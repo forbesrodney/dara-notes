@@ -71,7 +71,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             GitSync.sync(getApplication(), settings)
                 .onSuccess { messages.emit(it) }
-                .onFailure { messages.emit("Sync failed: ${it.message}") }
+                .onFailure { messages.emit("Sync failed: ${GitErrors.hint(it) ?: it.message}") }
         }
     }
 
@@ -93,7 +93,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     backStack.add(Screen.Notes)
                     onDone()
                 }
-                .onFailure { messages.emit("Clone failed: ${it.message}") }
+                .onFailure { messages.emit("Clone failed: ${GitErrors.hint(it) ?: it.message}") }
         }
     }
 

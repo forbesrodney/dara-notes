@@ -25,6 +25,8 @@ data class SyncState(
     val lastSyncAt: Long = 0,
     val lastMessage: String? = null,
     val lastError: String? = null,
+    /** Plain-language explanation of [lastError], when it is a common one. */
+    val lastHint: String? = null,
     /** Files that were committed with conflict markers during the last sync. */
     val conflicts: List<String> = emptyList(),
     /** Increments whenever a sync may have changed files on disk. */
@@ -75,7 +77,7 @@ object GitSync {
     private suspend fun run(context: Context, block: () -> String): Result<String> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
-                _state.update { it.copy(running = true, lastError = null) }
+                _state.update { it.copy(running = true, lastError = null, lastHint = null) }
                 val result = runCatching(block)
                 _state.update {
                     it.copy(
@@ -83,6 +85,7 @@ object GitSync {
                         lastSyncAt = if (result.isSuccess) System.currentTimeMillis() else it.lastSyncAt,
                         lastMessage = result.getOrNull() ?: it.lastMessage,
                         lastError = result.exceptionOrNull()?.let(::describe),
+                        lastHint = result.exceptionOrNull()?.let(GitErrors::hint),
                         generation = it.generation + 1,
                     )
                 }

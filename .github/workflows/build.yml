@@ -33,7 +33,7 @@ jobs:
         run: ./gradlew --no-daemon assembleDebug testDebugUnitTest
       - uses: actions/upload-artifact@v7
         with:
-          name: foam-for-android-debug
+          name: foamforandroid-debug
           path: app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
       - name: Upload test reports

@@ -238,7 +238,7 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
 fun SyncStatusLine(sync: SyncState) {
     val text = when {
         sync.running -> "Syncing…"
-        sync.lastError != null -> "Sync error: ${sync.lastError}"
+        sync.lastError != null -> "Sync error: ${sync.lastHint ?: sync.lastError}"
         sync.conflicts.isNotEmpty() -> "Conflicts to resolve: ${sync.conflicts.joinToString()}"
         sync.lastSyncAt > 0 -> "Synced ${DateUtils.getRelativeTimeSpanString(sync.lastSyncAt)}"
         else -> null

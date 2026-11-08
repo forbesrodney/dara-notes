@@ -220,6 +220,9 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                     sync.lastError?.let {
                         Text("Last error: $it", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
                     }
+                    sync.lastHint?.let {
+                        Text(it, color = MaterialTheme.colorScheme.onSurface, style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
                 1 -> {
                     Field("Index file", indexFile, { indexFile = it }, hint = "New notes are linked here as $bullet [[note]]")
