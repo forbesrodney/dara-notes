@@ -15,10 +15,18 @@ jobs:
           java-version: 17
           cache: gradle
       - uses: android-actions/setup-android@v4
-      # services.gradle.org can be slow to respond; fetch Gradle up front, with retries,
-      # so a slow download doesn't fail the build. (Cached after the first good run.)
+      # The Gradle wrapper downloads Gradle (~130 MB, from GitHub release assets) in one try and
+      # gives up on a stall. curl retries, resumes partial downloads and drops stalled transfers;
+      # the wrapper then installs from the local file and checks distributionSha256Sum.
       - name: Download Gradle
-        run: ./gradlew --version || (sleep 20 && ./gradlew --version) || (sleep 60 && ./gradlew --version)
+        run: |
+          props=gradle/wrapper/gradle-wrapper.properties
+          url=$(sed -n 's/^distributionUrl=//p' "$props" | sed 's/\\:/:/g')
+          zip="$RUNNER_TEMP/$(basename "$url")"
+          curl -fL --retry 6 --retry-all-errors --retry-delay 10 --connect-timeout 30 \
+            --speed-limit 50000 --speed-time 30 -C - -o "$zip" "$url"
+          sed -i.bak "s|^distributionUrl=.*|distributionUrl=file\\://$zip|" "$props" && rm "$props.bak"
+          ./gradlew --version
       - name: Build and run unit tests
         run: ./gradlew --no-daemon assembleDebug testDebugUnitTest
       - uses: actions/upload-artifact@v7
