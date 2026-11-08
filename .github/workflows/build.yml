@@ -9,6 +9,8 @@ jobs:
     steps:
       # Node 24 action versions (Node 20 actions are deprecated on GitHub's runners).
       - uses: actions/checkout@v7
+      # Fails if gradle-wrapper.jar isn't a genuine Gradle release (before anything runs it).
+      - uses: gradle/actions/wrapper-validation@v6
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
