@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "FoamNotes"
+rootProject.name = "FoamForAndroid"
 include(":app")

@@ -1,4 +1,4 @@
-package app.foamnotes.ui
+package app.foamforandroid.ui
 
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalDensity
@@ -6,9 +6,9 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.BoxWithConstraints
-import app.foamnotes.Linter
-import app.foamnotes.LintResult
-import app.foamnotes.LintConfig
+import app.foamforandroid.Linter
+import app.foamforandroid.LintResult
+import app.foamforandroid.LintConfig
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.flow.collectLatest
 import androidx.compose.runtime.rememberCoroutineScope
@@ -74,10 +74,10 @@ import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.material3.VerticalDivider
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.Alignment
-import app.foamnotes.MainViewModel
-import app.foamnotes.TaskStyle
-import app.foamnotes.Tasks
-import app.foamnotes.Screen
+import app.foamforandroid.MainViewModel
+import app.foamforandroid.TaskStyle
+import app.foamforandroid.Tasks
+import app.foamforandroid.Screen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.debounce

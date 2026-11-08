@@ -1,4 +1,4 @@
-package app.foamnotes.ui
+package app.foamforandroid.ui
 
 import android.annotation.SuppressLint
 import android.os.Handler
@@ -50,9 +50,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebViewAssetLoader
-import app.foamnotes.Graph
-import app.foamnotes.MainViewModel
-import app.foamnotes.Screen
+import app.foamforandroid.Graph
+import app.foamforandroid.MainViewModel
+import app.foamforandroid.Screen
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject

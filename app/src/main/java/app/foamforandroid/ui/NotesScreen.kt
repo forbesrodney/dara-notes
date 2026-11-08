@@ -1,4 +1,4 @@
-package app.foamnotes.ui
+package app.foamforandroid.ui
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
@@ -61,10 +61,10 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.foamnotes.MainViewModel
-import app.foamnotes.Note
-import app.foamnotes.Screen
-import app.foamnotes.SyncState
+import app.foamforandroid.MainViewModel
+import app.foamforandroid.Note
+import app.foamforandroid.Screen
+import app.foamforandroid.SyncState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 

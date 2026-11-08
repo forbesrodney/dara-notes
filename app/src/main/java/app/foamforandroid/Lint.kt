@@ -1,4 +1,4 @@
-package app.foamnotes
+package app.foamforandroid
 
 import android.annotation.SuppressLint
 import android.content.Context

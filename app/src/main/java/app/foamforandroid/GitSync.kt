@@ -1,4 +1,4 @@
-package app.foamnotes
+package app.foamforandroid
 
 import android.content.Context
 import kotlinx.coroutines.Dispatchers

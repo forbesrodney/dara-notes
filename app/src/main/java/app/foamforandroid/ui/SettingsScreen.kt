@@ -1,4 +1,4 @@
-package app.foamnotes.ui
+package app.foamforandroid.ui
 
 import kotlinx.coroutines.launch
 import androidx.compose.runtime.rememberCoroutineScope
@@ -52,9 +52,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import app.foamnotes.CompletionDate
-import app.foamnotes.DateOrder
-import app.foamnotes.MainViewModel
+import app.foamforandroid.CompletionDate
+import app.foamforandroid.DateOrder
+import app.foamforandroid.MainViewModel
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)

@@ -1,4 +1,4 @@
-package app.foamnotes
+package app.foamforandroid
 
 import org.json.JSONArray
 import org.json.JSONObject

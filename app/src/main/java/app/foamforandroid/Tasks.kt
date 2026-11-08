@@ -1,4 +1,4 @@
-package app.foamnotes
+package app.foamforandroid
 
 import java.time.LocalDate
 import java.time.chrono.IsoChronology

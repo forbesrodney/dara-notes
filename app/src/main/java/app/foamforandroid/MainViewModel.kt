@@ -1,4 +1,4 @@
-package app.foamnotes
+package app.foamforandroid
 
 import androidx.compose.foundation.lazy.LazyListState
 import android.app.Application

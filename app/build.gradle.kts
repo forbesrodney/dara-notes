@@ -5,15 +5,15 @@ plugins {
 }
 
 base {
-    archivesName.set("foam-for-android")
+    archivesName.set("foamforandroid")
 }
 
 android {
-    namespace = "app.foamnotes"
+    namespace = "app.foamforandroid"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "app.foamnotes"
+        applicationId = "app.foamforandroid"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

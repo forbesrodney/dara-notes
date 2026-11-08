@@ -5,12 +5,12 @@
   <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
   <application
-    android:name=".FoamNotesApp"
+    android:name=".FoamForAndroidApp"
     android:allowBackup="false"
     android:icon="@drawable/foam_icon"
     android:label="@string/app_name"
     android:supportsRtl="true"
-    android:theme="@style/Theme.FoamNotes">
+    android:theme="@style/Theme.FoamForAndroid">
     <activity
       android:name=".MainActivity"
       android:exported="true"

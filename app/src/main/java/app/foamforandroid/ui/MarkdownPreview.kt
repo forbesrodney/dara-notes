@@ -1,4 +1,4 @@
-package app.foamnotes.ui
+package app.foamforandroid.ui
 
 import android.annotation.SuppressLint
 import android.content.ActivityNotFoundException

@@ -1,4 +1,4 @@
-package app.foamnotes.ui
+package app.foamforandroid.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -32,8 +32,8 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.foamnotes.LintIssue
-import app.foamnotes.LintResult
+import app.foamforandroid.LintIssue
+import app.foamforandroid.LintResult
 
 private fun lineStart(text: String, line: Int): Int? {
     var start = 0

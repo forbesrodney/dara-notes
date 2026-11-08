@@ -1,6 +1,6 @@
-package app.foamnotes
+package app.foamforandroid
 
-import app.foamnotes.ui.GraphScreen
+import app.foamforandroid.ui.GraphScreen
 import android.app.Application
 import android.os.Build
 import android.os.Bundle
@@ -21,11 +21,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
-import app.foamnotes.ui.EditorScreen
-import app.foamnotes.ui.NotesScreen
-import app.foamnotes.ui.SettingsScreen
+import app.foamforandroid.ui.EditorScreen
+import app.foamforandroid.ui.NotesScreen
+import app.foamforandroid.ui.SettingsScreen
 
-class FoamNotesApp : Application() {
+class FoamForAndroidApp : Application() {
     override fun onCreate() {
         super.onCreate()
         // JGit reads ~/.gitconfig; give it a writable home inside app storage.

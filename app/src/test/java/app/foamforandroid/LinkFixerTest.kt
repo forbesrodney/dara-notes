@@ -1,4 +1,4 @@
-package app.foamnotes
+package app.foamforandroid
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
