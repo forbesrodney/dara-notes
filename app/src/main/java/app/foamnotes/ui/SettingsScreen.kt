@@ -1,5 +1,9 @@
 package app.foamnotes.ui
 
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.material3.Tab
+import androidx.compose.material3.PrimaryTabRow
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -75,7 +79,20 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     var syncAfterEdit by remember { mutableStateOf(s.syncAfterEdit) }
     var confirmReclone by remember { mutableStateOf(false) }
 
+    var tab by rememberSaveable { mutableStateOf(0) }
+    var confirmDiscard by remember { mutableStateOf(false) }
+
     val repoChanged = s.isConfigured && (remoteUrl.trim() != s.remoteUrl || branch.trim() != s.branch)
+    val autoSyncValue = autoSync.toIntOrNull()?.let { if (it in 1..14) 15 else it } ?: 15
+    // Anything different from what's saved (so Save can light up and Back can warn).
+    val dirty = remoteUrl.trim() != s.remoteUrl || branch.trim().ifBlank { "main" } != s.branch ||
+        username.trim() != s.username || token.trim() != s.token ||
+        authorName.trim() != s.authorName || authorEmail.trim() != s.authorEmail ||
+        indexFile.trim().ifBlank { "Index.md" } != s.indexFile || indexDaily != s.indexDailyNotes ||
+        bullet != s.bullet || strike != s.strikeCompleted || lintEnabled != s.lintEnabled ||
+        addDate != s.dateOnComplete || dateOrder != s.dateOrder || dateSep != s.dateSeparator ||
+        newNoteDir.trim().trim('/') != s.newNoteDir || dailyDir.trim().trim('/') != s.dailyDirOverride ||
+        autoSyncValue != s.autoSyncMinutes || syncAfterEdit != s.syncAfterEdit
 
     fun persist() {
         s.remoteUrl = remoteUrl.trim()
@@ -94,23 +111,47 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
         s.dateSeparator = dateSep
         s.newNoteDir = newNoteDir.trim().trim('/')
         s.dailyDirOverride = dailyDir.trim().trim('/')
-        s.autoSyncMinutes = autoSync.toIntOrNull()?.let { if (it in 1..14) 15 else it } ?: 15
+        s.autoSyncMinutes = autoSyncValue
         s.syncAfterEdit = syncAfterEdit
         vm.applySyncSchedule()
     }
 
+    fun save() {
+        if (repoChanged) confirmReclone = true
+        else { persist(); vm.back(); vm.syncNow() }
+    }
+
+    fun leave() { if (dirty && s.isConfigured) confirmDiscard = true else vm.back() }
+    BackHandler(enabled = dirty && s.isConfigured) { confirmDiscard = true }
+
+    val tabs = listOf("Repository", "Notes", "Editing", "Sync")
+
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = { Text(if (s.isConfigured) "Settings" else "Set up repository") },
-                navigationIcon = {
-                    if (vm.backStack.size > 1) {
-                        IconButton(onClick = { vm.back() }) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+            Column {
+                TopAppBar(
+                    title = { Text(if (s.isConfigured) "Settings" else "Set up repository") },
+                    navigationIcon = {
+                        if (vm.backStack.size > 1) {
+                            IconButton(onClick = ::leave) {
+                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            }
                         }
+                    },
+                    actions = {
+                        if (s.isConfigured) {
+                            TextButton(onClick = ::save, enabled = dirty && !sync.running) {
+                                Text(if (repoChanged) "Save & re-clone" else "Save")
+                            }
+                        }
+                    },
+                )
+                PrimaryTabRow(selectedTabIndex = tab) {
+                    tabs.forEachIndexed { i, title ->
+                        Tab(selected = tab == i, onClick = { tab = i }, text = { Text(title, maxLines = 1) })
                     }
-                },
-            )
+                }
+            }
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
@@ -118,107 +159,124 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
             Modifier.padding(padding).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            Section("Repository")
-            Field("Remote URL (HTTPS)", remoteUrl, { remoteUrl = it }, hint = "https://github.com/you/notes.git — blank for a local-only repo", keyboard = KeyboardType.Uri)
-            Field("Branch", branch, { branch = it })
-            Field("Username", username, { username = it }, hint = "Your Git host username")
-            OutlinedTextField(
-                value = token,
-                onValueChange = { token = it },
-                label = { Text("Access token") },
-                supportingText = { Text("Personal access token with repo read/write. Stored encrypted.") },
-                visualTransformation = PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth(),
-            )
-            Field("Commit author name", authorName, { authorName = it })
-            Field("Commit author email", authorEmail, { authorEmail = it }, keyboard = KeyboardType.Email)
+            when (tab) {
+                0 -> {
+                    Field("Remote URL (HTTPS)", remoteUrl, { remoteUrl = it }, hint = "https://github.com/you/notes.git — blank for a local-only repo", keyboard = KeyboardType.Uri)
+                    Field("Branch", branch, { branch = it })
+                    Field("Username", username, { username = it }, hint = "Your Git host username")
+                    OutlinedTextField(
+                        value = token,
+                        onValueChange = { token = it },
+                        label = { Text("Access token") },
+                        supportingText = { Text("Personal access token with repo read/write. Stored encrypted.") },
+                        visualTransformation = PasswordVisualTransformation(),
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                    Field("Commit author name", authorName, { authorName = it })
+                    Field("Commit author email", authorEmail, { authorEmail = it }, keyboard = KeyboardType.Email)
+                    Spacer(Modifier.height(8.dp))
+                    if (!s.isConfigured) {
+                        Button(
+                            onClick = { persist(); vm.cloneRepository {} },
+                            enabled = !sync.running,
+                            modifier = Modifier.fillMaxWidth(),
+                        ) { Text(if (sync.running) "Working…" else if (remoteUrl.isBlank()) "Create local repository" else "Clone repository") }
+                        Text(
+                            "The other tabs can be set now or later.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    } else {
+                        OutlinedButton(onClick = { confirmReclone = true }, enabled = !sync.running, modifier = Modifier.fillMaxWidth()) {
+                            Text("Discard local copy and re-clone")
+                        }
+                    }
+                    sync.lastError?.let {
+                        Text("Last error: $it", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                1 -> {
+                    Field("Index file", indexFile, { indexFile = it }, hint = "New notes are linked here as $bullet [[note]]")
+                    Toggle("Add daily notes to the index", indexDaily) { indexDaily = it }
+                    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                        Text("List bullet", Modifier.weight(1f))
+                        listOf("-" to "Dash  -", "*" to "Asterisk  *").forEach { (c, label) ->
+                            FilterChip(
+                                selected = bullet == c,
+                                onClick = { bullet = c },
+                                label = { Text(label) },
+                                modifier = Modifier.padding(start = 8.dp),
+                            )
+                        }
+                    }
+                    Field("Folder for new notes", newNoteDir, { newNoteDir = it }, hint = "Blank = repository root")
+                    Field("Daily notes folder", dailyDir, { dailyDir = it }, hint = "Blank = Foam setting foam.openDailyNote.directory, else journal")
+                    if (s.isConfigured) {
+                        Spacer(Modifier.height(8.dp))
+                        OutlinedButton(onClick = { persist(); vm.rebuildIndex() }, modifier = Modifier.fillMaxWidth()) {
+                            Text("Add missing notes to ${indexFile.ifBlank { "Index.md" }}")
+                        }
+                    }
+                }
+                2 -> {
+                    Section("markdownlint")
+                    Toggle("Check Markdown with markdownlint", lintEnabled) { lintEnabled = it }
+                    Text(
+                        "Uses the repository's .markdownlint.json (or .jsonc, .yaml, .markdownlint-cli2.*), " +
+                            "like the VS Code extension. Without one, all default rules apply.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
 
-            Section("Notes")
-            Field("Index file", indexFile, { indexFile = it }, hint = "New notes are linked here as $bullet [[note]]")
-            Toggle("Add daily notes to the index", indexDaily) { indexDaily = it }
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
-                Text("List bullet", Modifier.weight(1f))
-                listOf("-" to "Dash  -", "*" to "Asterisk  *").forEach { (c, label) ->
-                    FilterChip(
-                        selected = bullet == c,
-                        onClick = { bullet = c },
-                        label = { Text(label) },
-                        modifier = Modifier.padding(start = 8.dp),
+                    Section("Checklists")
+                    Toggle("Strike through checked items", strike) { strike = it }
+                    Toggle("Add completion date to checked items", addDate) { addDate = it }
+                    val (localeOrder, localeSep) = remember { CompletionDate.localeDefaults() }
+                    val (order, sep) = CompletionDate.resolve(dateOrder, dateSep)
+                    val today = remember { LocalDate.now() }
+                    val sample = { o: DateOrder, sp: String -> CompletionDate.format(today, o, sp) }
+                    Text("Date format", style = MaterialTheme.typography.bodyLarge)
+                    ChipRow(
+                        listOf(CompletionDate.LOCALE to "Locale (${sample(localeOrder, sep)})") +
+                            DateOrder.entries.map { o -> o.key to o.label(sep) },
+                        dateOrder,
+                    ) { dateOrder = it }
+                    Text("Date separator", style = MaterialTheme.typography.bodyLarge)
+                    ChipRow(
+                        listOf(CompletionDate.LOCALE to "Locale ( $localeSep )") +
+                            CompletionDate.separators.map { it to "  $it  " },
+                        dateSep,
+                        enabled = order.usesSeparator,
+                    ) { dateSep = it }
+                    Text(
+                        "Checked today: " + (if (strike) "~~Buy milk~~" else "Buy milk") +
+                            (if (addDate) " " + CompletionDate.stamp(today, order, sep) else ""),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
-            }
-            Field("Folder for new notes", newNoteDir, { newNoteDir = it }, hint = "Blank = repository root")
-            Field("Daily notes folder", dailyDir, { dailyDir = it }, hint = "Blank = Foam setting foam.openDailyNote.directory, else journal")
-
-            Section("Editor")
-            Toggle("Check Markdown with markdownlint", lintEnabled) { lintEnabled = it }
-            Text(
-                "Uses the repository's .markdownlint.json (or .jsonc, .yaml, .markdownlint-cli2.*), " +
-                    "like the VS Code extension. Without one, all default rules apply.",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Section("Checklists")
-            Toggle("Strike through checked items", strike) { strike = it }
-            Toggle("Add completion date to checked items", addDate) { addDate = it }
-            val (localeOrder, localeSep) = remember { CompletionDate.localeDefaults() }
-            val (order, sep) = CompletionDate.resolve(dateOrder, dateSep)
-            val today = remember { LocalDate.now() }
-            val sample = { o: DateOrder, sp: String -> CompletionDate.format(today, o, sp) }
-            Text("Date format", style = MaterialTheme.typography.bodyLarge)
-            ChipRow(
-                listOf(CompletionDate.LOCALE to "Locale (${sample(localeOrder, sep)})") +
-                    DateOrder.entries.map { o -> o.key to o.label(sep) },
-                dateOrder,
-            ) { dateOrder = it }
-            Text("Date separator", style = MaterialTheme.typography.bodyLarge)
-            ChipRow(
-                listOf(CompletionDate.LOCALE to "Locale ( $localeSep )") +
-                    CompletionDate.separators.map { it to "  $it  " },
-                dateSep,
-                enabled = order.usesSeparator,
-            ) { dateSep = it }
-            Text(
-                "Checked today: " + (if (strike) "~~Buy milk~~" else "Buy milk") +
-                    (if (addDate) " " + CompletionDate.stamp(today, order, sep) else ""),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-            )
-
-            Section("Sync")
-            Field("Background sync every (minutes, 0 = off)", autoSync, { autoSync = it.filter(Char::isDigit) }, hint = "Android allows 15 minutes minimum", keyboard = KeyboardType.Number)
-            Toggle("Sync shortly after editing", syncAfterEdit) { syncAfterEdit = it }
-
-            Spacer(Modifier.height(8.dp))
-            if (!s.isConfigured) {
-                Button(
-                    onClick = { persist(); vm.cloneRepository {} },
-                    enabled = !sync.running,
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text(if (sync.running) "Working…" else if (remoteUrl.isBlank()) "Create local repository" else "Clone repository") }
-            } else {
-                Button(
-                    onClick = {
-                        if (repoChanged) confirmReclone = true
-                        else { persist(); vm.back(); vm.syncNow() }
-                    },
-                    enabled = !sync.running,
-                    modifier = Modifier.fillMaxWidth(),
-                ) { Text(if (repoChanged) "Save and re-clone" else "Save") }
-                OutlinedButton(onClick = { persist(); vm.rebuildIndex() }, modifier = Modifier.fillMaxWidth()) {
-                    Text("Add missing notes to ${indexFile.ifBlank { "Index.md" }}")
+                3 -> {
+                    Field("Background sync every (minutes, 0 = off)", autoSync, { autoSync = it.filter(Char::isDigit) }, hint = "Android allows 15 minutes minimum", keyboard = KeyboardType.Number)
+                    Toggle("Sync shortly after editing", syncAfterEdit) { syncAfterEdit = it }
                 }
-                OutlinedButton(onClick = { confirmReclone = true }, enabled = !sync.running, modifier = Modifier.fillMaxWidth()) {
-                    Text("Discard local copy and re-clone")
-                }
-            }
-            sync.lastError?.let {
-                Text("Last error: $it", color = MaterialTheme.colorScheme.error, style = MaterialTheme.typography.bodySmall)
             }
         }
+    }
+
+    if (confirmDiscard) {
+        AlertDialog(
+            onDismissRequest = { confirmDiscard = false },
+            title = { Text("Discard changes?") },
+            text = { Text("Your changes to the settings haven't been saved.") },
+            confirmButton = {
+                TextButton(onClick = { confirmDiscard = false; vm.back() }) { Text("Discard") }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmDiscard = false; save() }) { Text(if (repoChanged) "Save & re-clone" else "Save") }
+            },
+        )
     }
 
     if (confirmReclone) {
