@@ -1,0 +1,39 @@
+:root {
+  --bg: #ffffff; --fg: #1f2328; --muted: #59636e; --border: #d1d9e0;
+  --code-bg: #f2f4f6; --link: #0b62c4; --missing: #b35900; --quote: #59636e;
+  --embed-bg: #f7f8fa;
+}
+:root.dark {
+  --bg: #121417; --fg: #e6e8eb; --muted: #9aa4af; --border: #30363d;
+  --code-bg: #1d2127; --link: #6cb6ff; --missing: #f0a35c; --quote: #9aa4af;
+  --embed-bg: #191c21;
+}
+html, body { background: var(--bg); color: var(--fg); margin: 0; }
+body {
+  font: 16px/1.6 -apple-system, "Roboto", "Segoe UI", sans-serif;
+  padding: 12px 16px 64px; overflow-wrap: break-word;
+}
+#content { max-width: 760px; margin: 0 auto; }
+h1, h2, h3, h4, h5, h6 { line-height: 1.25; margin: 1.2em 0 .5em; }
+h1 { font-size: 1.7em; border-bottom: 1px solid var(--border); padding-bottom: .25em; }
+h2 { font-size: 1.35em; border-bottom: 1px solid var(--border); padding-bottom: .2em; }
+a { color: var(--link); text-decoration: none; }
+a.wikilink.missing { color: var(--missing); text-decoration: underline dashed; }
+code, pre { font-family: "JetBrains Mono", "Roboto Mono", monospace; font-size: .9em; }
+code { background: var(--code-bg); padding: .1em .35em; border-radius: 4px; }
+pre { background: var(--code-bg); padding: 12px; border-radius: 6px; overflow-x: auto; }
+pre code { background: none; padding: 0; }
+blockquote { margin: 0; padding: 0 1em; color: var(--quote); border-left: 4px solid var(--border); }
+table { border-collapse: collapse; display: block; overflow-x: auto; }
+th, td { border: 1px solid var(--border); padding: 6px 12px; }
+img { max-width: 100%; }
+hr { border: 0; border-top: 1px solid var(--border); }
+li.task-list-item { list-style: none; }
+li.task-list-item input.task { margin: 0 .5em 0 -1.4em; width: 1.05em; height: 1.05em; vertical-align: -0.15em; }
+.footnotes { font-size: .9em; color: var(--muted); }
+.footnotes-sep { margin-top: 2em; }
+pre.mermaid { background: transparent; text-align: center; }
+.embed { border-left: 3px solid var(--link); background: var(--embed-bg); padding: 4px 12px; margin: 1em 0; border-radius: 0 6px 6px 0; }
+.embed-title { font-size: .8em; color: var(--muted); }
+.katex-display { overflow-x: auto; overflow-y: hidden; }
+.empty { color: var(--muted); font-style: italic; }

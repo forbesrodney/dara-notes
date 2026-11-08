@@ -1,0 +1,293 @@
+package app.foamnotes.ui
+
+import android.text.format.DateUtils
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.ui.unit.DpOffset
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.ListItem
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import app.foamnotes.MainViewModel
+import app.foamnotes.Note
+import app.foamnotes.Screen
+import app.foamnotes.SyncState
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+@Composable
+fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
+    val notes by vm.notes.collectAsState()
+    val sync by vm.syncState.collectAsState()
+    var query by rememberSaveable { mutableStateOf("") }
+    var showNew by remember { mutableStateOf(false) }
+    var toDelete by remember { mutableStateOf<Note?>(null) }
+    var menuFor by remember { mutableStateOf<Note?>(null) }
+    var toRename by remember { mutableStateOf<Note?>(null) }
+    var toMove by remember { mutableStateOf<Note?>(null) }
+    var filtered by remember { mutableStateOf(notes) }
+
+    LaunchedEffect(Unit) { vm.refresh() }
+    val listState = vm.notesListState
+    LaunchedEffect(notes, query) {
+        val updated = withContext(Dispatchers.IO) { vm.repo.search(query, notes) }
+        // The list keeps its place by item, so a note that moves to the top (just edited or
+        // synced) would land above the visible area. If we were at the top, stay there.
+        val atTop = listState.firstVisibleItemIndex == 0
+        filtered = updated
+        if (atTop) listState.scrollToItem(0)
+    }
+    val indexPath = vm.settings.indexFile
+    val index = notes.firstOrNull { it.path.equals(indexPath, ignoreCase = true) }
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Notes") },
+                actions = {
+                    if (index != null) {
+                        IconButton(onClick = { vm.openPath(index.path) }) {
+                            Icon(Icons.Default.Home, contentDescription = "Open ${index.path}")
+                        }
+                    }
+                    IconButton(onClick = { vm.navigate(Screen.Graph()) }) {
+                        Icon(GraphIcon, contentDescription = "Graph")
+                    }
+                    IconButton(onClick = vm::syncNow, enabled = !sync.running) {
+                        if (sync.running) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                        else Icon(Icons.Default.Refresh, contentDescription = "Sync now")
+                    }
+                    IconButton(onClick = { vm.navigate(Screen.Settings) }) {
+                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    }
+                },
+            )
+        },
+        floatingActionButton = {
+            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                SmallFloatingActionButton(onClick = vm::openDailyNote) {
+                    Icon(Icons.Default.DateRange, contentDescription = "Today's daily note")
+                }
+                ExtendedFloatingActionButton(
+                    onClick = { showNew = true },
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text("New note") },
+                )
+            }
+        },
+        snackbarHost = { SnackbarHost(snackbar) },
+    ) { padding ->
+        Column(Modifier.padding(padding).fillMaxSize()) {
+            SyncStatusLine(sync)
+            OutlinedTextField(
+                value = query,
+                onValueChange = { query = it },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                placeholder = { Text("Search notes") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+            )
+            PullToRefreshBox(
+                isRefreshing = sync.running,
+                onRefresh = vm::syncNow,
+                modifier = Modifier.fillMaxSize(),
+            ) {
+                LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 160.dp)) {
+                    items(filtered, key = { it.path }) { note ->
+                        Box {
+                        ListItem(
+                            headlineContent = { Text(note.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                            supportingContent = {
+                                Text(
+                                    note.path + " · " + DateUtils.getRelativeTimeSpanString(note.modified),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                            },
+                            modifier = Modifier.combinedClickable(
+                                onClick = { vm.openPath(note.path) },
+                                onLongClick = { menuFor = note },
+                            ),
+                        )
+                        DropdownMenu(
+                            expanded = menuFor == note,
+                            onDismissRequest = { menuFor = null },
+                            offset = DpOffset(16.dp, 0.dp),
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Rename") },
+                                leadingIcon = { Icon(Icons.Default.Edit, null) },
+                                onClick = { menuFor = null; toRename = note },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Move to folder") },
+                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, null) },
+                                onClick = { menuFor = null; toMove = note },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete") },
+                                leadingIcon = { Icon(Icons.Default.Delete, null) },
+                                onClick = { menuFor = null; toDelete = note },
+                            )
+                        }
+                        }
+                        HorizontalDivider()
+                    }
+                    if (filtered.isEmpty()) {
+                        item {
+                            Text(
+                                if (query.isBlank()) "No notes yet. Tap “New note” or the calendar for today's note."
+                                else "No matches",
+                                modifier = Modifier.padding(24.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    if (showNew) {
+        NewNoteDialog(onDismiss = { showNew = false }, onCreate = { title ->
+            showNew = false
+            vm.createNote(title)
+        })
+    }
+    toRename?.let { note ->
+        RenameNoteDialog(vm, note.path, onDismiss = { toRename = null }) { newPath ->
+            toRename = null
+            vm.relocateNote(note.path, newPath)
+        }
+    }
+    toMove?.let { note ->
+        MoveNoteDialog(vm, note.path, onDismiss = { toMove = null }) { newPath ->
+            toMove = null
+            vm.relocateNote(note.path, newPath)
+        }
+    }
+    toDelete?.let { note ->
+        AlertDialog(
+            onDismissRequest = { toDelete = null },
+            title = { Text("Delete note?") },
+            text = { Text("${note.path} will be deleted and the deletion synced.") },
+            confirmButton = {
+                TextButton(onClick = { vm.deleteNote(note.path); toDelete = null }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { toDelete = null }) { Text("Cancel") } },
+        )
+    }
+}
+
+@Composable
+fun SyncStatusLine(sync: SyncState) {
+    val text = when {
+        sync.running -> "Syncing…"
+        sync.lastError != null -> "Sync error: ${sync.lastError}"
+        sync.conflicts.isNotEmpty() -> "Conflicts to resolve: ${sync.conflicts.joinToString()}"
+        sync.lastSyncAt > 0 -> "Synced ${DateUtils.getRelativeTimeSpanString(sync.lastSyncAt)}"
+        else -> null
+    } ?: return
+    val isProblem = sync.lastError != null || sync.conflicts.isNotEmpty()
+    val icon: (@Composable () -> Unit)? = if (isProblem) {
+        { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
+    } else null
+    ListItem(
+        leadingContent = icon,
+        headlineContent = {
+            Text(
+                text,
+                style = MaterialTheme.typography.bodySmall,
+                color = if (isProblem) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+    )
+}
+
+@Composable
+private fun NewNoteDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
+    var title by remember { mutableStateOf("") }
+    val focus = remember { FocusRequester() }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("New note") },
+        text = {
+            Column {
+                OutlinedTextField(
+                    value = title,
+                    onValueChange = { title = it },
+                    label = { Text("Title") },
+                    singleLine = true,
+                    modifier = Modifier.focusRequester(focus),
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "It will be linked from the index automatically.",
+                    style = MaterialTheme.typography.bodySmall,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onCreate(title.trim()) }, enabled = title.isNotBlank()) { Text("Create") }
+        },
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
+    LaunchedEffect(Unit) { focus.requestFocus() }
+}

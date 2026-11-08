@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="/assets/vendor/markdownlint.min.js"></script>
+<script>
+// Runs markdownlint for the editor. Called from Kotlin with evaluateJavascript.
+
+// Strips line and block comments and trailing commas from JSONC, leaving strings intact.
+function stripJsonc(src) {
+  let out = '', i = 0, inStr = false;
+  while (i < src.length) {
+    const c = src[i], n = src[i + 1];
+    if (inStr) {
+      out += c;
+      if (c === '\\') { out += n ?? ''; i += 2; continue; }
+      if (c === '"') inStr = false;
+      i++;
+    } else if (c === '"') { inStr = true; out += c; i++; }
+    else if (c === '/' && n === '/') { while (i < src.length && src[i] !== '\n') i++; }
+    else if (c === '/' && n === '*') { i += 2; while (i < src.length && !(src[i] === '*' && src[i + 1] === '/')) i++; i += 2; }
+    else { out += c; i++; }
+  }
+  return out.replace(/,(\s*[}\]])/g, '$1');
+}
+
+/**
+ * Turns a config file into a markdownlint config object.
+ * kind: "markdownlint" (.markdownlint.*), "cli2" (.markdownlint-cli2.*, uses its "config"),
+ * or "vscode" (.vscode/settings.json, uses "markdownlint.config").
+ */
+function parseConfig(raw, format, kind) {
+  if (!raw) return null;
+  const obj = format === 'yaml' ? markdownlint.parseYaml(raw) : JSON.parse(stripJsonc(raw));
+  if (!obj || typeof obj !== 'object') return null;
+  if (kind === 'cli2') return obj.config || null;
+  if (kind === 'vscode') return obj['markdownlint.config'] || null;
+  return obj;
+}
+
+function run(text, cfg) {
+  let config = null, configError = null;
+  try { config = parseConfig(cfg.raw, cfg.format, cfg.kind); } catch (e) { configError = String(e.message || e); }
+  const result = markdownlint.lint({ strings: { note: text }, config: config || { default: true } });
+  return { errors: result.note || [], configError };
+}
+
+function lintNote(text, cfg) {
+  const { errors, configError } = run(text, cfg);
+  return JSON.stringify({
+    configError,
+    issues: errors.map(e => ({
+      line: e.lineNumber,
+      rule: e.ruleNames.slice(0, 2).join('/'),
+      description: e.ruleDescription,
+      detail: e.errorDetail || '',
+      context: e.errorContext || '',
+      column: e.errorRange ? e.errorRange[0] : 0,
+      length: e.errorRange ? e.errorRange[1] : 0,
+      fixable: !!e.fixInfo,
+    })),
+  });
+}
+
+function fixNote(text, cfg) {
+  const { errors } = run(text, cfg);
+  return markdownlint.applyFixes(text, errors);
+}
+</script>
+</head>
+<body></body>
+</html>

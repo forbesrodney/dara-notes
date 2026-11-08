@@ -1,0 +1,164 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<style>
+  html, body { margin: 0; height: 100%; overflow: hidden; background: transparent; }
+  #graph { position: absolute; inset: 0; }
+</style>
+<script src="/assets/vendor/force-graph.min.js"></script>
+</head>
+<body>
+<div id="graph"></div>
+<script>
+(function () {
+  const stub = { selected() {}, layout() {}, ready() {} };
+  const bridge = () => window.Android || stub;
+  let theme = {
+    bg: '#ffffff', fg: '#1b1b1f', note: '#4355b9', tag: '#8a5a00', placeholder: '#8f909a',
+    link: 'rgba(120,120,130,0.35)', linkHi: '#4355b9',
+  };
+  let selected = null;           // selected node id
+  let neighbours = new Set();    // ids next to the selected node
+  let all = { nodes: [], links: [] };
+  let fitPending = false;
+
+  const el = document.getElementById('graph');
+  const radius = n => n.type === 'tag' ? 3 + Math.sqrt(n.degree) * 1.2 : 3 + Math.sqrt(n.degree) * 1.4;
+  const endId = e => (typeof e === 'object' ? e.id : e);
+  const isHi = l => selected && (endId(l.source) === selected || endId(l.target) === selected);
+  const colour = n => n.type === 'tag' ? theme.tag : n.type === 'placeholder' ? theme.placeholder : theme.note;
+
+  const graph = new ForceGraph(el)
+    .width(window.innerWidth).height(window.innerHeight)
+    .backgroundColor('rgba(0,0,0,0)')
+    .nodeId('id')
+    .autoPauseRedraw(false)
+    .minZoom(0.1).maxZoom(12)
+    .cooldownTicks(300)
+    .linkColor(l => isHi(l) ? theme.linkHi : theme.link)
+    .linkWidth(l => isHi(l) ? 2 : 1)
+    .nodeCanvasObject((n, ctx, scale) => {
+      const dim = selected && n.id !== selected && !neighbours.has(n.id);
+      const r = radius(n);
+      ctx.globalAlpha = dim ? 0.2 : 1;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, 2 * Math.PI);
+      if (n.type === 'placeholder') {
+        ctx.lineWidth = 1.2; ctx.strokeStyle = colour(n); ctx.stroke();
+      } else {
+        ctx.fillStyle = colour(n); ctx.fill();
+      }
+      if (n.id === selected) {
+        ctx.lineWidth = 2.5 / scale; ctx.strokeStyle = theme.fg;
+        ctx.beginPath(); ctx.arc(n.x, n.y, r + 3 / scale, 0, 2 * Math.PI); ctx.stroke();
+      }
+      // Labels: always for the selection and its neighbours, otherwise once zoomed in
+      // (busy nodes earlier than leaves).
+      const show = n.id === selected || neighbours.has(n.id) || scale > 2.2 ||
+        (scale > 1.2 && n.degree >= 3) || (scale > 0.5 && n.degree >= 6);
+      if (show && !dim) {
+        const size = 12 / scale;
+        ctx.font = `${n.id === selected ? 'bold ' : ''}${size}px sans-serif`;
+        ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+        ctx.fillStyle = theme.fg;
+        ctx.fillText(n.label, n.x, n.y + r + 2 / scale);
+      }
+      ctx.globalAlpha = 1;
+    })
+    .nodePointerAreaPaint((n, c, ctx) => {
+      // Generous touch targets: finger-sized whatever the zoom.
+      ctx.fillStyle = c;
+      ctx.beginPath(); ctx.arc(n.x, n.y, Math.max(radius(n) + 4, 14 / graph.zoom()), 0, 2 * Math.PI); ctx.fill();
+    })
+    .onNodeClick(n => select(n.id))
+    .onBackgroundClick(() => select(null))
+    // Springy: a dragged node is released when you let go, and the layout pulls it back.
+    .onNodeDragEnd(n => { n.fx = undefined; n.fy = undefined; graph.d3ReheatSimulation(); })
+    .onEngineStop(() => {
+      if (fitPending) { fitPending = false; graph.zoomToFit(400, 40); }
+      saveLayout();
+    })
+    .onZoomEnd(() => saveLayout());
+
+  graph.d3Force('charge').strength(-110).distanceMax(250);
+  graph.d3Force('link').distance(40);
+  // Gentle pull towards the middle so notes without links stay near the rest of the graph
+  // instead of drifting off (which would make "fit" zoom right out).
+  graph.d3Force('gravity', (() => {
+    let nodes = [];
+    const force = alpha => {
+      for (const n of nodes) { n.vx -= n.x * 0.06 * alpha; n.vy -= n.y * 0.06 * alpha; }
+    };
+    force.initialize = ns => { nodes = ns; };
+    return force;
+  })());
+
+  function select(id) {
+    selected = id;
+    neighbours = new Set();
+    if (id) for (const l of all.links) {
+      const s = endId(l.source), t = endId(l.target);
+      if (s === id) neighbours.add(t);
+      if (t === id) neighbours.add(s);
+    }
+    const n = id && all.nodes.find(x => x.id === id);
+    bridge().selected(n ? JSON.stringify({ id: n.id, type: n.type, label: n.label, path: n.path, degree: neighbours.size }) : '');
+  }
+
+  let saveTimer = null;
+  function saveLayout() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => {
+      const pos = {};
+      for (const n of all.nodes) if (n.x !== undefined) pos[n.id] = [Math.round(n.x), Math.round(n.y)];
+      const c = graph.centerAt();
+      bridge().layout(JSON.stringify({ pos, zoom: graph.zoom(), cx: c.x, cy: c.y }));
+    }, 300);
+  }
+
+  /**
+   * data: {nodes, links} from Kotlin; opts: {tags, placeholders}; layout: saved positions
+   * and view, or null. Keeps positions of nodes that are already on screen.
+   */
+  window.setGraph = function (data, opts, layout) {
+    const keep = new Map(all.nodes.map(n => [n.id, n]));
+    const show = n => (n.type !== 'tag' || opts.tags) && (n.type !== 'placeholder' || opts.placeholders);
+    const nodes = data.nodes.filter(show).map(n => {
+      const old = keep.get(n.id);
+      if (old) return Object.assign(old, n);
+      const p = layout && layout.pos && layout.pos[n.id];
+      return p ? Object.assign(n, { x: p[0], y: p[1] }) : n;
+    });
+    const ids = new Set(nodes.map(n => n.id));
+    const links = data.links.filter(l => ids.has(endId(l.source)) && ids.has(endId(l.target)))
+      .map(l => ({ source: endId(l.source), target: endId(l.target) }));
+    const first = all.nodes.length === 0;
+    all = { nodes, links };
+    graph.graphData(all);
+    // Keep the selection if it's still shown (refreshing its neighbours and count).
+    if (selected) select(ids.has(selected) ? selected : null);
+    if (first) {
+      if (layout && layout.zoom) { graph.zoom(layout.zoom); graph.centerAt(layout.cx, layout.cy); }
+      else fitPending = true;
+    }
+  };
+
+  window.setTheme = function (t) { theme = Object.assign(theme, t); };
+  window.fit = function () { graph.zoomToFit(400, 40); };
+  window.focusNode = function (id) {
+    select(id);
+    const go = () => {
+      const n = all.nodes.find(x => x.id === id);
+      if (n && n.x !== undefined) { fitPending = false; graph.centerAt(n.x, n.y, 600); graph.zoom(3, 600); }
+    };
+    setTimeout(go, 600);
+  };
+
+  window.addEventListener('resize', () => graph.width(window.innerWidth).height(window.innerHeight));
+  bridge().ready();
+})();
+</script>
+</body>
+</html>
