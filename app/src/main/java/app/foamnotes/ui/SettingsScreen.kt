@@ -1,6 +1,9 @@
 package app.foamnotes.ui
 
-import androidx.compose.runtime.saveable.rememberSaveable
+import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.material3.Tab
 import androidx.compose.material3.PrimaryTabRow
 import androidx.activity.compose.BackHandler
@@ -79,7 +82,9 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     var syncAfterEdit by remember { mutableStateOf(s.syncAfterEdit) }
     var confirmReclone by remember { mutableStateOf(false) }
 
-    var tab by rememberSaveable { mutableStateOf(0) }
+    // Tabs are pages of a pager, so you can swipe between them as well as tap.
+    val pager = rememberPagerState(pageCount = { 4 })
+    val scope = rememberCoroutineScope()
     var confirmDiscard by remember { mutableStateOf(false) }
 
     val repoChanged = s.isConfigured && (remoteUrl.trim() != s.remoteUrl || branch.trim() != s.branch)
@@ -146,11 +151,15 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                         }
                     },
                 )
-                PrimaryTabRow(selectedTabIndex = tab) {
+                PrimaryTabRow(selectedTabIndex = pager.currentPage) {
                     tabs.forEachIndexed { i, title ->
                         // Custom content instead of Tab(text = …): the standard text slot adds 16dp
                         // of padding each side, which squeezes titles on narrow phones.
-                        Tab(selected = tab == i, onClick = { tab = i }, modifier = Modifier.height(48.dp)) {
+                        Tab(
+                            selected = pager.currentPage == i,
+                            onClick = { scope.launch { pager.animateScrollToPage(i) } },
+                            modifier = Modifier.height(48.dp),
+                        ) {
                             Text(
                                 title,
                                 style = MaterialTheme.typography.titleSmall,
@@ -165,11 +174,16 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
         },
         snackbarHost = { SnackbarHost(snackbar) },
     ) { padding ->
+        HorizontalPager(
+            state = pager,
+            modifier = Modifier.padding(padding).fillMaxSize().imePadding(),
+            verticalAlignment = Alignment.Top,
+        ) { page ->
         Column(
-            Modifier.padding(padding).fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(16.dp),
+            Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
-            when (tab) {
+            when (page) {
                 0 -> {
                     Field("Remote URL (HTTPS)", remoteUrl, { remoteUrl = it }, hint = "https://github.com/you/notes.git — blank for a local-only repo", keyboard = KeyboardType.Uri)
                     Field("Branch", branch, { branch = it })
@@ -272,6 +286,7 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                     Toggle("Sync shortly after editing", syncAfterEdit) { syncAfterEdit = it }
                 }
             }
+        }
         }
     }
 
