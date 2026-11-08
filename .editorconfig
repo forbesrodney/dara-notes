@@ -1,0 +1,25 @@
+# EditorConfig configuration cobbled together from my VSCode settings.json
+# top-most EditorConfig file
+root = true
+
+[*]
+indent_style = space
+indent_size = 2
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{c,cpp,cc,hpp,h,java,kt,kts,py,php}]
+# Language specific overrides
+# 4 space indents for c/c++/java/python type languages
+indent_size = 4
+
+[*.md]
+# trailing whitespaces are significant in Markdown
+trim_trailing_whitespace = false
+
+[Makefile]
+# Makefile requires tabs, not spaces
+indent_size = 8
+indent_style = tab
