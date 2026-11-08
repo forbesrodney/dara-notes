@@ -124,7 +124,7 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     fun leave() { if (dirty && s.isConfigured) confirmDiscard = true else vm.back() }
     BackHandler(enabled = dirty && s.isConfigured) { confirmDiscard = true }
 
-    val tabs = listOf("Repository", "Notes", "Editing", "Sync")
+    val tabs = listOf("Repo", "Notes", "Editing", "Sync")
 
     Scaffold(
         topBar = {
@@ -148,7 +148,17 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                 )
                 PrimaryTabRow(selectedTabIndex = tab) {
                     tabs.forEachIndexed { i, title ->
-                        Tab(selected = tab == i, onClick = { tab = i }, text = { Text(title, maxLines = 1) })
+                        // Custom content instead of Tab(text = …): the standard text slot adds 16dp
+                        // of padding each side, which squeezes titles on narrow phones.
+                        Tab(selected = tab == i, onClick = { tab = i }, modifier = Modifier.height(48.dp)) {
+                            Text(
+                                title,
+                                style = MaterialTheme.typography.titleSmall,
+                                maxLines = 1,
+                                softWrap = false,
+                                modifier = Modifier.padding(horizontal = 4.dp),
+                            )
+                        }
                     }
                 }
             }
