@@ -1,9 +1,15 @@
+# cspell:disable
+# We kinda want to allow these to give collaborators some help
+!/.vscode/**/*.default.json
+!/.vscode/**/*.local.json
+!/.vscode/**/*.shared.json
+!/.vscode/extensions.json
+!/.vscode/cspell.json
+
 .gradle/
 build/
-/local.properties
-/.idea/
-*.iml
-.DS_Store
-/captures
-.externalNativeBuild
-.cxx
+
+local.properties
+
+# We use git-cliff to generate this
+CHANGELOG.md
