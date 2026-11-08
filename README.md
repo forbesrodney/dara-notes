@@ -81,8 +81,8 @@ Needs JDK 17 or 21 (Gradle 8.10 does not run on newer JDKs) and the Android SDK
 The APK lands in `app/build/outputs/apk/debug/`. Install with
 `adb install app/build/outputs/apk/debug/foam-for-android-debug.apk`, or open the folder in Android Studio.
 
-Alternatively push this folder to GitHub: `.github/workflows/build.yml` builds the APK and
-attaches it to the workflow run as an artifact.
+Alternatively push this folder to GitHub: `.github/workflows/build.yml` builds the APK, runs the
+unit tests (`./gradlew testDebugUnitTest`) and attaches the APK to the workflow run as an artifact.
 
 To refresh the bundled JavaScript libraries: `scripts/fetch-vendor.sh`. markdownlint is
 bundled separately with `scripts/build-markdownlint.sh` (needs Node.js; versions are at the
