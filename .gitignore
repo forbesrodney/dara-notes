@@ -4,9 +4,11 @@
 !/.vscode/**/*.local.json
 !/.vscode/**/*.shared.json
 !/.vscode/extensions.json
+!/.vscode/tasks.json
 !/.vscode/cspell.json
 
 .gradle/
+.kotlin/
 build/
 
 local.properties
