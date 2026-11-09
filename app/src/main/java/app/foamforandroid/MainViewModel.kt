@@ -52,6 +52,16 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** The note list's scroll position, kept while you open notes and come back. */
     val notesListState = LazyListState()
 
+    /** Note list layout (flat or by folder, saved), open folders and the folder view's scroll. */
+    val notesTreeView = mutableStateOf(settings.notesView == "tree")
+    val notesExpanded = mutableStateOf(emptySet<String>())
+    val notesTreeListState = LazyListState()
+
+    fun setNotesTreeView(tree: Boolean) {
+        notesTreeView.value = tree
+        settings.notesView = if (tree) "tree" else "flat"
+    }
+
     /** Tag Explorer state: open tags (lowercase), the filter text and the scroll position. */
     val tagsExpanded = mutableStateOf(emptySet<String>())
     val tagsQuery = mutableStateOf("")

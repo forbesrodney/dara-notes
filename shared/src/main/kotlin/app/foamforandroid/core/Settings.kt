@@ -32,6 +32,9 @@ interface Settings {
     /** Check notes with markdownlint while editing. */
     var lintEnabled: Boolean
 
+    /** Note list layout: "flat" (every note, newest first) or "tree" (by folder). */
+    var notesView: String
+
     /** Graph filters. */
     var graphTags: Boolean
     var graphPlaceholders: Boolean

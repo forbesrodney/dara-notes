@@ -39,7 +39,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** Material "folder" icon (not in material-icons-core). */
-private val FolderIcon: ImageVector by lazy {
+val FolderIcon: ImageVector by lazy {
     ImageVector.Builder("Folder", 24.dp, 24.dp, 24f, 24f).addPath(
         pathData = addPathNodes("M10,4H4c-1.1,0 -1.99,0.9 -1.99,2L2,18c0,1.1 0.9,2 2,2h16c1.1,0 2,-0.9 2,-2V8c0,-1.1 -0.9,-2 -2,-2h-8l-2,-2z"),
         fill = SolidColor(Color.Black),

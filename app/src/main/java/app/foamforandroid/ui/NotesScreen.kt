@@ -2,26 +2,32 @@ package app.foamforandroid.ui
 
 import android.text.format.DateUtils
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
@@ -60,11 +66,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import app.foamforandroid.MainViewModel
 import app.foamforandroid.Screen
+import app.foamforandroid.core.FolderNode
 import app.foamforandroid.core.Note
+import app.foamforandroid.core.NoteTree
 import app.foamforandroid.core.SyncState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -81,6 +90,8 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     var toRename by remember { mutableStateOf<Note?>(null) }
     var toMove by remember { mutableStateOf<Note?>(null) }
     var filtered by remember { mutableStateOf(notes) }
+    val treeView by vm.notesTreeView
+    var expanded by vm.notesExpanded
 
     LaunchedEffect(Unit) { vm.refresh() }
     val listState = vm.notesListState
@@ -154,70 +165,109 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize()) {
             SyncStatusLine(sync)
-            OutlinedTextField(
-                value = query,
-                onValueChange = { query = it },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                placeholder = { Text("Search notes") },
-                singleLine = true,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
-            )
+            Row(
+                Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = query,
+                    onValueChange = { query = it },
+                    leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                    placeholder = { Text("Search notes") },
+                    singleLine = true,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = { vm.setNotesTreeView(!treeView) }) {
+                    if (treeView) Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Show as list")
+                    else Icon(FolderIcon, contentDescription = "Show by folder")
+                }
+            }
+
+            // One note in either view; long-press opens Rename / Move / Delete.
+            val noteItem: @Composable (Note, Dp, String) -> Unit = { note, indent, details ->
+                Box {
+                    ListItem(
+                        headlineContent = { Text(note.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+                        supportingContent = {
+                            Text(
+                                details + " · " + DateUtils.getRelativeTimeSpanString(note.modified),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        },
+                        modifier = Modifier
+                            .combinedClickable(
+                                onClick = { vm.openPath(note.path) },
+                                onLongClick = { menuFor = note },
+                            )
+                            .padding(start = indent),
+                    )
+                    DropdownMenu(
+                        expanded = menuFor == note,
+                        onDismissRequest = { menuFor = null },
+                        offset = DpOffset(16.dp, 0.dp),
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Rename") },
+                            leadingIcon = { Icon(Icons.Default.Edit, null) },
+                            onClick = { menuFor = null; toRename = note },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Move to folder") },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, null) },
+                            onClick = { menuFor = null; toMove = note },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete") },
+                            leadingIcon = { Icon(Icons.Default.Delete, null) },
+                            onClick = { menuFor = null; toDelete = note },
+                        )
+                    }
+                }
+            }
+            val empty: @Composable () -> Unit = {
+                Text(
+                    if (query.isBlank()) "No notes yet. Tap “New note” or the calendar for today's note."
+                    else "No matches",
+                    modifier = Modifier.padding(24.dp),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
             PullToRefreshBox(
                 isRefreshing = sync.running,
                 onRefresh = vm::syncNow,
                 modifier = Modifier.fillMaxSize(),
             ) {
-                LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 160.dp)) {
-                    items(filtered, key = { it.path }) { note ->
-                        Box {
-                        ListItem(
-                            headlineContent = { Text(note.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                            supportingContent = {
-                                Text(
-                                    note.path + " · " + DateUtils.getRelativeTimeSpanString(note.modified),
-                                    maxLines = 1,
-                                    overflow = TextOverflow.Ellipsis,
-                                    style = MaterialTheme.typography.bodySmall,
-                                )
-                            },
-                            modifier = Modifier.combinedClickable(
-                                onClick = { vm.openPath(note.path) },
-                                onLongClick = { menuFor = note },
-                            ),
-                        )
-                        DropdownMenu(
-                            expanded = menuFor == note,
-                            onDismissRequest = { menuFor = null },
-                            offset = DpOffset(16.dp, 0.dp),
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Rename") },
-                                leadingIcon = { Icon(Icons.Default.Edit, null) },
-                                onClick = { menuFor = null; toRename = note },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Move to folder") },
-                                leadingIcon = { Icon(Icons.AutoMirrored.Filled.ArrowForward, null) },
-                                onClick = { menuFor = null; toMove = note },
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Delete") },
-                                leadingIcon = { Icon(Icons.Default.Delete, null) },
-                                onClick = { menuFor = null; toDelete = note },
-                            )
+                if (!treeView) {
+                    LazyColumn(Modifier.fillMaxSize(), state = listState, contentPadding = PaddingValues(bottom = 160.dp)) {
+                        items(filtered, key = { it.path }) { note ->
+                            noteItem(note, 0.dp, note.path)
+                            HorizontalDivider()
                         }
-                        }
-                        HorizontalDivider()
+                        if (filtered.isEmpty()) item { empty() }
                     }
-                    if (filtered.isEmpty()) {
-                        item {
-                            Text(
-                                if (query.isBlank()) "No notes yet. Tap “New note” or the calendar for today's note."
-                                else "No matches",
-                                modifier = Modifier.padding(24.dp),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+                } else {
+                    // While searching, every folder with a match is open.
+                    val searching = query.isNotBlank()
+                    val rows = remember(filtered, expanded, searching) {
+                        treeRows(NoteTree.build(filtered)) { searching || it in expanded }
+                    }
+                    LazyColumn(Modifier.fillMaxSize(), state = vm.notesTreeListState, contentPadding = PaddingValues(bottom = 160.dp)) {
+                        items(rows, key = { it.key }) { row ->
+                            when (row) {
+                                is TreeRow.Folder -> FolderLine(row) {
+                                    if (!searching) {
+                                        val p = row.folder.path
+                                        expanded = if (p in expanded) expanded - p else expanded + p
+                                    }
+                                }
+                                // Notes line up with the folder icons at the same level.
+                                is TreeRow.File -> noteItem(row.note, 20.dp + TREE_INDENT * row.depth, row.note.path.substringAfterLast('/'))
+                            }
                         }
+                        if (rows.isEmpty()) item { empty() }
                     }
                 }
             }
@@ -311,4 +361,58 @@ private fun NewNoteDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
     LaunchedEffect(Unit) { focus.requestFocus() }
+}
+
+private val TREE_INDENT = 20.dp
+
+private sealed interface TreeRow {
+    val key: String
+    data class Folder(val folder: FolderNode, val depth: Int, val open: Boolean) : TreeRow {
+        override val key get() = "folder:" + folder.path
+    }
+    data class File(val note: Note, val depth: Int) : TreeRow {
+        override val key get() = "note:" + note.path
+    }
+}
+
+/** Flattens the folder tree into rows: folders first, then notes, descending into open folders. */
+private fun treeRows(root: FolderNode, isOpen: (String) -> Boolean): List<TreeRow> = buildList {
+    fun add(folder: FolderNode, depth: Int) {
+        for (sub in folder.folders) {
+            val open = isOpen(sub.path)
+            add(TreeRow.Folder(sub, depth, open))
+            if (open) add(sub, depth + 1)
+        }
+        folder.notes.forEach { add(TreeRow.File(it, depth)) }
+    }
+    add(root, 0)
+}
+
+@Composable
+private fun FolderLine(row: TreeRow.Folder, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick)
+            .padding(start = 8.dp + TREE_INDENT * row.depth, end = 16.dp, top = 12.dp, bottom = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Icon(
+            if (row.open) Icons.Default.KeyboardArrowDown else Icons.AutoMirrored.Filled.KeyboardArrowRight,
+            contentDescription = if (row.open) "Collapse" else "Expand",
+        )
+        Spacer(Modifier.width(4.dp))
+        Icon(FolderIcon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
+        Spacer(Modifier.width(8.dp))
+        Text(
+            row.folder.name,
+            style = MaterialTheme.typography.titleMedium,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
+        Text(
+            row.folder.noteCount.toString(),
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
 }

@@ -30,6 +30,10 @@ An Android app for managing Markdown notes kept in a Git repository, compatible 
   (or `markdownlint.config` in `.vscode/settings.json`), like the VS Code extension. Problems
   are highlighted; the *issues* chip lists them (tap one to jump to it) and offers *Fix all*
   for the rules markdownlint can fix.
+- **Note list, flat or by folder**: the button beside the search box switches between
+  every note newest first (like Foam's flat view) and a folder tree (like Foam's
+  hierarchical view) with a note count per folder. Tap a folder to open or close it; while
+  searching, folders with matches open automatically. The choice is remembered.
 - **Graph** (graph button on the note list, or *Show in graph* in a note's menu): Foam's
   springy graph of notes, tags (front matter and inline `#tags`) and missing notes, linked
   by wikilinks, embeds and relative Markdown links. Drag nodes (they spring back), pinch to
@@ -193,6 +197,7 @@ There are two Gradle modules:
 | `shared/.../Tasks.kt` | checking/unchecking items, completion dates |
 | `shared/.../Graph.kt` | graph data: notes, links and tags; orphans and placeholders |
 | `shared/.../Connections.kt` | every link in a note and what it points to; backlinks |
+| `shared/.../NoteTree.kt` | notes arranged by folder for the folder view |
 | `shared/.../Tags.kt` | the tag tree for the Tag Explorer |
 | `shared/.../Globs.kt` | VS Code-style glob matching for Foam settings |
 | `shared/.../LintModel.kt` | markdownlint results and config lookup |

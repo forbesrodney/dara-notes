@@ -41,6 +41,8 @@ class AndroidSettings(context: Context) : Settings {
 
     override var lintEnabled by BoolPref(prefs, "lint_enabled", false)
 
+    override var notesView by StringPref(prefs, "notes_view", "flat")
+
     override var graphTags by BoolPref(prefs, "graph_tags", true)
     override var graphPlaceholders by BoolPref(prefs, "graph_placeholders", true)
 
