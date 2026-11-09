@@ -214,6 +214,7 @@ private fun SelectedCard(s: Selected, vm: MainViewModel, modifier: Modifier) {
             when (s.type) {
                 "note" -> Button(onClick = { s.path?.let { vm.openPath(it) } }) { Text("Open") }
                 "placeholder" -> OutlinedButton(onClick = { vm.openWikilink(s.label) }) { Text("Create") }
+                "tag" -> OutlinedButton(onClick = { vm.showTag(s.label) }) { Text("Notes") }
             }
         }
     }

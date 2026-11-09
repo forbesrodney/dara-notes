@@ -25,6 +25,7 @@ import app.foamforandroid.ui.GraphScreen
 import app.foamforandroid.ui.NotesScreen
 import app.foamforandroid.ui.OrphansScreen
 import app.foamforandroid.ui.PlaceholdersScreen
+import app.foamforandroid.ui.TagsScreen
 import app.foamforandroid.ui.SettingsScreen
 
 class FoamForAndroidApp : Application() {
@@ -53,6 +54,7 @@ class MainActivity : ComponentActivity() {
                     is Screen.Graph -> GraphScreen(vm, screen, snackbar)
                     Screen.Orphans -> OrphansScreen(vm, snackbar)
                     Screen.Placeholders -> PlaceholdersScreen(vm, snackbar)
+                    Screen.Tags -> TagsScreen(vm, snackbar)
                     // key(): each note gets its own editor state, so leaving note A for
                     // note B can never flush B's text into A.
                     is Screen.Editor -> key(screen.path) { EditorScreen(vm, screen, snackbar) }

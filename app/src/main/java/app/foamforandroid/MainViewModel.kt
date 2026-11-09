@@ -3,6 +3,7 @@ package app.foamforandroid
 import android.app.Application
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import app.foamforandroid.core.GitErrors
@@ -31,6 +32,8 @@ sealed interface Screen {
     data object Orphans : Screen
     /** Wikilinks to notes that don't exist, and the notes that use them. */
     data object Placeholders : Screen
+    /** Foam's Tag Explorer. */
+    data object Tags : Screen
 }
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
@@ -46,6 +49,17 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     /** The note list's scroll position, kept while you open notes and come back. */
     val notesListState = LazyListState()
+
+    /** Tag Explorer state: open tags (lowercase), the filter text and the scroll position. */
+    val tagsExpanded = mutableStateOf(emptySet<String>())
+    val tagsQuery = mutableStateOf("")
+    val tagsListState = LazyListState()
+
+    /** Opens the Tag Explorer filtered to [tag]. */
+    fun showTag(tag: String) {
+        tagsQuery.value = tag.removePrefix("#")
+        navigate(Screen.Tags)
+    }
 
     /** Last graph positions and view (JSON from the graph page), kept while the app runs. */
     var graphLayout: String? = null

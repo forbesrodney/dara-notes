@@ -35,6 +35,10 @@ An Android app for managing Markdown notes kept in a Git repository, compatible 
   by wikilinks, embeds and relative Markdown links. Drag nodes (they spring back), pinch to
   zoom, tap a node to highlight its neighbors and open it (or create a missing note).
   Filters for tags and missing notes; the layout is kept while the app runs.
+- **Tags** (note list menu > *Tags*): like Foam's Tag Explorer, every tag (front matter and
+  inline `#tags`) as a tree, so `dev/git` sits under `dev`, with a note count for each. Tap
+  a tag to expand it and see its notes; tap a note to open it. A filter box narrows the
+  list. In the graph, selecting a tag offers *Notes* to jump here.
 - **Orphaned notes** (note list menu > *Orphaned notes*): like Foam's Orphans panel, the
   notes with no links to or from another note (tags don't count). Tap one to open it, or
   *Add to index* to link it from Index.md. Respects Foam's `foam.orphans.exclude` setting.
@@ -168,6 +172,7 @@ There are two Gradle modules:
 | `shared/.../IndexEditor.kt` | adding and removing Index.md entries |
 | `shared/.../Tasks.kt` | checking/unchecking items, completion dates |
 | `shared/.../Graph.kt` | graph data: notes, links and tags; orphans and placeholders |
+| `shared/.../Tags.kt` | the tag tree for the Tag Explorer |
 | `shared/.../Globs.kt` | VS Code-style glob matching for Foam settings |
 | `shared/.../LintModel.kt` | markdownlint results and config lookup |
 | `shared/.../Foam.kt` | Foam settings, templates, `$FOAM_*` variables, `dateformat` masks |

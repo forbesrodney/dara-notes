@@ -122,6 +122,10 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                         }
                         DropdownMenu(expanded = more, onDismissRequest = { more = false }) {
                             DropdownMenuItem(
+                                text = { Text("Tags") },
+                                onClick = { more = false; vm.navigate(Screen.Tags) },
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Orphaned notes") },
                                 onClick = { more = false; vm.navigate(Screen.Orphans) },
                             )

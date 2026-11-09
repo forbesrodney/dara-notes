@@ -134,6 +134,10 @@ class NoteRepository(val root: File, private val settings: Settings) {
             .sortedBy { it.title.lowercase() }
     }
 
+    /** Tags as a tree, like Foam's Tag Explorer: front matter tags and inline #tags. */
+    fun tags(): List<TagNode> =
+        Tags.tree(listNotes().associate { it.path to NoteParser.parse(read(it.path)).tags })
+
     /** A missing note and the notes that link to it. */
     data class MissingNote(val target: String, val linkedFrom: List<Note>)
 
