@@ -62,9 +62,8 @@ An Android app for managing Markdown notes kept in a Git repository, compatible 
   new name clashes with another note, links are path-qualified so each still points at
   the right note. Links inside code are left alone.
 - **Daily notes**: calendar button opens/creates today's note. Reads Foam's
-  `.vscode/settings.json` (`foam.openDailyNote.directory`, `filenameFormat`,
-  `fileExtension`, `titleFormat`) and `.foam/templates/daily-note.md` (incl.
-  `foam_template.filepath` and `$FOAM_DATE_*` variables). Default: `journal/yyyy-mm-dd.md`.
+  `.foam/templates/daily-note.md` (incl. `foam_template.filepath` and `$FOAM_DATE_*`
+  variables). Default: `journal/yyyy-mm-dd.md`.
   `.foam/templates/new-note.md` is used for new notes too.
 - **Preview** (markdown-it, bundled offline):
   - Wikilinks `[[note]]`, `[[note|alias]]`, `[[note#heading]]`, `[[folder/note]]`;
@@ -95,10 +94,6 @@ Any other keys are ignored.
 
 | Setting | Used for | Default |
 | --- | --- | --- |
-| `foam.openDailyNote.directory` | Folder for daily notes (Settings > Notes > *Daily notes folder* overrides it) | `journal` |
-| `foam.openDailyNote.filenameFormat` | Daily note file name, as a `dateformat` mask | `isoDate` (`yyyy-mm-dd`) |
-| `foam.openDailyNote.fileExtension` | Daily note file extension | `md` |
-| `foam.openDailyNote.titleFormat` | Daily note title, as a `dateformat` mask | `isoDate` |
 | `foam.orphans.exclude` | Glob patterns for notes left out of *Orphaned notes* | none |
 | `foam.placeholders.exclude` | Glob patterns for notes whose links are left out of *Placeholders* | none |
 | `markdownlint.config` | markdownlint rules, used when the repository has no markdownlint config file | none |
@@ -110,7 +105,6 @@ VS Code.
 
 ```jsonc
 {
-  "foam.openDailyNote.directory": "journal",
   // Daily notes and templates aren't expected to be linked
   "foam.orphans.exclude": ["journal/**", "templates/**"],
   // Example links in templates aren't real placeholders
@@ -121,7 +115,9 @@ VS Code.
 ### Other files
 
 - `.foam/templates/new-note.md`: template for new notes.
-- `.foam/templates/daily-note.md`: template for daily notes.
+- `.foam/templates/daily-note.md`: template for daily notes. Set its `filepath` to choose
+  where daily notes go (for example `journal/$FOAM_DATE_YEAR-$FOAM_DATE_MONTH-$FOAM_DATE_DATE.md`);
+  without one they go in `journal`, or Settings > Notes > *Daily notes folder*.
   Both templates support `foam_template` front matter (including `filepath`) and the `$FOAM_*`
   variables.
 - markdownlint configuration, first one found: `.markdownlint-cli2.jsonc`,
@@ -201,7 +197,7 @@ There are two Gradle modules:
 | `shared/.../Tags.kt` | the tag tree for the Tag Explorer |
 | `shared/.../Globs.kt` | VS Code-style glob matching for Foam settings |
 | `shared/.../LintModel.kt` | markdownlint results and config lookup |
-| `shared/.../Foam.kt` | Foam settings, templates, `$FOAM_*` variables, `dateformat` masks |
+| `shared/.../Foam.kt` | Foam settings, templates, `$FOAM_*` variables |
 | `shared/.../Settings.kt` | the settings each platform must store |
 | `app/.../AndroidSettings.kt` | settings in SharedPreferences; the token in encrypted preferences |
 | `app/.../SyncWorker.kt` | periodic and after-edit background sync |

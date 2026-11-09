@@ -239,7 +239,7 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                         }
                     }
                     Field("Folder for new notes", newNoteDir, { newNoteDir = it }, hint = "Blank = repository root")
-                    Field("Daily notes folder", dailyDir, { dailyDir = it }, hint = "Blank = Foam setting foam.openDailyNote.directory, else journal")
+                    Field("Daily notes folder", dailyDir, { dailyDir = it }, hint = "Used when the daily-note template has no filepath. Blank = journal")
                     if (s.isConfigured) {
                         Spacer(Modifier.height(8.dp))
                         OutlinedButton(onClick = { persist(); vm.rebuildIndex() }, modifier = Modifier.fillMaxWidth()) {

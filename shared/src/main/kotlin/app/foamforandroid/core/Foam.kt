@@ -7,22 +7,13 @@ import java.time.format.TextStyle
 import java.time.temporal.IsoFields
 import java.util.Locale
 
-/** Foam workspace conventions: daily note settings, templates and template variables. */
+/** Foam workspace conventions: settings, templates and template variables. */
 class FoamConfig(private val root: File) {
     private val vscode: JSONObject by lazy {
         val f = File(root, ".vscode/settings.json")
         if (!f.exists()) JSONObject()
         else runCatching { JSONObject(stripJsonc(f.readText())) }.getOrElse { JSONObject() }
     }
-
-    val dailyDirectory: String?
-        get() = vscode.optString("foam.openDailyNote.directory").ifBlank { null }
-    val dailyFilenameFormat: String
-        get() = vscode.optString("foam.openDailyNote.filenameFormat").ifBlank { "isoDate" }
-    val dailyFileExtension: String
-        get() = vscode.optString("foam.openDailyNote.fileExtension").ifBlank { "md" }
-    val dailyTitleFormat: String
-        get() = vscode.optString("foam.openDailyNote.titleFormat").ifBlank { "isoDate" }
 
     /** Globs for notes Foam leaves out of its Orphans panel (`foam.orphans.exclude`). */
     val orphansExclude: List<String>
@@ -146,52 +137,4 @@ object FoamVariables {
             .replace(Regex("-+"), "-")
             .trim('-')
             .ifBlank { "untitled" }
-}
-
-/** Implements the `dateformat` masks Foam uses for daily note names (e.g. "yyyy-mm-dd"). */
-object DateFormat {
-    private val named = mapOf(
-        "isoDate" to "yyyy-mm-dd",
-        "shortDate" to "m/d/yy",
-        "mediumDate" to "mmm d, yyyy",
-        "longDate" to "mmmm d, yyyy",
-        "fullDate" to "dddd, mmmm d, yyyy",
-        "isoDateTime" to "yyyy-mm-dd'T'HH:MM:ss",
-    )
-    private val token = Regex("d{1,4}|m{1,4}|yy(?:yy)?|([HhMsTt])\\1?|W{1,2}|N|\"[^\"]*\"|'[^']*'")
-
-    fun format(mask: String, t: LocalDateTime): String {
-        val loc = Locale.getDefault()
-        return token.replace(named[mask] ?: mask) { m ->
-            val v = m.value
-            when (v) {
-                "d" -> t.dayOfMonth.toString()
-                "dd" -> "%02d".format(t.dayOfMonth)
-                "ddd" -> t.dayOfWeek.getDisplayName(TextStyle.SHORT, loc)
-                "dddd" -> t.dayOfWeek.getDisplayName(TextStyle.FULL, loc)
-                "m" -> t.monthValue.toString()
-                "mm" -> "%02d".format(t.monthValue)
-                "mmm" -> t.month.getDisplayName(TextStyle.SHORT, loc)
-                "mmmm" -> t.month.getDisplayName(TextStyle.FULL, loc)
-                "yy" -> "%02d".format(t.year % 100)
-                "yyyy" -> "%04d".format(t.year)
-                "H" -> t.hour.toString()
-                "HH" -> "%02d".format(t.hour)
-                "h" -> ((t.hour + 11) % 12 + 1).toString()
-                "hh" -> "%02d".format((t.hour + 11) % 12 + 1)
-                "M" -> t.minute.toString()
-                "MM" -> "%02d".format(t.minute)
-                "s" -> t.second.toString()
-                "ss" -> "%02d".format(t.second)
-                "t" -> if (t.hour < 12) "a" else "p"
-                "tt" -> if (t.hour < 12) "am" else "pm"
-                "T" -> if (t.hour < 12) "A" else "P"
-                "TT" -> if (t.hour < 12) "AM" else "PM"
-                "W" -> t.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR).toString()
-                "WW" -> "%02d".format(t.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR))
-                "N" -> t.dayOfWeek.value.toString()
-                else -> v.substring(1, v.length - 1) // quoted literal
-            }
-        }
-    }
 }

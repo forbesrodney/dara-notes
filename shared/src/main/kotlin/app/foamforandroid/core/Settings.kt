@@ -42,7 +42,7 @@ interface Settings {
     /** Folder (relative to repo root) for new notes. Blank = root. */
     var newNoteDir: String
 
-    /** Daily note folder override. Blank = use Foam's .vscode/settings.json, else "journal". */
+    /** Daily note folder when there is no daily-note template `filepath`. Blank = "journal". */
     var dailyDirOverride: String
 
     /** Periodic background sync interval in minutes; 0 disables. */

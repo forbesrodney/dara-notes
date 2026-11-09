@@ -266,11 +266,11 @@ class NoteRepository(val root: File, private val settings: Settings) {
         val now = LocalDateTime.of(date, java.time.LocalTime.now())
         val cfg = foam
         val template = cfg.template("daily-note")
-        val title = DateFormat.format(cfg.dailyTitleFormat, now)
+        val title = date.toString() // yyyy-mm-dd, as Foam names daily notes
         val path = template?.filepath?.let { templatePath(FoamVariables.resolve(it, title, now)) }
             ?: run {
-                val dir = settings.dailyDirOverride.ifBlank { cfg.dailyDirectory ?: "journal" }
-                val name = DateFormat.format(cfg.dailyFilenameFormat, now) + "." + cfg.dailyFileExtension
+                val dir = settings.dailyDirOverride.ifBlank { "journal" }
+                val name = "$title.md"
                 joinPath(dir, name)
             }
         if (!file(path).exists()) {
@@ -344,7 +344,7 @@ class NoteRepository(val root: File, private val settings: Settings) {
     /** Adds every note not yet linked from the index. Returns the number added. */
     fun rebuildIndex(): Int {
         val files = allFiles()
-        val dailyDir = (settings.dailyDirOverride.ifBlank { foam.dailyDirectory ?: "journal" }).trim('/')
+        val dailyDir = settings.dailyDirOverride.ifBlank { "journal" }.trim('/')
         var added = 0
         for (path in files.filter { it.endsWith(".md") }.sorted()) {
             if (isIndex(path)) continue
