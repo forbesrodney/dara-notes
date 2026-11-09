@@ -103,12 +103,16 @@ across folders, `?` one character and `{a,b}` either name. A plain folder name s
 `journal` also covers everything inside it. Comments and trailing commas are allowed, as in
 VS Code.
 
+Templates never need excluding: `.foam` (and `.git`, `.vscode`, `.github`,
+`node_modules`, `_site`, `_layouts`) is never scanned for notes, so templates and their
+example links never show up in any view.
+
 ```jsonc
 {
-  // Daily notes and templates aren't expected to be linked
-  "foam.orphans.exclude": ["journal/**", "templates/**"],
-  // Example links in templates aren't real placeholders
-  "foam.placeholders.exclude": ["templates/**"]
+  // Daily notes aren't expected to be linked
+  "foam.orphans.exclude": ["journal/**"],
+  // Drafts link to notes that haven't been written yet
+  "foam.placeholders.exclude": ["drafts/**"]
 }
 ```
 
