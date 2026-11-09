@@ -37,3 +37,22 @@ class OrphansTest {
         assertFalse(Globs.matches("a+b.md", "aab.md"))
     }
 }
+
+class PlaceholdersTest {
+    @Test fun placeholdersListTheNotesLinkingToThem() {
+        val notes = mapOf(
+            "Index.md" to "* [[a]]\n* [[Someday]]\n![[missing.png]]",
+            "a.md" to "[[someday]] and [[Other idea#Section]] and [[a]]",
+            "b.md" to "[[Other idea|alias]] `[[in code]]`",
+        )
+        val g = Graph.build(notes, emptyMap(), notes.keys.toList())
+        assertEquals(
+            listOf(
+                Graph.Placeholder("missing.png", listOf("Index.md")),
+                Graph.Placeholder("Other idea", listOf("a.md", "b.md")),
+                Graph.Placeholder("Someday", listOf("Index.md", "a.md")),
+            ),
+            g.placeholders(),
+        )
+    }
+}

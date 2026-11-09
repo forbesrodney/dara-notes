@@ -134,6 +134,27 @@ class NoteRepository(val root: File, private val settings: Settings) {
             .sortedBy { it.title.lowercase() }
     }
 
+    /** A missing note and the notes that link to it. */
+    data class MissingNote(val target: String, val linkedFrom: List<Note>)
+
+    /**
+     * Placeholders, as in Foam's Placeholders panel: wikilink targets with no matching file,
+     * with the notes that link to them. Links from paths matching Foam's
+     * `foam.placeholders.exclude` globs are left out. Sorted by target.
+     */
+    fun placeholders(): List<MissingNote> {
+        val notes = listNotes()
+        val byPath = notes.associateBy { it.path }
+        val exclude = foam.placeholdersExclude
+        return graph(notes).placeholders().mapNotNull { p ->
+            val from = p.sources
+                .filter { src -> exclude.none { g -> Globs.matches(g, src) } }
+                .mapNotNull { byPath[it] }
+                .sortedBy { it.title.lowercase() }
+            if (from.isEmpty()) null else MissingNote(p.label, from)
+        }
+    }
+
     // ---- rename / move -------------------------------------------------------------------
 
     /** Folders in the repository (excluding Git/Foam/VS Code internals), sorted. */

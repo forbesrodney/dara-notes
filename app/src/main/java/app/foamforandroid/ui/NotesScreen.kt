@@ -125,6 +125,10 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                                 text = { Text("Orphaned notes") },
                                 onClick = { more = false; vm.navigate(Screen.Orphans) },
                             )
+                            DropdownMenuItem(
+                                text = { Text("Placeholders") },
+                                onClick = { more = false; vm.navigate(Screen.Placeholders) },
+                            )
                         }
                     }
                 },

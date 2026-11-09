@@ -26,9 +26,15 @@ class FoamConfig(private val root: File) {
 
     /** Globs for notes Foam leaves out of its Orphans panel (`foam.orphans.exclude`). */
     val orphansExclude: List<String>
-        get() = vscode.optJSONArray("foam.orphans.exclude")
-            ?.let { a -> (0 until a.length()).mapNotNull { a.optString(it).trim().ifBlank { null } } }
+        get() = globs("foam.orphans.exclude")
+
+    private fun globs(key: String): List<String> =
+        vscode.optJSONArray(key)?.let { a -> (0 until a.length()).mapNotNull { a.optString(it).trim().ifBlank { null } } }
             ?: emptyList()
+
+    /** Globs for notes whose links Foam leaves out of its Placeholders panel (`foam.placeholders.exclude`). */
+    val placeholdersExclude: List<String>
+        get() = globs("foam.placeholders.exclude")
 
     fun template(name: String): Template? {
         val dir = File(root, ".foam/templates")

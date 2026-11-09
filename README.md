@@ -38,6 +38,10 @@ An Android app for managing Markdown notes kept in a Git repository, compatible 
 - **Orphaned notes** (note list menu > *Orphaned notes*): like Foam's Orphans panel, the
   notes with no links to or from another note (tags don't count). Tap one to open it, or
   *Add to index* to link it from Index.md. Respects Foam's `foam.orphans.exclude` setting.
+- **Placeholders** (note list menu > *Placeholders*): like Foam's Placeholders panel, the
+  wikilinks that point to notes that don't exist yet, each with the notes that link to it.
+  *Create* makes the note; tap a linking note to open it. Respects Foam's
+  `foam.placeholders.exclude` setting.
 - **Rename and move notes** (long-press a note, or the editor's menu): every link is
   fixed: wikilinks (`[[note]]`, aliases, headings, embeds), relative Markdown links and
   Foam's link reference definitions, as are the moved note's own relative links. If a
@@ -107,7 +111,7 @@ There are two Gradle modules:
 | `shared/.../Links.kt` | wikilink resolution and link fixing for rename/move |
 | `shared/.../IndexEditor.kt` | adding and removing Index.md entries |
 | `shared/.../Tasks.kt` | checking/unchecking items, completion dates |
-| `shared/.../Graph.kt` | graph data: notes, links and tags; orphans |
+| `shared/.../Graph.kt` | graph data: notes, links and tags; orphans and placeholders |
 | `shared/.../Globs.kt` | VS Code-style glob matching for Foam settings |
 | `shared/.../LintModel.kt` | markdownlint results and config lookup |
 | `shared/.../Foam.kt` | Foam settings, templates, `$FOAM_*` variables, `dateformat` masks |

@@ -29,6 +29,8 @@ sealed interface Screen {
     data class Graph(val focus: String? = null) : Screen
     /** Notes with no links to or from other notes. */
     data object Orphans : Screen
+    /** Wikilinks to notes that don't exist, and the notes that use them. */
+    data object Placeholders : Screen
 }
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {

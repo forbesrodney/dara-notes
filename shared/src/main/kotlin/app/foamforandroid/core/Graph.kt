@@ -43,6 +43,18 @@ data class Graph(val nodes: List<Node>, val links: List<Link>) {
         return nodes.filter { it.type == Type.NOTE && it.id !in connected }.map { it.id }
     }
 
+    /** A wikilink target with no matching file, and the notes (paths) that link to it. */
+    data class Placeholder(val label: String, val sources: List<String>)
+
+    /** Placeholders (links to missing notes), as in Foam's Placeholders panel. Sorted by label. */
+    fun placeholders(): List<Placeholder> {
+        val sources = HashMap<String, MutableList<String>>()
+        for (l in links) sources.getOrPut(l.target) { mutableListOf() } += l.source
+        return nodes.filter { it.type == Type.PLACEHOLDER }
+            .map { Placeholder(it.label, sources[it.id].orEmpty().distinct().sorted()) }
+            .sortedBy { it.label.lowercase() }
+    }
+
     companion object {
         fun tagId(tag: String) = "tag:" + tag.lowercase()
         fun placeholderId(target: String) = "placeholder:" + target.lowercase()
