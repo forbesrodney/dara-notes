@@ -215,6 +215,15 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                             },
                         )
                         DropdownMenuItem(
+                            text = { Text("Connections") },
+                            leadingIcon = { Icon(LinkIcon, null) },
+                            onClick = {
+                                menu = false
+                                if (value.text != saved) { vm.save(path, value.text); saved = value.text }
+                                vm.navigate(Screen.Connections(path))
+                            },
+                        )
+                        DropdownMenuItem(
                             text = { Text("Show in graph") },
                             leadingIcon = { Icon(GraphIcon, null) },
                             onClick = {

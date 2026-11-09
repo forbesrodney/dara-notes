@@ -134,6 +134,14 @@ class NoteRepository(val root: File, private val settings: Settings) {
             .sortedBy { it.title.lowercase() }
     }
 
+    /** Every link in the note at [path], and the notes that link to it (Foam's Connections). */
+    fun connections(path: String): Pair<List<NoteLink>, List<Backlink>> {
+        val files = allFiles()
+        val notes = listNotes().associate { it.path to read(it.path) }
+        return Connections.links(notes[path] ?: read(path), path, files) to
+            Connections.backlinks(path, notes, files)
+    }
+
     /** Tags as a tree, like Foam's Tag Explorer: front matter tags and inline #tags. */
     fun tags(): List<TagNode> =
         Tags.tree(listNotes().associate { it.path to NoteParser.parse(read(it.path)).tags })

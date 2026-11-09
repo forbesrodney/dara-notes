@@ -20,6 +20,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
+import app.foamforandroid.ui.ConnectionsScreen
 import app.foamforandroid.ui.EditorScreen
 import app.foamforandroid.ui.GraphScreen
 import app.foamforandroid.ui.NotesScreen
@@ -55,6 +56,7 @@ class MainActivity : ComponentActivity() {
                     Screen.Orphans -> OrphansScreen(vm, snackbar)
                     Screen.Placeholders -> PlaceholdersScreen(vm, snackbar)
                     Screen.Tags -> TagsScreen(vm, snackbar)
+                    is Screen.Connections -> ConnectionsScreen(vm, screen, snackbar)
                     // key(): each note gets its own editor state, so leaving note A for
                     // note B can never flush B's text into A.
                     is Screen.Editor -> key(screen.path) { EditorScreen(vm, screen, snackbar) }

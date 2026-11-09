@@ -34,6 +34,8 @@ sealed interface Screen {
     data object Placeholders : Screen
     /** Foam's Tag Explorer. */
     data object Tags : Screen
+    /** Links in the note at [path] and what they point to, plus notes linking to it. */
+    data class Connections(val path: String) : Screen
 }
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
