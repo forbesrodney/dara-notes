@@ -22,6 +22,7 @@ import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -113,6 +114,18 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                     }
                     IconButton(onClick = { vm.navigate(Screen.Settings) }) {
                         Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    }
+                    Box {
+                        var more by remember { mutableStateOf(false) }
+                        IconButton(onClick = { more = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                        }
+                        DropdownMenu(expanded = more, onDismissRequest = { more = false }) {
+                            DropdownMenuItem(
+                                text = { Text("Orphaned notes") },
+                                onClick = { more = false; vm.navigate(Screen.Orphans) },
+                            )
+                        }
                     }
                 },
             )

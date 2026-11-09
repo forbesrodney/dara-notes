@@ -28,6 +28,21 @@ data class Graph(val nodes: List<Node>, val links: List<Link>) {
         return JSONObject().put("nodes", ns).put("links", ls).toString()
     }
 
+    /**
+     * Notes with no links to or from another note or a placeholder, as in Foam's Orphans panel.
+     * Tags don't count as connections. Returns note paths.
+     */
+    fun orphans(): List<String> {
+        val type = nodes.associate { it.id to it.type }
+        val connected = HashSet<String>()
+        for (l in links) {
+            if (type[l.source] == Type.TAG || type[l.target] == Type.TAG) continue
+            connected += l.source
+            connected += l.target
+        }
+        return nodes.filter { it.type == Type.NOTE && it.id !in connected }.map { it.id }
+    }
+
     companion object {
         fun tagId(tag: String) = "tag:" + tag.lowercase()
         fun placeholderId(target: String) = "placeholder:" + target.lowercase()

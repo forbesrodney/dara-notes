@@ -18,8 +18,7 @@ data class Note(
 internal fun repoName(url: String): String? =
     url.trim().trimEnd('/').substringAfterLast('/').substringAfterLast(':').removeSuffix(".git").ifBlank { null }
 
-/** File-level operations on the notes repository, following Foam conventions. */
-/** Notes in the local clone at [root]. */
+/** File-level operations on the notes repository (the local clone at [root]), following Foam conventions. */
 class NoteRepository(val root: File, private val settings: Settings) {
     private val foam get() = FoamConfig(root)
 
@@ -114,14 +113,25 @@ class NoteRepository(val root: File, private val settings: Settings) {
     // ---- graph ---------------------------------------------------------------------------
 
     /** Notes, tags and missing notes, with the links between them (Foam's graph). */
-    fun graph(): Graph {
-        val files = allFiles()
+    fun graph(): Graph = graph(listNotes())
+
+    private fun graph(notes: List<Note>): Graph = Graph.build(
+        notes = notes.associate { it.path to read(it.path) },
+        titles = notes.associate { it.path to it.title },
+        allFiles = allFiles(),
+    )
+
+    /**
+     * Orphaned notes, as in Foam's Orphans panel: no links to or from another note (tags don't
+     * count). Paths matching Foam's `foam.orphans.exclude` globs are left out. Sorted by title.
+     */
+    fun orphans(): List<Note> {
         val notes = listNotes()
-        return Graph.build(
-            notes = notes.associate { it.path to read(it.path) },
-            titles = notes.associate { it.path to it.title },
-            allFiles = files,
-        )
+        val ids = graph(notes).orphans().toSet()
+        val exclude = foam.orphansExclude
+        return notes
+            .filter { it.path in ids && exclude.none { g -> Globs.matches(g, it.path) } }
+            .sortedBy { it.title.lowercase() }
     }
 
     // ---- rename / move -------------------------------------------------------------------

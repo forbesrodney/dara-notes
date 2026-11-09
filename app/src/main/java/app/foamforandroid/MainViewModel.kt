@@ -27,6 +27,8 @@ sealed interface Screen {
     data object Settings : Screen
     /** The note graph, optionally centred on [focus] (a note path). */
     data class Graph(val focus: String? = null) : Screen
+    /** Notes with no links to or from other notes. */
+    data object Orphans : Screen
 }
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
@@ -182,6 +184,15 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
                     else "Now ${r.path} · updated ${r.links} link(s) in ${r.notes} note(s)"
                 )
             }.onFailure { messages.emit(it.message ?: "Couldn't move $oldPath") }
+        }
+    }
+
+    /** Links [path] from the index file, so it's no longer an orphan. */
+    fun addToIndex(path: String) {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { repo.addToIndex(path) }
+            afterEdit()
+            messages.emit("Linked from ${settings.indexFile}")
         }
     }
 

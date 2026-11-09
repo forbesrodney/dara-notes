@@ -24,6 +24,12 @@ class FoamConfig(private val root: File) {
     val dailyTitleFormat: String
         get() = vscode.optString("foam.openDailyNote.titleFormat").ifBlank { "isoDate" }
 
+    /** Globs for notes Foam leaves out of its Orphans panel (`foam.orphans.exclude`). */
+    val orphansExclude: List<String>
+        get() = vscode.optJSONArray("foam.orphans.exclude")
+            ?.let { a -> (0 until a.length()).mapNotNull { a.optString(it).trim().ifBlank { null } } }
+            ?: emptyList()
+
     fun template(name: String): Template? {
         val dir = File(root, ".foam/templates")
         val f = listOf("$name.md", name).map { File(dir, it) }.firstOrNull { it.isFile } ?: return null
