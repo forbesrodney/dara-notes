@@ -1,6 +1,5 @@
-package app.foamforandroid
+package app.foamforandroid.core
 
-import android.content.Context
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -43,14 +42,12 @@ object GitSync {
     private val _state = MutableStateFlow(SyncState())
     val state: StateFlow<SyncState> = _state
 
-    fun repoDir(context: Context) = File(context.filesDir, "repo")
 
     /** Runs [block] while no sync is touching the working tree (e.g. rewriting many files). */
     suspend fun <T> exclusive(block: () -> T): T = withContext(Dispatchers.IO) { mutex.withLock { block() } }
 
     /** Clone the remote (or init a local repo when no remote is set), replacing any local copy. */
-    suspend fun cloneFresh(context: Context, s: Settings): Result<String> = run(context) {
-        val dir = repoDir(context)
+    suspend fun cloneFresh(dir: File, s: Settings): Result<String> = run {
         dir.deleteRecursively()
         s.cloned = false
         if (s.remoteUrl.isBlank()) {
@@ -66,15 +63,15 @@ object GitSync {
                 .close()
         }
         s.cloned = true
-        doSync(context, s)
+        doSync(dir, s)
     }
 
-    suspend fun sync(context: Context, s: Settings): Result<String> {
+    suspend fun sync(dir: File, s: Settings): Result<String> {
         if (!s.isConfigured) return Result.failure(IllegalStateException("Repository not set up"))
-        return run(context) { doSync(context, s) }
+        return run { doSync(dir, s) }
     }
 
-    private suspend fun run(context: Context, block: () -> String): Result<String> =
+    private suspend fun run(block: () -> String): Result<String> =
         withContext(Dispatchers.IO) {
             mutex.withLock {
                 _state.update { it.copy(running = true, lastError = null, lastHint = null) }
@@ -112,8 +109,7 @@ object GitSync {
         s.authorEmail.ifBlank { "foam-notes@android.local" },
     )
 
-    private fun doSync(context: Context, s: Settings): String {
-        val dir = repoDir(context)
+    private fun doSync(dir: File, s: Settings): String {
         if (!File(dir, ".git").exists()) {
             Git.init().setDirectory(dir).setInitialBranch(s.branch).call().close()
         }

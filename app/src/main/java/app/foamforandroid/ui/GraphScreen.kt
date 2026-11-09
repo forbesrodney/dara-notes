@@ -50,9 +50,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebViewAssetLoader
-import app.foamforandroid.Graph
 import app.foamforandroid.MainViewModel
 import app.foamforandroid.Screen
+import app.foamforandroid.core.Graph
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject

@@ -10,13 +10,15 @@ import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
+import app.foamforandroid.core.GitSync
+import app.foamforandroid.core.Settings
 import java.util.concurrent.TimeUnit
 
 class SyncWorker(context: Context, params: WorkerParameters) : CoroutineWorker(context, params) {
     override suspend fun doWork(): Result {
-        val settings = Settings(applicationContext)
+        val settings = AndroidSettings(applicationContext)
         if (!settings.isConfigured) return Result.success()
-        val result = GitSync.sync(applicationContext, settings)
+        val result = GitSync.sync(repoDir(applicationContext), settings)
         return when {
             result.isSuccess -> Result.success()
             runAttemptCount < 3 -> Result.retry()

@@ -32,8 +32,8 @@ import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.foamforandroid.LintIssue
-import app.foamforandroid.LintResult
+import app.foamforandroid.core.LintIssue
+import app.foamforandroid.core.LintResult
 
 private fun lineStart(text: String, line: Int): Int? {
     var start = 0

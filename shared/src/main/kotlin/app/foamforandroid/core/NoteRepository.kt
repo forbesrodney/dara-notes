@@ -1,6 +1,5 @@
-package app.foamforandroid
+package app.foamforandroid.core
 
-import android.content.Context
 import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -20,8 +19,8 @@ internal fun repoName(url: String): String? =
     url.trim().trimEnd('/').substringAfterLast('/').substringAfterLast(':').removeSuffix(".git").ifBlank { null }
 
 /** File-level operations on the notes repository, following Foam conventions. */
-class NoteRepository(context: Context, private val settings: Settings) {
-    val root: File = GitSync.repoDir(context)
+/** Notes in the local clone at [root]. */
+class NoteRepository(val root: File, private val settings: Settings) {
     private val foam get() = FoamConfig(root)
 
     private val ignoredDirs = setOf(".git", ".foam", ".vscode", ".github", "node_modules", "_site", "_layouts")

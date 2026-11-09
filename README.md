@@ -82,7 +82,7 @@ The APK lands in `app/build/outputs/apk/debug/`. Install with
 `adb install app/build/outputs/apk/debug/foamforandroid-debug.apk`, or open the folder in Android Studio.
 
 Alternatively push this folder to GitHub: `.github/workflows/build.yml` builds the APK, runs the
-unit tests (`./gradlew testDebugUnitTest`) and attaches the APK to the workflow run as an artifact.
+unit tests (`./gradlew :shared:test testDebugUnitTest`) and attaches the APK to the workflow run as an artifact.
 
 To refresh the bundled JavaScript libraries: `scripts/fetch-vendor.sh`. markdownlint is
 bundled separately with `scripts/build-markdownlint.sh` (needs Node.js; versions are at the
@@ -90,15 +90,30 @@ top of the script).
 
 ## Layout
 
+There are two Gradle modules:
+
+- **`shared/`**: the note logic (package `app.foamforandroid.core`), in plain Kotlin with no
+  Android dependencies, so a desktop app can reuse it later. All unit tests are here (`./gradlew :shared:test`).
+- **`app/`**: the Android app: Compose screens, WebViews, settings storage and background sync.
+
 | File | Purpose |
 | --- | --- |
-| `GitSync.kt` | clone / commit / fetch / merge / push, conflict handling |
-| `SyncWorker.kt` | periodic and after-edit background sync |
-| `NoteRepository.kt` | listing, search, rename/move, Index.md, daily notes, task toggling |
-| `Links.kt` | wikilink resolution and link fixing for rename/move (unit-tested) |
-| `Tasks.kt` | checking/unchecking items, completion dates |
-| `Graph.kt`, `ui/GraphScreen.kt`, `assets/graph.html` | graph data (unit-tested) and the force-graph view |
-| `Lint.kt`, `assets/lint.html` | markdownlint in a background WebView, config lookup |
-| `Foam.kt` | Foam settings, templates, `$FOAM_*` variables, `dateformat` masks |
-| `ui/` | Compose screens and the WebView preview |
+| `shared/.../GitSync.kt` | clone / commit / fetch / merge / push, conflict handling |
+| `shared/.../GitErrors.kt` | plain-language hints for common Git errors |
+| `shared/.../NoteRepository.kt` | listing, search, rename/move, Index.md, daily notes, task toggling |
+| `shared/.../Links.kt` | wikilink resolution and link fixing for rename/move |
+| `shared/.../IndexEditor.kt` | adding and removing Index.md entries |
+| `shared/.../Tasks.kt` | checking/unchecking items, completion dates |
+| `shared/.../Graph.kt` | graph data: notes, links and tags |
+| `shared/.../LintModel.kt` | markdownlint results and config lookup |
+| `shared/.../Foam.kt` | Foam settings, templates, `$FOAM_*` variables, `dateformat` masks |
+| `shared/.../Settings.kt` | the settings each platform must store |
+| `app/.../AndroidSettings.kt` | settings in SharedPreferences; the token in encrypted preferences |
+| `app/.../SyncWorker.kt` | periodic and after-edit background sync |
+| `app/.../Lint.kt`, `assets/lint.html` | markdownlint in a background WebView |
+| `app/.../ui/GraphScreen.kt`, `assets/graph.html` | the force-graph view |
+| `app/.../ui/` | Compose screens and the WebView preview |
 | `assets/preview.*` | markdown-it pipeline with wikilink, task-list and mermaid plugins |
+
+`...` is `src/main/kotlin/app/foamforandroid/core` in `shared/` and `src/main/java/app/foamforandroid`
+in `app/`; `assets/` is `app/src/main/assets`.

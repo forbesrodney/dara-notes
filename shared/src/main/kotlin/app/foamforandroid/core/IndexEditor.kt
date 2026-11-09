@@ -1,4 +1,4 @@
-package app.foamforandroid
+package app.foamforandroid.core
 
 /**
  * Edits the index note's text. Foam may keep a block of link reference definitions at the

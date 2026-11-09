@@ -64,10 +64,11 @@ dependencies {
     implementation("androidx.webkit:webkit:1.12.1")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-    // JGit 5.13 is Java 8 compatible and runs on Android API 26+.
-    implementation("org.eclipse.jgit:org.eclipse.jgit:5.13.3.202401111512-r")
+    // Note logic, Git sync (JGit) and coroutines come from :shared.
+    implementation(project(":shared"))
+    // JGit logs through SLF4J; discard it.
     implementation("org.slf4j:slf4j-nop:1.7.36")
     debugImplementation("androidx.compose.ui:ui-tooling")
+    // Unit tests for the note logic live in :shared.
     testImplementation("junit:junit:4.13.2")
-    testImplementation("org.json:json:20240303")
 }

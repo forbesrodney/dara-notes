@@ -1,10 +1,17 @@
 package app.foamforandroid
 
-import androidx.compose.foundation.lazy.LazyListState
 import android.app.Application
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import app.foamforandroid.core.GitErrors
+import app.foamforandroid.core.GitSync
+import app.foamforandroid.core.Graph
+import app.foamforandroid.core.Note
+import app.foamforandroid.core.NoteRepository
+import app.foamforandroid.core.Settings
+import app.foamforandroid.core.SyncState
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,8 +30,8 @@ sealed interface Screen {
 }
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
-    val settings = Settings(app)
-    val repo = NoteRepository(app, settings)
+    val settings: Settings = AndroidSettings(app)
+    val repo = NoteRepository(repoDir(app), settings)
     val syncState: StateFlow<SyncState> = GitSync.state
 
     val backStack = mutableStateListOf<Screen>(if (settings.isConfigured) Screen.Notes else Screen.Settings)
@@ -69,7 +76,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     fun syncNow() {
         if (!settings.isConfigured) return
         viewModelScope.launch {
-            GitSync.sync(getApplication(), settings)
+            GitSync.sync(repo.root, settings)
                 .onSuccess { messages.emit(it) }
                 .onFailure { messages.emit("Sync failed: ${GitErrors.hint(it) ?: it.message}") }
         }
@@ -85,7 +92,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun cloneRepository(onDone: () -> Unit) {
         viewModelScope.launch {
-            GitSync.cloneFresh(getApplication(), settings)
+            GitSync.cloneFresh(repo.root, settings)
                 .onSuccess {
                     SyncScheduler.schedulePeriodic(getApplication(), settings)
                     messages.emit("Repository ready")

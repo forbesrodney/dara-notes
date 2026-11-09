@@ -1,6 +1,5 @@
 package app.foamforandroid
 
-import app.foamforandroid.ui.GraphScreen
 import android.app.Application
 import android.os.Build
 import android.os.Bundle
@@ -22,6 +21,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.platform.LocalContext
 import app.foamforandroid.ui.EditorScreen
+import app.foamforandroid.ui.GraphScreen
 import app.foamforandroid.ui.NotesScreen
 import app.foamforandroid.ui.SettingsScreen
 
@@ -30,7 +30,7 @@ class FoamForAndroidApp : Application() {
         super.onCreate()
         // JGit reads ~/.gitconfig; give it a writable home inside app storage.
         System.setProperty("user.home", filesDir.absolutePath)
-        SyncScheduler.schedulePeriodic(this, Settings(this))
+        SyncScheduler.schedulePeriodic(this, AndroidSettings(this))
     }
 }
 
