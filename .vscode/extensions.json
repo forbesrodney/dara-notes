@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "fwcd.kotlin",
+    "vscjava.vscode-gradle",
+    "DiemasMichiels.emulate",
+    "levkosyk.vscode-android-tools",
+    "redhat.vscode-xml",
+    "timonwong.shellcheck"
+  ]
+}
