@@ -91,15 +91,19 @@ commit_parsers = [
   { message = "^feature", group = "<!-- 0 -->Added" },
   { message = "^performance", group = "<!-- 2 -->Changed" },
   { message = "^documentation", group = "<!-- 6 -->Documentation" },
-  # A few new types to fill in the gaps, keep rewrite rules to a minimum
+
+  # A few new types to fill in the gaps, help keep rewrite rules to a minimum
   { message = "^changed", group = "<!-- 2 -->Changed" },
   { message = "^removed", group = "<!-- 3 -->Removed" },
-  { message = "^security", group = "<!-- 4 -->Security" },
+  { message = "^sec", group = "<!-- 4 -->Security" },
   { message = "^deprecated", group = "<!-- 5 -->Deprecated" },
+
+  # More long forms
+  { message = "^security", group = "<!-- 4 -->Security" },
+
   # A few rule rewrites
   # { message = "^fix\\(security\\)", group = "<!-- 4 -->Security" },
   # { message = "^feat\\(docs\\)", group = "<!-- 6 -->Documentation" },
-
   # { message = "^fix\\(removed{0,1}\\)", group = "<!-- 3 -->Removed"},
   # { message = "^fix.*removed{0,1}", group = "<!-- 3 -->Removed"},
   # { message = "^fix\\(deprecated{0,1}\\)", group = "<!-- 5 -->Deprecated"},
