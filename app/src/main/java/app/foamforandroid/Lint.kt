@@ -22,7 +22,7 @@ import kotlin.coroutines.resumeWithException
 
 /**
  * Runs the bundled markdownlint (assets/vendor/markdownlint.min.js) in a background WebView.
- * One instance for the whole app; calls are serialised on the main thread.
+ * One instance for the whole app; calls are serialized on the main thread.
  */
 object Linter {
     private const val PAGE = "https://appassets.androidplatform.net/assets/lint.html"

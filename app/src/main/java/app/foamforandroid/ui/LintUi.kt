@@ -64,7 +64,7 @@ data class LintHighlight(val issues: List<LintIssue>, val color: Color) : Visual
         val b = AnnotatedString.Builder(text)
         for (issue in issues) {
             val r = issueRange(s, issue)
-            // Empty lines have nothing to colour; mark their line break instead.
+            // Empty lines have nothing to color; mark their line break instead.
             val end = if (r.collapsed) (r.start + 1).coerceAtMost(s.length) else r.end
             if (end > r.start) b.addStyle(SpanStyle(background = color), r.start, end)
         }

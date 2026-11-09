@@ -25,7 +25,7 @@ sealed interface Screen {
     data object Notes : Screen
     data class Editor(val path: String, val startEditing: Boolean = false) : Screen
     data object Settings : Screen
-    /** The note graph, optionally centred on [focus] (a note path). */
+    /** The note graph, optionally centered on [focus] (a note path). */
     data class Graph(val focus: String? = null) : Screen
     /** Notes with no links to or from other notes. */
     data object Orphans : Screen

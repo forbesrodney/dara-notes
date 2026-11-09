@@ -51,7 +51,7 @@ object IndexEditor {
         return "$text$sep$item\n"
     }
 
-    /** Removes list items linking to any of [ids] and definitions labelled with them. */
+    /** Removes list items linking to any of [ids] and definitions labeled with them. */
     fun remove(text: String, ids: Collection<String>): String {
         val lines = text.split("\n")
         val kept = lines.filterNot { line ->

@@ -20,7 +20,7 @@
     link: 'rgba(120,120,130,0.35)', linkHi: '#4355b9',
   };
   let selected = null;           // selected node id
-  let neighbours = new Set();    // ids next to the selected node
+  let neighbors = new Set();    // ids next to the selected node
   let all = { nodes: [], links: [] };
   let fitPending = false;
 
@@ -28,7 +28,7 @@
   const radius = n => n.type === 'tag' ? 3 + Math.sqrt(n.degree) * 1.2 : 3 + Math.sqrt(n.degree) * 1.4;
   const endId = e => (typeof e === 'object' ? e.id : e);
   const isHi = l => selected && (endId(l.source) === selected || endId(l.target) === selected);
-  const colour = n => n.type === 'tag' ? theme.tag : n.type === 'placeholder' ? theme.placeholder : theme.note;
+  const color = n => n.type === 'tag' ? theme.tag : n.type === 'placeholder' ? theme.placeholder : theme.note;
 
   const graph = new ForceGraph(el)
     .width(window.innerWidth).height(window.innerHeight)
@@ -40,23 +40,23 @@
     .linkColor(l => isHi(l) ? theme.linkHi : theme.link)
     .linkWidth(l => isHi(l) ? 2 : 1)
     .nodeCanvasObject((n, ctx, scale) => {
-      const dim = selected && n.id !== selected && !neighbours.has(n.id);
+      const dim = selected && n.id !== selected && !neighbors.has(n.id);
       const r = radius(n);
       ctx.globalAlpha = dim ? 0.2 : 1;
       ctx.beginPath();
       ctx.arc(n.x, n.y, r, 0, 2 * Math.PI);
       if (n.type === 'placeholder') {
-        ctx.lineWidth = 1.2; ctx.strokeStyle = colour(n); ctx.stroke();
+        ctx.lineWidth = 1.2; ctx.strokeStyle = color(n); ctx.stroke();
       } else {
-        ctx.fillStyle = colour(n); ctx.fill();
+        ctx.fillStyle = color(n); ctx.fill();
       }
       if (n.id === selected) {
         ctx.lineWidth = 2.5 / scale; ctx.strokeStyle = theme.fg;
         ctx.beginPath(); ctx.arc(n.x, n.y, r + 3 / scale, 0, 2 * Math.PI); ctx.stroke();
       }
-      // Labels: always for the selection and its neighbours, otherwise once zoomed in
+      // Labels: always for the selection and its neighbors, otherwise once zoomed in
       // (busy nodes earlier than leaves).
-      const show = n.id === selected || neighbours.has(n.id) || scale > 2.2 ||
+      const show = n.id === selected || neighbors.has(n.id) || scale > 2.2 ||
         (scale > 1.2 && n.degree >= 3) || (scale > 0.5 && n.degree >= 6);
       if (show && !dim) {
         const size = 12 / scale;
@@ -84,7 +84,7 @@
 
   graph.d3Force('charge').strength(-110).distanceMax(250);
   graph.d3Force('link').distance(40);
-  // Gentle pull towards the middle so notes without links stay near the rest of the graph
+  // Gentle pull toward the middle so notes without links stay near the rest of the graph
   // instead of drifting off (which would make "fit" zoom right out).
   graph.d3Force('gravity', (() => {
     let nodes = [];
@@ -97,14 +97,14 @@
 
   function select(id) {
     selected = id;
-    neighbours = new Set();
+    neighbors = new Set();
     if (id) for (const l of all.links) {
       const s = endId(l.source), t = endId(l.target);
-      if (s === id) neighbours.add(t);
-      if (t === id) neighbours.add(s);
+      if (s === id) neighbors.add(t);
+      if (t === id) neighbors.add(s);
     }
     const n = id && all.nodes.find(x => x.id === id);
-    bridge().selected(n ? JSON.stringify({ id: n.id, type: n.type, label: n.label, path: n.path, degree: neighbours.size }) : '');
+    bridge().selected(n ? JSON.stringify({ id: n.id, type: n.type, label: n.label, path: n.path, degree: neighbors.size }) : '');
   }
 
   let saveTimer = null;
@@ -137,7 +137,7 @@
     const first = all.nodes.length === 0;
     all = { nodes, links };
     graph.graphData(all);
-    // Keep the selection if it's still shown (refreshing its neighbours and count).
+    // Keep the selection if it's still shown (refreshing its neighbors and count).
     if (selected) select(ids.has(selected) ? selected : null);
     if (first) {
       if (layout && layout.zoom) { graph.zoom(layout.zoom); graph.centerAt(layout.cx, layout.cy); }

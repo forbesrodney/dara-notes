@@ -491,7 +491,7 @@ fun TextFieldValue.toggleCheckbox(bullet: String, style: TaskStyle): TextFieldVa
 
 /**
  * Toggles a list item on the current line using [bullet]. An existing item written with any
- * bullet (-, * or +) is recognised, so the button can also remove it; on a task item it
+ * bullet (-, * or +) is recognized, so the button can also remove it; on a task item it
  * removes just the checkbox.
  */
 fun TextFieldValue.toggleListPrefix(bullet: String, task: Boolean): TextFieldValue {

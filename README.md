@@ -69,6 +69,62 @@ An Android app for managing Markdown notes kept in a Git repository, compatible 
   the same kind (bullet, numbered with the same number, or unchecked checkbox); Enter on an
   empty item ends the list.
 
+## Repository settings
+
+Some behavior is configured in the notes repository itself, in the same files Foam and the
+VS Code markdownlint extension use, so the app and VS Code follow the same rules.
+
+### `.vscode/settings.json`
+
+The app reads these keys from `.vscode/settings.json` at the root of the notes repository.
+Any other keys are ignored.
+
+| Setting | Used for | Default |
+| --- | --- | --- |
+| `foam.openDailyNote.directory` | Folder for daily notes (Settings > Notes > *Daily notes folder* overrides it) | `journal` |
+| `foam.openDailyNote.filenameFormat` | Daily note file name, as a `dateformat` mask | `isoDate` (`yyyy-mm-dd`) |
+| `foam.openDailyNote.fileExtension` | Daily note file extension | `md` |
+| `foam.openDailyNote.titleFormat` | Daily note title, as a `dateformat` mask | `isoDate` |
+| `foam.orphans.exclude` | Glob patterns for notes left out of *Orphaned notes* | none |
+| `foam.placeholders.exclude` | Glob patterns for notes whose links are left out of *Placeholders* | none |
+| `markdownlint.config` | markdownlint rules, used when the repository has no markdownlint config file | none |
+
+Glob patterns are relative to the repository root: `*` matches within one folder, `**`
+across folders, `?` one character and `{a,b}` either name. A plain folder name such as
+`journal` also covers everything inside it. Comments and trailing commas are allowed, as in
+VS Code.
+
+```jsonc
+{
+  "foam.openDailyNote.directory": "journal",
+  // Daily notes and templates aren't expected to be linked
+  "foam.orphans.exclude": ["journal/**", "templates/**"],
+  // Example links in templates aren't real placeholders
+  "foam.placeholders.exclude": ["templates/**"]
+}
+```
+
+### Other files
+
+- `.foam/templates/new-note.md`: template for new notes.
+- `.foam/templates/daily-note.md`: template for daily notes.
+  Both templates support `foam_template` front matter (including `filepath`) and the `$FOAM_*`
+  variables.
+- markdownlint configuration, first one found: `.markdownlint-cli2.jsonc`,
+  `.markdownlint-cli2.yaml`, `.markdownlint.jsonc`, `.markdownlint.json`, `.markdownlint.yaml`,
+  `.markdownlint.yml`, then `markdownlint.config` in `.vscode/settings.json`.
+
+### Things to check
+
+- **Commit and push these files.** The app only sees what is in the repository. A global
+  gitignore that excludes `.vscode/` hides `settings.json` from Git; to check, run
+  `git check-ignore -v .vscode/settings.json` in the notes repository. If it is ignored, add
+  `!/.vscode/settings.json` to the notes repository's `.gitignore`, then commit and push the
+  file and sync in the app.
+- **`.code-workspace` settings aren't read.** If you open your notes through a
+  `.code-workspace` file, VS Code also uses the `"settings"` in it, but the app doesn't. Put
+  settings the app should follow in `.vscode/settings.json`.
+
 ## Setup in the app
 
 1. Create a personal access token with read/write access to the repo

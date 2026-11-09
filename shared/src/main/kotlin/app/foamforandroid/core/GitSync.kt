@@ -33,7 +33,7 @@ data class SyncState(
 )
 
 /**
- * Git synchronisation: stage everything, commit, fetch, merge (fast-forward when possible),
+ * Git synchronization: stage everything, commit, fetch, merge (fast-forward when possible),
  * push. Merge conflicts never lose data: conflicting files are committed with conflict
  * markers and reported so the user can tidy them up in the editor.
  */
