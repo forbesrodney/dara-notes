@@ -1,25 +1,23 @@
 #!/usr/bin/env bash
 # Bundles markdownlint (and js-yaml, for YAML configs) into a single offline script for the
 # editor's Markdown checks: app/src/main/assets/vendor/markdownlint.min.js
-# Needs Node.js/npm. Re-run after changing the versions below.
+#
+# Versions are pinned in scripts/markdownlint/package.json, and every sub-dependency in
+# scripts/markdownlint/package-lock.json, so a rebuild produces the same file. To upgrade,
+# change package.json, run `npm install --package-lock-only` in scripts/markdownlint, then
+# run this script. Needs Node.js/npm.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-MARKDOWNLINT=0.42.1
-JSYAML=4.1.0
-ESBUILD=0.24.2
+SRC="$PWD/scripts/markdownlint"
 OUT="$PWD/app/src/main/assets/vendor/markdownlint.min.js"
 
+# Build in a temporary copy so node_modules never lands in the repository.
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
+cp "$SRC/package.json" "$SRC/package-lock.json" "$SRC/entry.mjs" "$work/"
 cd "$work"
-npm init -y >/dev/null
-npm install --silent --no-audit --no-fund "markdownlint@$MARKDOWNLINT" "js-yaml@$JSYAML" "esbuild@$ESBUILD"
-cat > entry.mjs <<'EOF'
-import { lint } from "markdownlint/sync";
-import { applyFixes, getVersion } from "markdownlint";
-import yaml from "js-yaml";
-globalThis.markdownlint = { lint, applyFixes, getVersion, parseYaml: (s) => yaml.load(s) };
-EOF
+npm ci --silent --no-audit --no-fund
 npx esbuild entry.mjs --bundle --minify --format=iife --platform=browser --target=es2020 \
   --legal-comments=eof --outfile="$OUT"
-echo "  $OUT ($(wc -c < "$OUT" | tr -d ' ') bytes, markdownlint $MARKDOWNLINT)"
+version=$(node -p 'JSON.parse(require("fs").readFileSync("node_modules/markdownlint/package.json")).version')
+echo "  $OUT ($(wc -c < "$OUT" | tr -d ' ') bytes, markdownlint $version)"
