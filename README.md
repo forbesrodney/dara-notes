@@ -83,6 +83,11 @@ same code runs on Windows and Linux) shares the screens and note logic.
   the same kind (bullet, numbered with the same number, or unchecked checkbox); Enter on an
   empty item ends the list.
 
+## Privacy
+
+The app keeps your notes and settings on your device and sends them only to the Git host you
+set up; it has no analytics, ads or tracking. See [PRIVACY.md](PRIVACY.md).
+
 ## Repository settings
 
 Some behavior is configured in the notes repository itself, in the same files Foam and the

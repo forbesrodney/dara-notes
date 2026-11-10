@@ -137,5 +137,5 @@ sort_commits = "oldest"
 # can also use --github-token argument or GITHUB_TOKEN environment variable
 # [remote.github]
 # owner = "forbesrodney"
-# repo = "macOS_Development_using_Python"
+# repo = "foam-for-android"
 # token = ""

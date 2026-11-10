@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Privacy Policy - Foam for Android, iOS and macOS</title>
+<meta name="description" content="Privacy policy for Foam for Android, Foam for iOS and Foam for macOS.">
+<!-- The web copy of PRIVACY.md in the repository; keep the two in step. -->
+<style>
+  :root {
+    --bg: #ffffff;
+    --fg: #1f2328;
+    --muted: #59636e;
+    --accent: #4b3fb5;
+    --rule: #d8dee4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #121417;
+      --fg: #e6e8eb;
+      --muted: #9aa4ae;
+      --accent: #b4abff;
+      --rule: #30363d;
+    }
+  }
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--fg);
+    font: 17px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  main { max-width: 44rem; margin: 0 auto; padding: 2.5rem 1rem 4rem; }
+  h1 { font-size: 2rem; line-height: 1.2; margin: 0 0 0.25rem; }
+  h2 { font-size: 1.25rem; margin: 2.25rem 0 0.5rem; padding-top: 1.25rem; border-top: 1px solid var(--rule); }
+  .date { color: var(--muted); margin: 0 0 1.5rem; }
+  .summary { font-size: 1.05rem; }
+  ul { padding-left: 1.25rem; }
+  li { margin: 0.4rem 0; }
+  a { color: var(--accent); }
+  strong { font-weight: 600; }
+</style>
+</head>
+<body>
+<main>
+<h1>Privacy Policy</h1>
+<p class="date">Effective November 10, 2026</p>
+
+<p class="summary">This policy covers Foam for Android, Foam for iOS and Foam for macOS (together,
+"the app"), made by Snake Pit Software. In short: your notes stay on your device and in the Git
+repository you choose. The app has no accounts, no analytics, no advertising and no tracking, and
+the developer never receives your notes or your settings.</p>
+
+<h2>What the app stores, and where</h2>
+<p>Everything the app stores is kept on your device, in the app's own private storage:</p>
+<ul>
+  <li><strong>Your notes:</strong> a copy (clone) of the Git repository you set up, or a local-only
+    repository if you don't connect one.</li>
+  <li><strong>Your settings:</strong> the repository URL, branch, username, commit author name and
+    email, and your preferences in the app.</li>
+  <li><strong>Your access token</strong>, if you enter one: kept in your system's secure storage
+    (Android's encrypted preferences, the iOS Keychain or the macOS Keychain), and used only to
+    sign in to your Git host.</li>
+</ul>
+<p>On Android, the app's data is excluded from system backups. Uninstalling the app deletes all
+of it from the device.</p>
+
+<h2>What the app sends, and to whom</h2>
+<ul>
+  <li><strong>Your Git host.</strong> When the app syncs, it connects over HTTPS to the Git host
+    in your repository URL (for example, GitHub) to download changes and upload yours. It sends
+    your username and access token to sign in, and your notes and commits (which include the
+    commit author name and email you set). What happens to that data there is covered by your
+    Git host's own privacy policy.</li>
+  <li><strong>Images from the web in your notes.</strong> If a note includes an image by its web
+    address, the preview downloads that image from the site hosting it, as any web page or
+    Markdown viewer would. That site can see the request, like any other visit, including your
+    IP address.</li>
+  <li><strong>Links you open.</strong> Web links in your notes open in your browser, and only
+    when you tap them.</li>
+</ul>
+<p>The app sends nothing else. It contains no analytics, advertising, crash reporting or other
+third-party services, and the developer receives no data from it.</p>
+
+<h2>Permissions</h2>
+<p>On Android, the app asks only for internet access and to check whether a network connection
+is available (to sync). On iOS, it uses background app refresh to sync, if your settings allow
+it.</p>
+
+<h2>Children</h2>
+<p>The app doesn't collect personal information from anyone, including children.</p>
+
+<h2>Your choices</h2>
+<p>You control what the app has: you can change or remove your token and settings in the app,
+delete notes, disconnect the repository, or uninstall the app. Data in your Git repository is
+managed through your Git host.</p>
+
+<h2>Changes</h2>
+<p>If this policy changes, the updated version will be posted here with a new effective
+date.</p>
+
+<h2>Contact</h2>
+<p>Questions about this policy:
+  <a href="mailto:support@snakepitsoftware.com">support@snakepitsoftware.com</a></p>
+</main>
+</body>
+</html>
