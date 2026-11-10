@@ -82,6 +82,14 @@ same code runs on Windows and Linux) shares the screens and note logic.
   wikilink autocomplete as soon as you type `[[`. Enter in a list starts the next item of
   the same kind (bullet, numbered with the same number, or unchecked checkbox); Enter on an
   empty item ends the list.
+- **Table of contents**: *Add table of contents* in a note's menu puts a list of links to its
+  sections (`##` to `######` headings, nested by level) under the note's title, like
+  `- [Snippet Syntax](#snippet-syntax)`; the same item then reads *Update table of
+  contents*. Once a note has one, editing the note updates it when you switch to Preview or
+  leave the note (never while you type). A heading with `<!-- omit from toc -->` at its end,
+  or on the line above, is left out. In the preview, every heading can be linked to with
+  `#id` (GitHub-style: lowercase, punctuation removed, spaces as hyphens), so tables of
+  contents made elsewhere, such as in VS Code, work too.
 - **Keyboard shortcuts** in the editor, with a hardware keyboard: Ctrl+B or Cmd+B for bold,
   Ctrl+I or Cmd+I for italic, Ctrl+Shift+X or Cmd+Shift+X for strike-through, and Ctrl+Enter
   or Cmd+Enter to check or uncheck the task on the current line. Bold, italic and

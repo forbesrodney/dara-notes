@@ -59,7 +59,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.input.key.Key
 import androidx.compose.ui.input.key.KeyEvent
 import androidx.compose.ui.input.key.KeyEventType
@@ -84,6 +87,7 @@ import app.foamforandroid.Screen
 import app.foamforandroid.core.LintResult
 import app.foamforandroid.core.TaskStyle
 import app.foamforandroid.core.Tasks
+import app.foamforandroid.core.Toc
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -98,6 +102,10 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     val path = screen.path
     var value by remember(path) { mutableStateOf(TextFieldValue(vm.repo.read(path))) }
     var saved by remember(path) { mutableStateOf(value.text) }
+    // The note as loaded (or reloaded after a sync): edited if the text differs.
+    var baseline by remember(path) { mutableStateOf(value.text) }
+    // False once the note is renamed, moved or deleted, so leaving it writes nothing.
+    var flushOnLeave by remember(path) { mutableStateOf(true) }
     var editing by rememberSaveable(path) { mutableStateOf(screen.startEditing) }
     var menu by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
@@ -125,6 +133,14 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
         }
     }
 
+    val bullet = vm.settings.bullet
+    // Brings the table of contents up to date when an edited note goes to Preview or is left,
+    // so it never changes under the cursor while typing.
+    fun refreshToc() {
+        if (value.text == baseline) return
+        Toc.update(value.text, bullet)?.let { value = value.applying(it) }
+    }
+
     // Auto-save shortly after typing stops.
     LaunchedEffect(path) {
         snapshotFlow { value.text }.debounce(800).collect { text ->
@@ -133,8 +149,14 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     }
     // Save anything pending when leaving the note.
     val latest by rememberUpdatedState(value.text)
+    val latestBaseline by rememberUpdatedState(baseline)
+    val latestFlush by rememberUpdatedState(flushOnLeave)
     DisposableEffect(path) {
-        onDispose { if (latest != saved) vm.save(path, latest) }
+        onDispose {
+            if (!latestFlush) return@onDispose
+            val text = if (latest != latestBaseline) Toc.update(latest, bullet)?.text ?: latest else latest
+            if (text != saved) vm.save(path, text)
+        }
     }
     // Keep the cursor on screen. A tap focuses the field before it moves the cursor, and on
     // focus the field scrolls to the old cursor (often the top of the note); so whenever the
@@ -169,6 +191,7 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                 val c = value.selection.start.coerceAtMost(disk.length)
                 value = TextFieldValue(disk, TextRange(c))
                 saved = disk
+                baseline = disk
             }
         }
     }
@@ -208,7 +231,10 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                     }
                 },
                 actions = {
-                    TextButton(onClick = { editing = !editing }) { Text(if (editing) "Preview" else "Edit") }
+                    TextButton(onClick = {
+                        if (editing) refreshToc()
+                        editing = !editing
+                    }) { Text(if (editing) "Preview" else "Edit") }
                     IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "More") }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(
@@ -237,6 +263,23 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                                 menu = false
                                 if (value.text != saved) { vm.save(path, value.text); saved = value.text }
                                 vm.navigate(Screen.Graph(focus = path))
+                            },
+                        )
+                        val hasToc = Toc.has(value.text)
+                        DropdownMenuItem(
+                            text = { Text(if (hasToc) "Update table of contents" else "Add table of contents") },
+                            leadingIcon = { Icon(TocIcon, null) },
+                            onClick = {
+                                menu = false
+                                val edit = Toc.insertOrUpdate(value.text, bullet)
+                                if (edit == null) {
+                                    val why = if (hasToc) "The table of contents is up to date" else "No sections (## headings) to list"
+                                    scope.launch { snackbar.showSnackbar(why) }
+                                } else {
+                                    value = value.applying(edit)
+                                    vm.save(path, value.text)
+                                    saved = value.text
+                                }
                             },
                         )
                         DropdownMenuItem(
@@ -351,6 +394,7 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
         renaming = false
         moving = false
         saved = value.text // written by relocateNote, so leaving this editor must not flush it
+        flushOnLeave = false
         vm.relocateNote(path, newPath, pendingText = value.text, keepEditing = editing)
     }
     val result = lint
@@ -387,6 +431,7 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                 TextButton(onClick = {
                     confirmDelete = false
                     saved = value.text // nothing to flush
+                    flushOnLeave = false
                     vm.deleteNote(path)
                 }) { Text("Delete") }
             },
@@ -467,6 +512,26 @@ private fun shortcut(e: KeyEvent, bullet: String, taskStyle: () -> TaskStyle): (
         Key.Enter, Key.NumPadEnter -> { v -> v.toggleCheckbox(bullet, taskStyle()) }
         else -> null
     }
+}
+
+/** Material "toc" icon (not in material-icons-core). */
+val TocIcon: ImageVector by lazy {
+    ImageVector.Builder("Toc", 24.dp, 24.dp, 24f, 24f).addPath(
+        pathData = addPathNodes(
+            "M3,9h14V7H3v2zM3,13h14v-2H3v2zM3,17h14v-2H3v2zM19,17h2v-2h-2v2zM19,7v2h2V7h-2zM19,13h2v-2h-2v2z",
+        ),
+        fill = SolidColor(Color.Black),
+    ).build()
+}
+
+/** The note after [edit], with the cursor or selection moved along with the text. */
+fun TextFieldValue.applying(edit: Toc.Edit): TextFieldValue {
+    fun map(p: Int) = when {
+        p >= edit.start + edit.removed -> p + edit.added - edit.removed
+        p > edit.start -> edit.start
+        else -> p
+    }
+    return TextFieldValue(edit.text, TextRange(map(selection.start), map(selection.end)))
 }
 
 // ---- text editing helpers -------------------------------------------------------------------

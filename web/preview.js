@@ -121,6 +121,26 @@
     .use(wikilinks)
     .use(mermaidFences);
 
+  // GitHub-style heading IDs, for #links and tables of contents. Keep in step with Toc.slug
+  // and Toc.headings in shared/src/commonMain/kotlin/app/foamforandroid/core/Toc.kt.
+  function slug(text) {
+    return text.trim().toLowerCase().replace(/[^\p{L}\p{M}\p{N}\p{Pc} -]/gu, '').replace(/ /g, '-');
+  }
+  function headingIds(root) {
+    const seen = Object.create(null);
+    root.querySelectorAll('h1, h2, h3, h4, h5, h6').forEach(h => {
+      if (h.closest('.embed')) return; // an embedded note's headings aren't this note's
+      const base = slug(h.textContent.replace(/\s+/g, ' '));
+      let id = base;
+      while (id in seen) {
+        seen[base]++;
+        id = base + '-' + seen[base];
+      }
+      seen[id] = 0;
+      h.id = id;
+    });
+  }
+
   let mermaidTheme = null;
   const content = document.getElementById('content');
 
@@ -135,6 +155,7 @@
       html = '<pre>' + escapeHtml(String(e && e.stack || e)) + '</pre>';
     }
     content.innerHTML = html.trim() ? html : '<p class="empty">Empty note</p>';
+    headingIds(content);
     window.scrollTo(0, y);
     const nodes = content.querySelectorAll('pre.mermaid');
     if (nodes.length && window.mermaid) {
