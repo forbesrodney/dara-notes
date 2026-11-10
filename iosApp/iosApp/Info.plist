@@ -6,6 +6,9 @@
 	<!-- Compose Multiplatform needs this to draw at the display's full refresh rate. -->
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Uses only exempt encryption (standard HTTPS), so App Store Connect doesn't ask on each upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<!-- Background sync: an app refresh task (BackgroundSync in ui/src/iosMain). -->
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
