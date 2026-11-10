@@ -132,9 +132,16 @@ example links never show up in any view.
 
 - **Commit and push these files.** The app only sees what is in the repository. A global
   gitignore that excludes `.vscode/` hides `settings.json` from Git; to check, run
-  `git check-ignore -v .vscode/settings.json` in the notes repository. If it is ignored, add
-  `!/.vscode/settings.json` to the notes repository's `.gitignore`, then commit and push the
-  file and sync in the app.
+  `git check-ignore -v .vscode/settings.json` in the notes repository (no output means it
+  isn't ignored). If it is, add these lines to the notes repository's `.gitignore`, then commit
+  and push the file and sync in the app. Git can't re-include a file inside an ignored folder,
+  so the folder is re-included first and its other files ignored again:
+
+  ```gitignore
+  !/.vscode/
+  /.vscode/*
+  !/.vscode/settings.json
+  ```
 - **`.code-workspace` settings aren't read.** If you open your notes through a
   `.code-workspace` file, VS Code also uses the `"settings"` in it, but the app doesn't. Put
   settings the app should follow in `.vscode/settings.json`.
@@ -149,21 +156,38 @@ example links never show up in any view.
 ## Building
 
 Needs JDK 17 or 21 (Gradle 8.10 does not run on newer JDKs) and the Android SDK
-(platform 35).
+(platform 35, build tools 34.0.0).
+
+### Android Studio
+
+1. Install Android Studio (`brew install --cask android-studio`) and choose the *Standard*
+   setup, which puts the SDK in `~/Library/Android/sdk`.
+2. In *SDK Manager*, install *Android SDK Platform 35* and, for the emulator, the API 35
+   *Google APIs ARM 64 v8a System Image*; under *SDK Tools*, *Build-Tools 34.0.0* and
+   *Command-line Tools (latest)*.
+3. *Open* this folder. In *Settings > Build, Execution, Deployment > Build Tools > Gradle*, set
+   *Gradle JDK* to JDK 21 (for example `/opt/homebrew/opt/openjdk@21`); Android Studio's own
+   JDK is too new for Gradle 8.10.
+4. Run the *app* configuration on an emulator or device.
+
+### Command line
 
 ```bash
 ./gradlew assembleDebug
 ```
 
 The APK lands in `app/build/outputs/apk/debug/`. Install with
-`adb install app/build/outputs/apk/debug/foamforandroid-debug.apk`, or open the folder in Android Studio.
+`adb install app/build/outputs/apk/debug/foamforandroid-debug.apk`. The scripts below look for
+the SDK in `$ANDROID_HOME`, else `~/Library/Android/sdk`.
 
 Alternatively push this folder to GitHub: `.github/workflows/build.yml` builds the APK, runs the
 unit tests (`./gradlew :shared:test testDebugUnitTest`) and attaches the APK to the workflow run as an artifact.
 
 ### Scripts
 
-Each script also has a VS Code task with the same purpose.
+Each script also has a shared Android Studio run configuration (in `.run/`), so it can be
+picked from the run configuration list in the toolbar. *Run unit tests*, *Build release APK*
+and *Build release AAB* run the matching Gradle tasks.
 
 | Script | What it does |
 | --- | --- |
@@ -173,6 +197,7 @@ Each script also has a VS Code task with the same purpose.
 | `scripts/build-markdownlint.sh` | Rebuilds `vendor/markdownlint.min.js` (needs Node.js). Versions are pinned in `scripts/markdownlint/package.json`, and all sub-dependencies in its `package-lock.json`, so a rebuild gives the same file. |
 | `scripts/refresh-all.sh` | Runs `fetch-deps.sh`, `fetch-vendor.sh` and `build-markdownlint.sh`, then reports whether any committed library changed. |
 | `scripts/check-updates.sh` | Lists newer versions of the pinned JavaScript libraries. Changes nothing. |
+| `scripts/changelog.sh` | Regenerates `CHANGELOG.md` with git-cliff (`.cliff.toml`) and lists commits it skipped. |
 
 The JavaScript libraries are committed, so a checkout builds without Node.js or network
 access to the CDN. To upgrade one, change its version in `fetch-vendor.sh` (or in

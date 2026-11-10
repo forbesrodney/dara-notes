@@ -1,17 +1,13 @@
-# cspell:disable
-# We kinda want to allow these to give collaborators some help
-!/.vscode/**/*.default.json
-!/.vscode/**/*.local.json
-!/.vscode/**/*.shared.json
-!/.vscode/extensions.json
-!/.vscode/tasks.json
-!/.vscode/cspell.json
-
 .gradle/
 .kotlin/
 build/
 
 local.properties
+
+# Android Studio / IntelliJ settings and caches
+.idea/
+*.iml
+captures/
 
 # We use git-cliff to generate this
 CHANGELOG.md

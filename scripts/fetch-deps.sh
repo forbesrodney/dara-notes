@@ -11,7 +11,10 @@ cd "$(dirname "$0")/.."
 # Keep in step with compileSdk in app/build.gradle.kts and the build tools AGP uses.
 SDK_PACKAGES=("platform-tools" "platforms;android-35" "build-tools;34.0.0")
 
-: "${ANDROID_HOME:?Set ANDROID_HOME to your Android SDK folder}"
+# Android Studio's standard SDK location, unless ANDROID_HOME says otherwise.
+ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Library/Android/sdk}}"
+[ -d "$ANDROID_HOME" ] || { echo "Android SDK not found at $ANDROID_HOME; set ANDROID_HOME" >&2; exit 1; }
+export ANDROID_HOME
 sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
 [ -x "$sdkmanager" ] || sdkmanager="$(command -v sdkmanager || true)"
 [ -n "$sdkmanager" ] || { echo "sdkmanager not found in \$ANDROID_HOME/cmdline-tools/latest/bin" >&2; exit 1; }
