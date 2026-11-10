@@ -7,6 +7,7 @@ import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -46,7 +47,6 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -63,6 +63,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.style.TextOverflow
@@ -149,15 +150,10 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
             )
         },
         floatingActionButton = {
-            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                SmallFloatingActionButton(onClick = vm::openDailyNote) {
-                    Icon(Icons.Default.DateRange, contentDescription = "Today's daily note")
-                }
-                ExtendedFloatingActionButton(
-                    onClick = { showNew = true },
-                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                    text = { Text("New note") },
-                )
+            // Two matching buttons: the same height, and as wide as the wider of the two.
+            Column(Modifier.width(IntrinsicSize.Max), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                ListActionButton(Icons.Default.DateRange, "Today", vm::openDailyNote)
+                ListActionButton(Icons.Default.Add, "New note") { showNew = true }
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -413,5 +409,19 @@ private fun FolderLine(row: TreeRow.Folder, onClick: () -> Unit) {
             style = MaterialTheme.typography.labelLarge,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
+    }
+}
+
+/**
+ * One of the note list's floating buttons. They share a width (the column's), so the icon and
+ * label sit at the start, lining up from one button to the next.
+ */
+@Composable
+private fun ListActionButton(icon: ImageVector, label: String, onClick: () -> Unit) {
+    ExtendedFloatingActionButton(onClick = onClick, modifier = Modifier.fillMaxWidth()) {
+        Icon(icon, contentDescription = null)
+        Spacer(Modifier.width(12.dp))
+        Text(label)
+        Spacer(Modifier.weight(1f))
     }
 }
