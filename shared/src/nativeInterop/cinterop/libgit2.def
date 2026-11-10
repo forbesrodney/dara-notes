@@ -1,0 +1,7 @@
+# libgit2 for the Apple targets (scripts/build-libgit2.sh builds the static libraries).
+package = libgit2
+headers = git2.h
+headerFilter = git2.h git2/**
+staticLibraries = libgit2.a
+# Secure Transport (HTTPS), iconv (Unicode file names) and the system frameworks libgit2 uses.
+linkerOpts = -liconv -framework Security -framework CoreFoundation

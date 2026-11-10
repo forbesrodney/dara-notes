@@ -235,8 +235,13 @@ scripts/ios-run.sh
 
 or open `iosApp/iosApp.xcodeproj` in Xcode. Running on a device needs your Apple Developer
 team: set `TEAM_ID` in `iosApp/Configuration/Local.xcconfig` (not committed). Not done yet:
-Git sync (libgit2), the preview, graph and markdownlint (WKWebView), Keychain storage for the
-token, and background sync.
+the preview, graph and markdownlint (WKWebView), Keychain storage for the token, and
+background sync.
+
+Git on iOS uses [libgit2](https://libgit2.org), built from source by
+`scripts/build-libgit2.sh` (HTTPS through Apple's Secure Transport; no SSH). Gradle runs the
+script the first time it's needed, which takes about two minutes and needs CMake
+(`brew install cmake`); the libraries land in `shared/build/libgit2`.
 
 ### Scripts
 
@@ -253,6 +258,7 @@ and *Build release AAB* run the matching Gradle tasks.
 | `scripts/refresh-all.sh` | Runs `fetch-deps.sh`, `fetch-vendor.sh` and `build-markdownlint.sh`, then reports whether any committed library changed. |
 | `scripts/check-updates.sh` | Lists newer versions of the pinned JavaScript libraries. Changes nothing. |
 | `scripts/app-icons.py` | Draws the desktop and iOS app icons (`desktopApp/icons/`, the iOS asset catalog) from `art/foam_icon.svg`. Rerun it after changing the artwork. |
+| `scripts/build-libgit2.sh` | Builds libgit2 for iPhone, the iOS Simulator and the Mac (Gradle runs it when needed). |
 | `scripts/ios-run.sh` | Builds the iOS app and runs it in the iOS Simulator (optionally pass a simulator name or ID). |
 | `scripts/changelog.sh` | Regenerates `CHANGELOG.md` with git-cliff (`.cliff.toml`) and lists commits it skipped. |
 
@@ -275,7 +281,8 @@ folder), run the script, test, and commit the result.
 - **`shared/`** has no UI and no platform dependencies. Nearly all of it is in
   `src/commonMain`, using multiplatform libraries: Okio for files, kotlinx-datetime and
   kotlinx.serialization. `src/jvmMain` holds the JVM pieces (Git with JGit; month names and
-  date formats from `java.time`) and `src/appleMain` the iOS ones (Foundation). All unit tests
+  date formats from `java.time`) and `src/appleMain` the iOS ones (Git with libgit2, through
+  `src/nativeInterop/cinterop/libgit2.def`; Foundation for the rest). All unit tests
   are here, in `src/commonTest` and `src/jvmTest` (`./gradlew :shared:jvmTest`; also
   `:shared:macosArm64Test` and `:shared:iosSimulatorArm64Test`).
 - **`ui/`** is Compose Multiplatform (`src/commonMain`). The few platform pieces are `expect`
@@ -291,6 +298,7 @@ folder), run the script, test, and commit the result.
 | --- | --- |
 | `shared/.../GitSync.kt` | one sync at a time, sync status; `GitEngine`, what each platform's Git provides |
 | `shared/jvmMain/.../JGitEngine.kt` | clone / commit / fetch / merge / push with JGit, conflict handling |
+| `shared/appleMain/.../LibGit2Engine.kt` | the same with libgit2, for iOS |
 | `shared/.../GitErrors.kt` | plain-language hints for common Git errors |
 | `shared/.../NoteRepository.kt` | listing, search, rename/move, Index.md, daily notes, task toggling |
 | `shared/.../Links.kt` | wikilink resolution and link fixing for rename/move |

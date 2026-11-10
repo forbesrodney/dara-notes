@@ -25,14 +25,7 @@ internal actual fun <T> locked(lock: Any, block: () -> T): T {
 
 actual val ioDispatcher: CoroutineDispatcher get() = Dispatchers.IO
 
-internal actual fun platformGitEngine(): GitEngine = NoGitEngine
-
-/** Until libgit2 is in place: no Git on iOS yet. */
-private object NoGitEngine : GitEngine {
-    private fun unavailable(): Nothing = throw UnsupportedOperationException("Git sync isn't available on iOS yet")
-    override fun cloneFresh(dir: okio.Path, s: Settings) = unavailable()
-    override fun sync(dir: okio.Path, s: Settings): SyncResult = unavailable()
-}
+internal actual fun platformGitEngine(): GitEngine = LibGit2Engine
 
 internal actual fun networkErrorHint(t: Throwable): String? = null
 

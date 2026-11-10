@@ -5,14 +5,21 @@ import platform.Foundation.NSUserDefaults
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
-/** Settings in NSUserDefaults. The access token is kept in memory until Keychain storage is added. */
+/** Settings in NSUserDefaults, with the access token in the Keychain. */
 class IosSettings : Settings {
     private val defaults = NSUserDefaults.standardUserDefaults
 
     override var remoteUrl by StringPref("remote_url", "")
     override var branch by StringPref("branch", "main")
     override var username by StringPref("username", "")
-    override var token: String = ""
+    private val keychain = Keychain(service = "Foam for iOS", account = "git-access-token")
+    private var cachedToken: String? = null
+    override var token: String
+        get() = cachedToken ?: (keychain.get() ?: "").also { cachedToken = it }
+        set(value) {
+            if (value != cachedToken) keychain.set(value)
+            cachedToken = value
+        }
     override var authorName by StringPref("author_name", "")
     override var authorEmail by StringPref("author_email", "")
 
