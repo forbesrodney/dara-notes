@@ -28,4 +28,9 @@ echo "== Gradle and project dependencies"
 echo "== One full build, for the tools Gradle downloads during a build"
 ./gradlew assembleDebug assembleRelease bundleRelease lintDebug testDebugUnitTest :shared:jvmTest
 
+if [ "$(uname)" = Darwin ]; then
+    echo "== dmgbuild, for the macOS .dmg"
+    scripts/macos-dmg.sh --setup
+fi
+
 echo "Done. Builds can now run offline: ./gradlew --offline assembleDebug"

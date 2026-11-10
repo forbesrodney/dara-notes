@@ -64,7 +64,7 @@ compose.desktop {
             }
             packageVersion = "1.0.0"
             description = "Markdown notes compatible with Foam, synced with Git"
-            vendor = "Foam for Android"
+            vendor = "Snakepit Software"
             // The parts of Java the app uses (from ./gradlew :desktopApp:suggestRuntimeModules, plus
             // java.naming and jdk.crypto.ec for HTTPS). java.management: JGit; jdk.jsobject:
             // JavaFX's web view talks to JavaScript through it.

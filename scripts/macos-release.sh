@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Builds the signed macOS .dmg, has Apple notarize it, and staples the ticket, so it opens on
+# Builds the signed macOS .dmg (with scripts/macos-dmg.sh), has Apple notarize it, and staples the ticket, so it opens on
 # any Mac without the "unidentified developer" warning.
 # Output: desktopApp/build/compose/binaries/main/dmg/Foam for macOS-<version>.dmg
 #
@@ -21,10 +21,9 @@ if ! xcrun notarytool history --keychain-profile "$profile" >/dev/null 2>&1; the
     exit 1
 fi
 
-echo "== Building the signed .dmg"
+echo "== Building the signed app"
 rm -rf desktopApp/build/compose/binaries/main/dmg
-./gradlew -q :desktopApp:packageDmg
-dmg=$(ls desktopApp/build/compose/binaries/main/dmg/*.dmg)
+./gradlew -q :desktopApp:createDistributable
 app="desktopApp/build/compose/binaries/main/app/Foam for macOS.app"
 codesign --verify --deep --strict "$app" || { echo "The app isn't signed: is apple.teamId set in local.properties?" >&2; exit 1; }
 
@@ -43,6 +42,9 @@ for jar in "$app"/Contents/app/*.jar; do
     done < <(find "$work/x" -type f -print0)
 done
 [ "$unsigned" -eq 0 ] || { echo "Notarization would fail: $unsigned unsigned native file(s)." >&2; exit 1; }
+
+echo "== Building the .dmg"
+dmg=$(scripts/macos-dmg.sh | tail -1)
 
 # Compose signs the app but not the disk image; Gatekeeper checks the image when it's opened.
 team=$(sed -nE 's/^[[:space:]]*apple\.teamId[[:space:]]*=[[:space:]]*([A-Z0-9]+).*/\1/p' local.properties | tail -1)

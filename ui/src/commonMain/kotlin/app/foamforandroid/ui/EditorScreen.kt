@@ -115,6 +115,7 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     val notes by vm.notes.collectAsState()
     val sync by vm.syncState.collectAsState()
     val focus = remember { FocusRequester() }
+    var swallowTyped by remember { mutableStateOf(false) }
 
     // New notes open straight into the editor with the cursor at the end.
     LaunchedEffect(Unit) {
@@ -316,11 +317,18 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                             .padding(12.dp)
                             .onFocusChanged { editorFocused = it.isFocused }
                             .onPreviewKeyEvent { e ->
+                                // The character a shortcut's key types arrives as a separate event
+                                // (a Mac sends Cmd+Enter's newline separately); swallow it, or the text field
+                                // inserts it into the note as it was before the shortcut.
+                                if (e.type != KeyEventType.KeyDown && e.type != KeyEventType.KeyUp) {
+                                    return@onPreviewKeyEvent swallowTyped.also { swallowTyped = false }
+                                }
                                 val action = shortcut(e, vm.settings.bullet) { TaskStyle.from(vm.settings) }
                                     ?: return@onPreviewKeyEvent false
-                                // Act on the key press; swallow the release and typed character too,
-                                // so Option-C on a Mac doesn't also type a ç.
-                                if (e.type == KeyEventType.KeyDown) value = action(value)
+                                if (e.type == KeyEventType.KeyDown) {
+                                    value = action(value)
+                                    swallowTyped = true
+                                } else swallowTyped = false
                                 true
                             }
                             .focusRequester(focus),
@@ -444,19 +452,20 @@ private fun FormatToolbar(bullet: String, taskStyle: () -> TaskStyle, onAction: 
 }
 
 /**
- * Hardware-keyboard shortcuts, matching VS Code's Markdown All in One: Ctrl or Cmd with B
- * (bold) and I (italic), and Alt (Option on a Mac) with S (strike-through) and C (check the
- * line's task). Returns the edit for [e], or null if it isn't a shortcut.
+ * Hardware-keyboard shortcuts, with Ctrl or Cmd: B bold, I italic, Shift+X strike-through,
+ * and L or Enter to check the line's task (as in Obsidian and Notion). Returns the edit for
+ * [e], or null if it isn't a shortcut. Option/Alt is left alone: many keyboard layouts type
+ * letters with it.
  */
 private fun shortcut(e: KeyEvent, bullet: String, taskStyle: () -> TaskStyle): ((TextFieldValue) -> TextFieldValue)? {
-    if (e.isShiftPressed) return null
-    val command = (e.isCtrlPressed || e.isMetaPressed) && !e.isAltPressed
-    val alt = e.isAltPressed && !e.isCtrlPressed && !e.isMetaPressed
-    return when {
-        command && e.key == Key.B -> { v -> v.toggleWrap("**", "bold") }
-        command && e.key == Key.I -> { v -> v.toggleWrap("*", "italic") }
-        alt && e.key == Key.S -> { v -> v.toggleWrap("~~", "strike") }
-        alt && e.key == Key.C -> { v -> v.toggleCheckbox(bullet, taskStyle()) }
+    if (!(e.isCtrlPressed || e.isMetaPressed) || e.isAltPressed) return null
+    return if (e.isShiftPressed) when (e.key) {
+        Key.X -> { v -> v.toggleWrap("~~", "strike") }
+        else -> null
+    } else when (e.key) {
+        Key.B -> { v -> v.toggleWrap("**", "bold") }
+        Key.I -> { v -> v.toggleWrap("*", "italic") }
+        Key.L, Key.Enter, Key.NumPadEnter -> { v -> v.toggleCheckbox(bullet, taskStyle()) }
         else -> null
     }
 }
