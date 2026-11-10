@@ -82,6 +82,11 @@ same code runs on Windows and Linux) shares the screens and note logic.
   wikilink autocomplete as soon as you type `[[`. Enter in a list starts the next item of
   the same kind (bullet, numbered with the same number, or unchecked checkbox); Enter on an
   empty item ends the list.
+- **Keyboard shortcuts** in the editor, with a hardware keyboard (as in VS Code's Markdown
+  All in One): Ctrl+B or Cmd+B for bold, Ctrl+I or Cmd+I for italic, Alt+S (Option+S on a
+  Mac) for strike-through, and Alt+C to check or uncheck the task on the current line. Bold,
+  italic and strike-through toggle, and with nothing selected apply to the word at the
+  cursor. On Android, use Ctrl: the system may claim some Cmd (Meta) shortcuts.
 
 ## Privacy
 
@@ -304,6 +309,7 @@ and *Build release AAB* run the matching Gradle tasks.
 | `scripts/macos-release.sh` | Builds the signed macOS `.dmg`, notarizes it and staples the ticket. |
 | `scripts/ios-release.sh` | Archives the iOS app and exports a signed `.ipa` (TestFlight/App Store, or ad hoc). |
 | `scripts/ios-run.sh` | Builds the iOS app and runs it in the iOS Simulator (optionally pass a simulator name or ID). |
+| `scripts/bump-version.sh` | Raises the version of all the apps together: `micro` (1.2.3 to 1.2.4), `minor` (1.3.0), `major` (2.0.0), or an exact version such as `1.4.0`. Also adds 1 to the Android `versionCode` and the iOS build number, which `build` raises alone (for another upload of the same version). `--dry-run` shows the change without writing it. Doesn't commit or tag. |
 | `scripts/changelog.sh` | Regenerates `CHANGELOG.md` with git-cliff (`.cliff.toml`) and lists commits it skipped. |
 
 The JavaScript libraries are committed, so a checkout builds without Node.js or network
