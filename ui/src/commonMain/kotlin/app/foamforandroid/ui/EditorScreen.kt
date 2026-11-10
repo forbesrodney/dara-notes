@@ -57,6 +57,7 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusProperties
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -319,6 +320,7 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                             items(matches, key = { it.path }) { note ->
                                 SuggestionChip(
                                     onClick = { value = completeWikilink(value, query.first, vm.repo.linkId(note.path)) },
+                                    modifier = Modifier.keepEditorFocus(),
                                     label = { Text(note.id) },
                                 )
                             }
@@ -483,13 +485,13 @@ private fun FormatToolbar(bullet: String, taskStyle: () -> TaskStyle, onAction: 
         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp),
     ) {
         editActions.forEach { (label, transform) ->
-            TextButton(onClick = { onAction(transform) }, contentPadding = PaddingValues(horizontal = 8.dp)) {
+            TextButton(onClick = { onAction(transform) }, Modifier.keepEditorFocus(), contentPadding = PaddingValues(horizontal = 8.dp)) {
                 Text(label)
             }
         }
         VerticalDivider(Modifier.height(24.dp).align(Alignment.CenterVertically).padding(horizontal = 4.dp))
         actions.forEach { (label, transform) ->
-            TextButton(onClick = { onAction(transform) }, contentPadding = PaddingValues(horizontal = 10.dp)) {
+            TextButton(onClick = { onAction(transform) }, Modifier.keepEditorFocus(), contentPadding = PaddingValues(horizontal = 10.dp)) {
                 Text(label, fontFamily = if (label.length <= 2) FontFamily.Serif else FontFamily.Monospace)
             }
         }
@@ -513,6 +515,12 @@ private fun shortcut(e: KeyEvent, bullet: String, taskStyle: () -> TaskStyle): (
         else -> null
     }
 }
+
+/**
+ * For buttons that act on the editor's text: clicking them mustn't take the focus, because
+ * the editor clears its selection when it loses focus (and on a phone, hides the keyboard).
+ */
+private fun Modifier.keepEditorFocus() = focusProperties { canFocus = false }
 
 /** Material "toc" icon (not in material-icons-core). */
 val TocIcon: ImageVector by lazy {
