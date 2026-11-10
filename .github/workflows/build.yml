@@ -14,7 +14,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
           cache: gradle
       - uses: android-actions/setup-android@v4
       # The Gradle wrapper downloads Gradle (~130 MB, from GitHub release assets) in one try and
@@ -30,7 +30,7 @@ jobs:
           sed -i.bak "s|^distributionUrl=.*|distributionUrl=file\\://$zip|" "$props" && rm "$props.bak"
           ./gradlew --version
       - name: Build and run unit tests
-        run: ./gradlew --no-daemon assembleDebug :shared:test testDebugUnitTest
+        run: ./gradlew --no-daemon assembleDebug :shared:jvmTest testDebugUnitTest
       - uses: actions/upload-artifact@v7
         with:
           name: foamforandroid-debug

@@ -2,8 +2,8 @@ package app.foamforandroid.core
 
 import app.foamforandroid.core.NoteLink.Kind
 import app.foamforandroid.core.NoteLink.Status
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.Test
 
 class ConnectionsTest {
     private val files = listOf("Index.md", "projects/plan.md", "projects/notes.md", "img/cat.png", "docs/a b.pdf")

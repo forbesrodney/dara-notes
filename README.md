@@ -155,19 +155,19 @@ example links never show up in any view.
 
 ## Building
 
-Needs JDK 17 or 21 (Gradle 8.10 does not run on newer JDKs) and the Android SDK
-(platform 35, build tools 34.0.0).
+Needs JDK 17 or newer (JDK 21 recommended) and the Android SDK (platform 37, build tools
+36.0.0).
 
 ### Android Studio
 
 1. Install Android Studio (`brew install --cask android-studio`) and choose the *Standard*
    setup, which puts the SDK in `~/Library/Android/sdk`.
-2. In *SDK Manager*, install *Android SDK Platform 35* and, for the emulator, the API 35
-   *Google APIs ARM 64 v8a System Image*; under *SDK Tools*, *Build-Tools 34.0.0* and
+2. In *SDK Manager*, install *Android SDK Platform 37* and, for the emulator, the API 35
+   *Google APIs ARM 64 v8a System Image*; under *SDK Tools*, *Build-Tools 36.0.0* and
    *Command-line Tools (latest)*.
-3. *Open* this folder. In *Settings > Build, Execution, Deployment > Build Tools > Gradle*, set
-   *Gradle JDK* to JDK 21 (for example `/opt/homebrew/opt/openjdk@21`); Android Studio's own
-   JDK is too new for Gradle 8.10.
+3. *Open* this folder. Android Studio's own JDK works; to build with the same JDK as the
+   command line, set *Settings > Build, Execution, Deployment > Build Tools > Gradle >
+   Gradle JDK* to JDK 21 (for example `/opt/homebrew/opt/openjdk@21`).
 4. Run the *app* configuration on an emulator or device.
 
 ### Command line
@@ -181,7 +181,7 @@ The APK lands in `app/build/outputs/apk/debug/`. Install with
 the SDK in `$ANDROID_HOME`, else `~/Library/Android/sdk`.
 
 Alternatively push this folder to GitHub: `.github/workflows/build.yml` builds the APK, runs the
-unit tests (`./gradlew :shared:test testDebugUnitTest`) and attaches the APK to the workflow run as an artifact.
+unit tests (`./gradlew :shared:jvmTest testDebugUnitTest`) and attaches the APK to the workflow run as an artifact.
 
 ### Scripts
 
@@ -208,8 +208,12 @@ folder), run the script, test, and commit the result.
 
 There are two Gradle modules:
 
-- **`shared/`**: the note logic (package `app.foamforandroid.core`), in plain Kotlin with no
-  Android dependencies, so a desktop app can reuse it later. All unit tests are here (`./gradlew :shared:test`).
+- **`shared/`**: the note logic (package `app.foamforandroid.core`), a Kotlin Multiplatform
+  module with no Android dependencies. `src/commonMain` uses only the Kotlin standard library
+  (links, graph, tags, folder tree, index editing, globs), so it can be built for any platform;
+  `src/jvmMain` still needs Java libraries (Git sync with JGit, file access, Foam config and
+  templates, checklists and dates). All unit tests are here, in `src/commonTest` and
+  `src/jvmTest` (`./gradlew :shared:jvmTest`).
 - **`app/`**: the Android app: Compose screens, WebViews, settings storage and background sync.
 
 | File | Purpose |

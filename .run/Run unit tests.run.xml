@@ -10,7 +10,7 @@
       </option>
       <option name="taskNames">
         <list>
-          <option value=":shared:test" />
+          <option value=":shared:jvmTest" />
           <option value="testDebugUnitTest" />
         </list>
       </option>

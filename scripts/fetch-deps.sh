@@ -9,7 +9,7 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 # Keep in step with compileSdk in app/build.gradle.kts and the build tools AGP uses.
-SDK_PACKAGES=("platform-tools" "platforms;android-35" "build-tools;34.0.0")
+SDK_PACKAGES=("platform-tools" "platforms;android-37.0" "build-tools;36.0.0")
 
 # Android Studio's standard SDK location, unless ANDROID_HOME says otherwise.
 ANDROID_HOME="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/Library/Android/sdk}}"
@@ -26,6 +26,6 @@ echo "== Gradle and project dependencies"
 ./gradlew downloadDependencies
 
 echo "== One full build, for the tools Gradle downloads during a build"
-./gradlew assembleDebug assembleRelease bundleRelease lintDebug testDebugUnitTest :shared:test
+./gradlew assembleDebug assembleRelease bundleRelease lintDebug testDebugUnitTest :shared:jvmTest
 
 echo "Done. Builds can now run offline: ./gradlew --offline assembleDebug"

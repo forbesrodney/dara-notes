@@ -1,7 +1,7 @@
 package app.foamforandroid.core
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.Test
 
 class IndexEditorTest {
     /** Shape of a real Foam index: two lists, then Foam's link definitions. */

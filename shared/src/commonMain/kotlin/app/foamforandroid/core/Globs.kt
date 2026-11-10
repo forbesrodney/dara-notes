@@ -10,7 +10,7 @@ object Globs {
     fun matches(glob: String, path: String): Boolean {
         val g = glob.trim().removePrefix("./").trim('/')
         if (g.isEmpty()) return false
-        val re = synchronized(cache) { cache.getOrPut(g) { toRegex(g) } }
+        val re = locked(cache) { cache.getOrPut(g) { toRegex(g) } }
         return re.matches(path)
     }
 

@@ -1,8 +1,5 @@
 package app.foamforandroid.core
 
-import org.json.JSONArray
-import org.json.JSONObject
-
 /** The note graph, as Foam shows it: notes, tags and placeholders (links to missing notes). */
 data class Graph(val nodes: List<Node>, val links: List<Link>) {
     enum class Type(val key: String) { NOTE("note"), TAG("tag"), PLACEHOLDER("placeholder") }
@@ -10,22 +7,21 @@ data class Graph(val nodes: List<Node>, val links: List<Link>) {
     data class Node(val id: String, val type: Type, val label: String, val path: String? = null)
     data class Link(val source: String, val target: String)
 
+    /** The graph as JSON for the graph view: nodes (with their link counts) and links. */
     fun toJson(): String {
         val degree = HashMap<String, Int>()
         for (l in links) {
-            degree.merge(l.source, 1, Int::plus)
-            degree.merge(l.target, 1, Int::plus)
+            degree[l.source] = (degree[l.source] ?: 0) + 1
+            degree[l.target] = (degree[l.target] ?: 0) + 1
         }
-        val ns = JSONArray()
-        for (n in nodes) {
-            ns.put(
-                JSONObject().put("id", n.id).put("type", n.type.key).put("label", n.label)
-                    .put("path", n.path ?: JSONObject.NULL).put("degree", degree[n.id] ?: 0),
-            )
+        val ns = nodes.joinToString(",", "[", "]") { n ->
+            "{\"id\":${Json.quote(n.id)},\"type\":${Json.quote(n.type.key)},\"label\":${Json.quote(n.label)}," +
+                "\"path\":${n.path?.let(Json::quote) ?: "null"},\"degree\":${degree[n.id] ?: 0}}"
         }
-        val ls = JSONArray()
-        for (l in links) ls.put(JSONObject().put("source", l.source).put("target", l.target))
-        return JSONObject().put("nodes", ns).put("links", ls).toString()
+        val ls = links.joinToString(",", "[", "]") { l ->
+            "{\"source\":${Json.quote(l.source)},\"target\":${Json.quote(l.target)}}"
+        }
+        return "{\"nodes\":$ns,\"links\":$ls}"
     }
 
     /**
@@ -141,7 +137,7 @@ object NoteParser {
                 if (d.startsWith("<")) d = d.removePrefix("<").removeSuffix(">")
                 if (d.startsWith("#") || SCHEME.containsMatchIn(d)) return@forEach
                 d = d.substringBefore('#').substringBefore('?')
-                d = runCatching { java.net.URLDecoder.decode(d.replace("+", "%2B"), "UTF-8") }.getOrDefault(d)
+                d = RepoPaths.percentDecode(d) ?: d
                 if (d.isNotEmpty()) mdLinks += d
             }
             // Headings start with "# " (a space), so they never match a tag.

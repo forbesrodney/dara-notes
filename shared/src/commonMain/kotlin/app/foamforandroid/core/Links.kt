@@ -1,6 +1,5 @@
 package app.foamforandroid.core
 
-import java.net.URLDecoder
 
 /** Foam-style wikilink resolution over a list of repository-relative paths. */
 object Wikilinks {
@@ -32,6 +31,28 @@ object Wikilinks {
 
 /** Repository-relative path helpers ('/' separated, no leading slash). */
 object RepoPaths {
+    /**
+     * Decodes `%XX` escapes as UTF-8, as in a Markdown link destination (`+` stays a plus).
+     * Returns null if an escape is malformed.
+     */
+    fun percentDecode(s: String): String? {
+        if ('%' !in s) return s
+        val bytes = ArrayList<Byte>(s.length)
+        var i = 0
+        while (i < s.length) {
+            val c = s[i]
+            if (c == '%') {
+                val hex = s.substring(i + 1, minOf(i + 3, s.length))
+                if (hex.length != 2) return null
+                val v = hex.toIntOrNull(16) ?: return null
+                bytes.add(v.toByte()); i += 3
+            } else {
+                c.toString().encodeToByteArray().forEach { bytes.add(it) }; i++
+            }
+        }
+        return bytes.toByteArray().decodeToString()
+    }
+
     fun dir(path: String) = path.substringBeforeLast('/', "")
 
     /** Joins [base] dir and a relative [rel] path, resolving `.` and `..`. Null if it escapes the repo. */
@@ -169,7 +190,7 @@ class LinkFixer(
         if (raw.isEmpty() || raw.startsWith("#") || SCHEME.containsMatchIn(raw)) return null
         val cut = raw.indexOfAny(charArrayOf('#', '?')).let { if (it < 0) raw.length else it }
         val pathPart = raw.substring(0, cut)
-        val decoded = runCatching { URLDecoder.decode(pathPart.replace("+", "%2B"), "UTF-8") }.getOrDefault(pathPart)
+        val decoded = RepoPaths.percentDecode(pathPart) ?: pathPart
         val rooted = decoded.startsWith("/")
         val resolved = RepoPaths.join(if (rooted) "" else RepoPaths.dir(fileBefore), decoded)
         // Foam's reference definitions may omit the extension.

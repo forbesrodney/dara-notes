@@ -133,7 +133,7 @@ object Connections {
         }
         val heading = dest.substringAfter('#', "").ifEmpty { null }
         var target = dest.substringBefore('#').substringBefore('?')
-        target = runCatching { java.net.URLDecoder.decode(target.replace("+", "%2B"), "UTF-8") }.getOrDefault(target)
+        target = RepoPaths.percentDecode(target) ?: target
         val joined = if (target.startsWith("/")) RepoPaths.join("", target.trimStart('/'))
         else RepoPaths.join(RepoPaths.dir(path), target)
         val resolved = joined?.let { j -> listOf(j, "$j.md").firstOrNull { it in files } }

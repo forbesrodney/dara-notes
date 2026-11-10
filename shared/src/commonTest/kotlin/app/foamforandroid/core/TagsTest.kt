@@ -1,7 +1,7 @@
 package app.foamforandroid.core
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.Test
 
 class TagsTest {
     private val tree = Tags.tree(

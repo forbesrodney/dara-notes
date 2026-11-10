@@ -1,7 +1,7 @@
 package app.foamforandroid.core
 
-import org.junit.Assert.assertEquals
-import org.junit.Test
+import kotlin.test.assertEquals
+import kotlin.test.Test
 
 class NoteTreeTest {
     private fun note(path: String, title: String = path.substringAfterLast('/').removeSuffix(".md")) =

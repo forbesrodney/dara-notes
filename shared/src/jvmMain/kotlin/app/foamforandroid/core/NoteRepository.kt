@@ -4,20 +4,6 @@ import java.io.File
 import java.time.LocalDate
 import java.time.LocalDateTime
 
-data class Note(
-    /** Path relative to the repository root, using '/' separators. */
-    val path: String,
-    val title: String,
-    val modified: Long,
-) {
-    /** Foam identifier: file name without extension. */
-    val id: String get() = path.substringAfterLast('/').removeSuffix(".md")
-}
-
-/** Repository name from a clone URL: `https://github.com/me/dev-notes.git` → `dev-notes`. */
-internal fun repoName(url: String): String? =
-    url.trim().trimEnd('/').substringAfterLast('/').substringAfterLast(':').removeSuffix(".git").ifBlank { null }
-
 /** File-level operations on the notes repository (the local clone at [root]), following Foam conventions. */
 class NoteRepository(val root: File, private val settings: Settings) {
     private val foam get() = FoamConfig(root)
