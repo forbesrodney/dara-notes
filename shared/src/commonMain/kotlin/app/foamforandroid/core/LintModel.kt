@@ -1,9 +1,17 @@
 package app.foamforandroid.core
 
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.put
 import okio.FileSystem
 import okio.Path
+import kotlinx.serialization.json.Json as JsonParser
 
 data class LintIssue(
     /** 1-based line number. */
@@ -19,7 +27,33 @@ data class LintIssue(
     val fixable: Boolean,
 )
 
-data class LintResult(val issues: List<LintIssue>, val configFile: String?, val configError: String?)
+data class LintResult(val issues: List<LintIssue>, val configFile: String?, val configError: String?) {
+    companion object {
+        /** Reads lint.html's `lintNote` output: `{"issues": [...], "configError": ...}`. */
+        fun parse(json: String, config: LintConfig): LintResult {
+            val obj = JsonParser.parseToJsonElement(json).jsonObject
+            fun JsonObject.str(key: String) = (this[key] as? JsonPrimitive)?.contentOrNull
+            fun JsonObject.int(key: String) = (this[key] as? JsonPrimitive)?.intOrNull ?: 0
+            val issues = (obj["issues"] as? JsonArray).orEmpty().map { it.jsonObject }.map { e ->
+                LintIssue(
+                    line = e.int("line"),
+                    rule = e.str("rule") ?: "",
+                    description = e.str("description") ?: "",
+                    detail = e.str("detail") ?: "",
+                    context = e.str("context") ?: "",
+                    column = e.int("column"),
+                    length = e.int("length"),
+                    fixable = (e["fixable"] as? JsonPrimitive)?.booleanOrNull ?: false,
+                )
+            }
+            return LintResult(
+                issues.sortedWith(compareBy({ it.line }, { it.column })),
+                config.file,
+                obj.str("configError")?.takeIf { it.isNotEmpty() && it != "null" },
+            )
+        }
+    }
+}
 
 /** markdownlint config found in the repository, in the order the VS Code extension uses. */
 data class LintConfig(val file: String?, val raw: String, val format: String, val kind: String) {

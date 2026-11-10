@@ -1,7 +1,8 @@
 # Foam for Android
 
 An Android app for managing Markdown notes kept in a Git repository, compatible with
-[Foam](https://foambubble.github.io/foam/) workspaces.
+[Foam](https://foambubble.github.io/foam/) workspaces. A desktop version (macOS for now; the
+same code runs on Windows and Linux) shares the screens and note logic.
 
 ## Features
 
@@ -167,7 +168,7 @@ Needs JDK 17 or newer (JDK 21 recommended) and the Android SDK (platform 37, bui
    *Command-line Tools (latest)*.
 3. *Open* this folder. Android Studio's own JDK works; to build with the same JDK as the
    command line, set *Settings > Build, Execution, Deployment > Build Tools > Gradle >
-   Gradle JDK* to JDK 21 (for example `/opt/homebrew/opt/openjdk@21`).
+   Gradle JDK* to JDK 21 (for example Temurin, `/Library/Java/JavaVirtualMachines/temurin-21.jdk/Contents/Home`).
 4. Run the *app* configuration on an emulator or device.
 
 ### Command line
@@ -183,6 +184,43 @@ the SDK in `$ANDROID_HOME`, else `~/Library/Android/sdk`.
 Alternatively push this folder to GitHub: `.github/workflows/build.yml` builds the APK, runs the
 unit tests (`./gradlew :shared:jvmTest testDebugUnitTest`) and attaches the APK to the workflow run as an artifact.
 
+### Desktop app
+
+The desktop app is the `desktop/` module: the same screens in a Compose Desktop window, named
+for its system (*Foam for macOS*, *Foam for Windows*, *Foam for Linux*). Run it
+with the *Run desktop app* configuration, or:
+
+```bash
+./gradlew :desktop:run
+```
+
+*Package desktop app* (`./gradlew :desktop:packageDistributionForCurrentOS`) builds an installer
+for the computer you run it on: a `.dmg` on macOS, `.msi` on Windows, `.deb` on Linux, in
+`desktop/build/compose/binaries/main/`. Each must be built on its own system, because the bundled
+Java runtime and JavaFX are native. The package isn't signed yet, so macOS asks for confirmation
+the first time it opens (right-click, *Open*).
+
+Packaging needs a self-contained JDK 21, because the app bundles a Java runtime made from it.
+Homebrew's `openjdk` formulas link to other Homebrew libraries, so an app packaged with it only runs on
+Macs that have them. Install Eclipse Temurin 21, which the build finds by default:
+
+```bash
+brew install --cask temurin@21
+```
+
+To use another JDK, set `foam.packagingJdk=/path/to/jdk/Contents/Home` in
+`~/.gradle/gradle.properties`. Building and running don't need it.
+
+How it differs from Android:
+
+- **Storage:** the repository is cloned into `~/Library/Application Support/Foam for macOS/repo`
+  (Windows: `%APPDATA%\Foam for Windows\repo`; Linux: `~/.local/share/foam-for-linux/repo`).
+  Settings are in Java preferences, and the access token in the system keychain (macOS
+  Keychain, Windows Credential Manager, or the Secret Service on Linux).
+- **Sync:** *Sync every* runs on a timer while the app is open, with no 15-minute minimum; the
+  app also syncs when its window comes to the front. Commits say "from macOS".
+- **Preview, graph and markdownlint:** the same web pages as on Android, in JavaFX's WebView.
+
 ### Scripts
 
 Each script also has a shared Android Studio run configuration (in `.run/`), so it can be
@@ -197,6 +235,7 @@ and *Build release AAB* run the matching Gradle tasks.
 | `scripts/build-markdownlint.sh` | Rebuilds `vendor/markdownlint.min.js` (needs Node.js). Versions are pinned in `scripts/markdownlint/package.json`, and all sub-dependencies in its `package-lock.json`, so a rebuild gives the same file. |
 | `scripts/refresh-all.sh` | Runs `fetch-deps.sh`, `fetch-vendor.sh` and `build-markdownlint.sh`, then reports whether any committed library changed. |
 | `scripts/check-updates.sh` | Lists newer versions of the pinned JavaScript libraries. Changes nothing. |
+| `scripts/desktop-icons.py` | Draws the desktop app icons (`desktop/icons/`) from `art/foam_icon.svg`. Rerun it after changing the artwork. |
 | `scripts/changelog.sh` | Regenerates `CHANGELOG.md` with git-cliff (`.cliff.toml`) and lists commits it skipped. |
 
 The JavaScript libraries are committed, so a checkout builds without Node.js or network

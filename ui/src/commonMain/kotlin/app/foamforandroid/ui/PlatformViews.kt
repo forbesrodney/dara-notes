@@ -64,6 +64,12 @@ expect fun GraphWebView(
     modifier: Modifier = Modifier,
 )
 
+/**
+ * Whether buttons drawn over a web view get their clicks. On the desktop the web view is a
+ * native component that takes the clicks, so controls go beside it instead.
+ */
+expect val clickableOverWebViews: Boolean
+
 /** The platform's color scheme (Android 12+ uses the wallpaper colors). */
 @Composable
 expect fun platformColorScheme(dark: Boolean): ColorScheme

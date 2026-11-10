@@ -8,13 +8,11 @@ import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.webkit.WebViewAssetLoader
 import app.foamforandroid.core.LintConfig
-import app.foamforandroid.core.LintIssue
 import app.foamforandroid.core.LintResult
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
-import org.json.JSONArray
 import org.json.JSONObject
 import org.json.JSONTokener
 import kotlin.coroutines.resume
@@ -66,25 +64,8 @@ object Linter {
         }
     }
 
-    suspend fun lint(context: Context, text: String, config: LintConfig): LintResult {
-        val out = eval(context, "lintNote(${JSONObject.quote(text)}, ${config.toJson()})")
-        val obj = JSONObject(out)
-        val arr: JSONArray = obj.getJSONArray("issues")
-        val issues = (0 until arr.length()).map { i ->
-            val e = arr.getJSONObject(i)
-            LintIssue(
-                line = e.getInt("line"),
-                rule = e.getString("rule"),
-                description = e.getString("description"),
-                detail = e.optString("detail"),
-                context = e.optString("context"),
-                column = e.optInt("column"),
-                length = e.optInt("length"),
-                fixable = e.optBoolean("fixable"),
-            )
-        }
-        return LintResult(issues.sortedWith(compareBy({ it.line }, { it.column })), config.file, obj.optString("configError").takeIf { it.isNotEmpty() && it != "null" })
-    }
+    suspend fun lint(context: Context, text: String, config: LintConfig): LintResult =
+        LintResult.parse(eval(context, "lintNote(${JSONObject.quote(text)}, ${config.toJson()})"), config)
 
     suspend fun fixAll(context: Context, text: String, config: LintConfig): String =
         eval(context, "fixNote(${JSONObject.quote(text)}, ${config.toJson()})")

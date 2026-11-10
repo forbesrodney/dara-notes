@@ -19,3 +19,5 @@ actual fun platformColorScheme(dark: Boolean): ColorScheme {
         else -> lightColorScheme()
     }
 }
+
+actual val clickableOverWebViews: Boolean = true

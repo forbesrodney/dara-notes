@@ -146,8 +146,11 @@ fun GraphScreen(vm: MainViewModel, screen: Screen.Graph, snackbar: SnackbarHostS
                     modifier = Modifier.fillMaxSize(),
                 )
                 if (graph == null) CircularProgressIndicator(Modifier.align(Alignment.Center))
-                selected?.let { s -> SelectedCard(s, vm, Modifier.align(Alignment.BottomCenter)) }
+                if (clickableOverWebViews) {
+                    selected?.let { s -> SelectedCard(s, vm, Modifier.align(Alignment.BottomCenter)) }
+                }
             }
+            if (!clickableOverWebViews) selected?.let { s -> SelectedCard(s, vm, Modifier) }
         }
     }
 }

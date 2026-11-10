@@ -2,9 +2,11 @@
    Foam wikilinks / embeds and Mermaid diagrams. `window.Android` is the native bridge. */
 (function () {
   'use strict';
-  const bridge = window.Android || {
+  const stub = {
     resolve: () => '', readNote: () => '', openWikilink() {}, openLink() {}, toggleTask() {}
   };
+  // Looked up on each call: the desktop app adds window.Android after the page has loaded.
+  const bridge = () => window.Android || stub;
   const IMAGE = /\.(png|jpe?g|gif|svg|webp|bmp|avif)$/i;
   let embedDepth = 0;
 
@@ -43,14 +45,14 @@
 
     md.renderer.rules.wikilink = function (tokens, idx) {
       const { target, alias } = tokens[idx].meta;
-      const resolved = target.startsWith('#') ? 'self' : bridge.resolve(target);
+      const resolved = target.startsWith('#') ? 'self' : bridge().resolve(target);
       const cls = 'wikilink' + (resolved ? '' : ' missing');
       return '<a class="' + cls + '" href="#" data-target="' + escapeHtml(target) + '">' +
         escapeHtml(alias || target) + '</a>';
     };
     md.renderer.rules.wikiembed = function (tokens, idx, options, env) {
       const { target, alias } = tokens[idx].meta;
-      const path = bridge.resolve(target);
+      const path = bridge().resolve(target);
       if (path && IMAGE.test(path)) {
         return '<img src="' + repoUrl(path) + '" alt="' + escapeHtml(alias || target) + '">';
       }
@@ -60,7 +62,7 @@
       }
       embedDepth++;
       try {
-        const html = md.render(stripFrontMatter(bridge.readNote(path)), { embedded: true });
+        const html = md.render(stripFrontMatter(bridge().readNote(path)), { embedded: true });
         return '<div class="embed"><div class="embed-title"><a class="wikilink" href="#" data-target="' +
           escapeHtml(target) + '">' + escapeHtml(target) + '</a></div>' + html + '</div>';
       } finally {
@@ -149,7 +151,7 @@
     const box = e.target.closest('input.task');
     if (box) {
       e.preventDefault();
-      if (!box.disabled) bridge.toggleTask(Number(box.dataset.line));
+      if (!box.disabled) bridge().toggleTask(Number(box.dataset.line));
       return;
     }
     const a = e.target.closest('a');
@@ -157,7 +159,7 @@
     e.preventDefault();
     if (a.classList.contains('wikilink')) {
       const t = a.dataset.target;
-      if (t.startsWith('#')) scrollToHeading(t.slice(1)); else bridge.openWikilink(t);
+      if (t.startsWith('#')) scrollToHeading(t.slice(1)); else bridge().openWikilink(t);
       return;
     }
     const href = a.getAttribute('href') || '';
@@ -166,7 +168,7 @@
       if (el) el.scrollIntoView({ behavior: 'smooth' });
       return;
     }
-    bridge.openLink(a.href);
+    bridge().openLink(a.href);
   });
 
   function scrollToHeading(text) {

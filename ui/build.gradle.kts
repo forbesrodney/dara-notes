@@ -11,6 +11,19 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
+val javafxVersion = "21.0.13"
+
+/** JavaFX has native code, so its jars are per platform; build on the platform you package for. */
+val javafxPlatform: String = run {
+    val os = System.getProperty("os.name").lowercase()
+    val arm = System.getProperty("os.arch") in setOf("aarch64", "arm64")
+    when {
+        "mac" in os -> if (arm) "mac-aarch64" else "mac"
+        "win" in os -> "win"
+        else -> if (arm) "linux-aarch64" else "linux"
+    }
+}
+
 kotlin {
     android {
         namespace = "app.foamforandroid.ui"
@@ -44,6 +57,12 @@ kotlin {
         }
         androidMain.dependencies {
             implementation("androidx.webkit:webkit:1.12.1")
+        }
+        jvmMain.dependencies {
+            // JavaFX's WebView shows the preview and graph in the desktop app.
+            for (module in listOf("base", "graphics", "controls", "media", "web", "swing")) {
+                implementation("org.openjfx:javafx-$module:$javafxVersion:$javafxPlatform")
+            }
         }
     }
 }

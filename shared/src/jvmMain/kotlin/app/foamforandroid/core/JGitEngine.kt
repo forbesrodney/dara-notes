@@ -39,8 +39,8 @@ internal object JGitEngine : GitEngine {
         else null
 
     private fun ident(s: Settings) = PersonIdent(
-        s.authorName.ifBlank { "Foam Notes (Android)" },
-        s.authorEmail.ifBlank { "foam-notes@android.local" },
+        s.authorName.ifBlank { "Foam Notes (${GitSync.clientName})" },
+        s.authorEmail.ifBlank { "foam-notes@${GitSync.clientName.lowercase()}.local" },
     )
 
     private fun doSync(dir: File, s: Settings): SyncResult {
@@ -83,7 +83,7 @@ internal object JGitEngine : GitEngine {
                             .include(remoteRef)
                             .setStrategy(MergeStrategy.RECURSIVE)
                             .setFastForward(MergeCommand.FastForwardMode.FF)
-                            .setMessage("Merge remote changes into Android notes")
+                            .setMessage("Merge remote changes into ${GitSync.clientName} notes")
                             .call()
                         when (merge.mergeStatus) {
                             MergeResult.MergeStatus.CONFLICTING -> {
@@ -149,7 +149,7 @@ internal object JGitEngine : GitEngine {
         if (changed.isEmpty()) return 0
         val summary = if (changed.size <= 3) changed.joinToString() else "${changed.size} files"
         git.commit()
-            .setMessage("Update $summary from Android")
+            .setMessage("Update $summary from ${GitSync.clientName}")
             .setAuthor(ident(s))
             .setCommitter(ident(s))
             .call()

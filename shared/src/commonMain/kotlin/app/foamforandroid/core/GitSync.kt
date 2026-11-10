@@ -41,6 +41,9 @@ interface GitEngine {
  * files are committed with conflict markers and reported so the user can tidy them up.
  */
 object GitSync {
+    /** Names this app in commit messages and the default author: "Android", "macOS", ... */
+    var clientName: String = "Android"
+
     /** The Git implementation; replaceable in tests. */
     var engine: GitEngine = platformGitEngine()
 

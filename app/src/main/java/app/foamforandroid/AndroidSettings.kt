@@ -80,6 +80,5 @@ class AndroidSettings(context: Context) : Settings {
     }
 }
 
-/** Where the notes repository is cloned: app-private storage. */
 /** Where the notes repository is cloned, in the app's private storage. */
 fun repoDir(context: Context): Path = File(context.filesDir, "repo").toOkioPath()
