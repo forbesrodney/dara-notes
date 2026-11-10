@@ -6,6 +6,11 @@ import SwiftUI
 struct FoamApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
+    init() {
+        // Background sync must be registered before the app finishes launching.
+        MainViewControllerKt.startBackgroundSync()
+    }
+
     var body: some Scene {
         WindowGroup {
             // Compose draws edge to edge and applies the safe-area insets itself.

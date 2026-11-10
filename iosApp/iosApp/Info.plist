@@ -6,5 +6,14 @@
 	<!-- Compose Multiplatform needs this to draw at the display's full refresh rate. -->
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
+	<!-- Background sync: an app refresh task (BackgroundSync in ui/src/iosMain). -->
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>app.foamforios.sync</string>
+	</array>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+	</array>
 </dict>
 </plist>

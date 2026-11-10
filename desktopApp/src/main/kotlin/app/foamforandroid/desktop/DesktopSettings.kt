@@ -1,7 +1,6 @@
 package app.foamforandroid.desktop
 
 import app.foamforandroid.core.Settings
-import com.github.javakeyring.Keyring
 import java.util.prefs.Preferences
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -76,23 +75,20 @@ class DesktopSettings : Settings {
 
         fun get(): String = cached ?: (load() ?: "").also { cached = it }
 
+        private val secrets = Secrets.system()
+
         private fun load(): String? = runCatching {
-            Keyring.create().use { k ->
-                runCatching { k.getPassword(SERVICE, ACCOUNT) }.getOrNull()
-                    ?: runCatching { k.getPassword(OLD_SERVICE, ACCOUNT) }.getOrNull()?.also { token ->
-                        k.setPassword(SERVICE, ACCOUNT, token)
-                        runCatching { k.deletePassword(OLD_SERVICE, ACCOUNT) }
-                    }
-            }
+            secrets.get(SERVICE, ACCOUNT)
+                ?: secrets.get(OLD_SERVICE, ACCOUNT)?.also { token ->
+                    secrets.set(SERVICE, ACCOUNT, token)
+                    runCatching { secrets.delete(OLD_SERVICE, ACCOUNT) }
+                }
         }.getOrNull()
 
         fun set(value: String) {
             if (value == cached) return
             runCatching {
-                Keyring.create().use { k ->
-                    if (value.isEmpty()) runCatching { k.deletePassword(SERVICE, ACCOUNT) }
-                    else k.setPassword(SERVICE, ACCOUNT, value)
-                }
+                if (value.isEmpty()) secrets.delete(SERVICE, ACCOUNT) else secrets.set(SERVICE, ACCOUNT, value)
             }.onFailure { System.err.println("Couldn't save the access token in the keychain: ${it.message}") }
             cached = value
         }

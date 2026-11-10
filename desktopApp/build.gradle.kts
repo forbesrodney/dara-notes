@@ -2,6 +2,7 @@
 // a Compose Desktop window. Git uses JGit, as on Android.
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import java.io.File
+import java.util.Properties
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -24,9 +25,14 @@ dependencies {
     implementation(compose.desktop.currentOs)
     // Dispatchers.Main on the desktop: the Swing/Compose UI thread.
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-swing:1.11.0")
-    // The access token goes in the system keychain (macOS Keychain, Windows Credential
-    // Manager, Secret Service on Linux).
-    implementation("com.github.javakeyring:java-keyring:1.0.4")
+    // The access token goes in the system's secret store: the macOS Keychain (through JNA),
+    // Windows Credential Manager or the Secret Service on Linux (java-keyring).
+    implementation("com.github.javakeyring:java-keyring:1.0.4") {
+        // Its macOS helper is an unsigned native library, which notarization rejects; the app
+        // talks to the macOS Keychain through JNA instead (Secrets.kt).
+        exclude(group = "pt.davidafsilva.apple", module = "jkeychain")
+    }
+    implementation("net.java.dev.jna:jna:5.13.0")
     // JGit logs through SLF4J; discard it. (2.x, matching the SLF4J API the desktop libraries use.)
     implementation("org.slf4j:slf4j-nop:2.0.7")
 }
@@ -69,8 +75,16 @@ compose.desktop {
             )
             // Drawn from art/foam_icon.svg by scripts/app-icons.py.
             macOS {
-                bundleID = "app.foamforandroid"
+                bundleID = "app.foamformacos"
                 iconFile.set(project.file("icons/foam.icns"))
+                // Signed with your Developer ID certificate when local.properties has
+                // apple.teamId (scripts/macos-release.sh then notarizes the .dmg).
+                developerIdName()?.let { name ->
+                    signing {
+                        sign.set(true)
+                        identity.set(name)
+                    }
+                }
             }
             windows {
                 iconFile.set(project.file("icons/foam.ico"))
@@ -100,4 +114,21 @@ fun packagingJdk(): String? {
         }
         .maxByOrNull { File(it, "release").readText().substringAfter("JAVA_VERSION=\"").substringBefore('"') }
         ?.path
+}
+
+/**
+ * The name on the "Developer ID Application" certificate in your keychain for the team in
+ * local.properties (apple.teamId), e.g. "Jane Doe (ABCDE12345)"; null if either is missing.
+ */
+fun developerIdName(): String? {
+    val props = Properties()
+    val local = rootProject.file("local.properties")
+    if (local.isFile) local.reader().use { props.load(it) }
+    val team = props.getProperty("apple.teamId")?.trim()?.ifEmpty { null } ?: return null
+    if ("mac" !in System.getProperty("os.name").lowercase()) return null
+    val out = runCatching {
+        ProcessBuilder("security", "find-identity", "-v", "-p", "codesigning")
+            .redirectErrorStream(true).start().inputStream.bufferedReader().readText()
+    }.getOrDefault("")
+    return Regex("\"Developer ID Application: (.+ \\($team\\))\"").find(out)?.groupValues?.get(1)
 }

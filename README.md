@@ -197,8 +197,26 @@ with the *Run desktop app* configuration, or:
 *Package desktop app* (`./gradlew :desktopApp:packageDistributionForCurrentOS`) builds an installer
 for the computer you run it on: a `.dmg` on macOS, `.msi` on Windows, `.deb` on Linux, in
 `desktopApp/build/compose/binaries/main/`. Each must be built on its own system, because the bundled
-Java runtime and JavaFX are native. The package isn't signed yet, so macOS asks for confirmation
-the first time it opens (right-click, *Open*).
+Java runtime and JavaFX are native.
+
+On macOS, the `.dmg` is signed with your *Developer ID Application* certificate when
+`local.properties` (not committed) has your Apple Developer team ID:
+
+```
+apple.teamId=ABCDE12345
+```
+
+*Build macOS release* (`scripts/macos-release.sh`) then builds that signed `.dmg`, has Apple
+notarize it and staples the ticket, so it opens on any Mac without a warning. It needs
+notarization credentials saved once in the keychain under the profile `foam-notary`, with an
+App Store Connect API key (or an Apple ID and app-specific password; see the script):
+
+```bash
+xcrun notarytool store-credentials foam-notary --key /path/AuthKey_XXXXXXXXXX.p8 --key-id XXXXXXXXXX --issuer <issuer UUID>
+```
+
+Without a team ID the package is unsigned, and macOS asks for confirmation the first time it
+opens (right-click, *Open*).
 
 Packaging needs a self-contained JDK 21, because the app bundles a Java runtime made from it.
 Homebrew's `openjdk` formulas link to other Homebrew libraries, so an app packaged with it only runs on
@@ -221,22 +239,41 @@ How it differs from Android:
   app also syncs when its window comes to the front. Commits say "from macOS".
 - **Preview, graph and markdownlint:** the same web pages as on Android, in JavaFX's WebView.
 
-### iOS app (in progress)
+### iOS app
 
 `iosApp/` is a small Xcode project around the shared screens: `FoamApp.swift` shows the
 Compose UI from the `FoamUI` framework, which its *Compile Kotlin framework* build phase
-(`iosApp/build-kotlin.sh`) builds with Gradle. Needs Xcode with an iOS simulator runtime
-(*Xcode > Settings > Components*) and a JDK 21. Run it in the simulator with the *Run iOS app
-(simulator)* configuration, or:
+(`iosApp/build-kotlin.sh`) builds with Gradle; the `web/` pages are bundled as resources. Needs
+Xcode with an iOS simulator runtime (*Xcode > Settings > Components*) and a JDK 21. Run it in
+the simulator with the *Run iOS app (simulator)* configuration, or:
 
 ```bash
 scripts/ios-run.sh
 ```
 
-or open `iosApp/iosApp.xcodeproj` in Xcode. Running on a device needs your Apple Developer
-team: set `TEAM_ID` in `iosApp/Configuration/Local.xcconfig` (not committed). Not done yet:
-the preview, graph and markdownlint (WKWebView), Keychain storage for the token, and
-background sync.
+or open `iosApp/iosApp.xcodeproj` in Xcode. A device or release build needs your Apple
+Developer team ID in `iosApp/Configuration/Local.xcconfig` (not committed):
+
+```
+TEAM_ID = ABCDE12345
+```
+
+*Build iOS release* (`scripts/ios-release.sh`) archives and exports a signed `.ipa` for
+TestFlight and the App Store into `build/ios/release/export/` (`scripts/ios-release.sh
+release-testing` for an ad hoc build). Signing is automatic, with the Apple ID in *Xcode >
+Settings > Accounts* or an App Store Connect API key (see the script).
+
+How it differs from Android:
+
+- **Storage:** the repository is cloned into the app's Application Support folder; settings are
+  in `NSUserDefaults` and the access token in the Keychain (this device only, readable after
+  the first unlock so background sync can use it).
+- **Sync:** *Sync every* asks iOS for a background refresh no sooner than that; iOS decides when
+  it runs (usually while the phone is idle and online). The app also syncs when it opens and 30
+  seconds after an edit while it's open. Commits say "from iOS".
+- **Preview, graph and markdownlint:** the same pages in WKWebView, served under a private
+  `foam:` scheme. The pages' synchronous calls (resolving wikilinks, reading embedded notes)
+  are answered through that scheme too.
 
 Git on iOS uses [libgit2](https://libgit2.org), built from source by
 `scripts/build-libgit2.sh` (HTTPS through Apple's Secure Transport; no SSH). Gradle runs the
@@ -259,6 +296,8 @@ and *Build release AAB* run the matching Gradle tasks.
 | `scripts/check-updates.sh` | Lists newer versions of the pinned JavaScript libraries. Changes nothing. |
 | `scripts/app-icons.py` | Draws the desktop and iOS app icons (`desktopApp/icons/`, the iOS asset catalog) from `art/foam_icon.svg`. Rerun it after changing the artwork. |
 | `scripts/build-libgit2.sh` | Builds libgit2 for iPhone, the iOS Simulator and the Mac (Gradle runs it when needed). |
+| `scripts/macos-release.sh` | Builds the signed macOS `.dmg`, notarizes it and staples the ticket. |
+| `scripts/ios-release.sh` | Archives the iOS app and exports a signed `.ipa` (TestFlight/App Store, or ad hoc). |
 | `scripts/ios-run.sh` | Builds the iOS app and runs it in the iOS Simulator (optionally pass a simulator name or ID). |
 | `scripts/changelog.sh` | Regenerates `CHANGELOG.md` with git-cliff (`.cliff.toml`) and lists commits it skipped. |
 
