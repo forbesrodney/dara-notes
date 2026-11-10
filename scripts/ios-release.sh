@@ -2,7 +2,7 @@
 # Builds a signed release of the iOS app: an archive, then an .ipa exported from it.
 #   scripts/ios-release.sh                 # .ipa for TestFlight / the App Store
 #   scripts/ios-release.sh release-testing # .ipa for registered devices (ad hoc)
-# Output: build/ios/release/FoamForiOS.xcarchive and build/ios/release/export/*.ipa
+# Output: iosApp/build/release/FoamForiOS.xcarchive and iosApp/build/release/export/*.ipa
 #
 # Needs your Apple Developer team ID as TEAM_ID in iosApp/Configuration/Local.xcconfig
 # (not committed), e.g.  TEAM_ID = ABCDE12345
@@ -17,7 +17,7 @@ local_config=iosApp/Configuration/Local.xcconfig
 team=$(sed -nE 's/^[[:space:]]*TEAM_ID[[:space:]]*=[[:space:]]*([A-Z0-9]+).*/\1/p' "$local_config" 2>/dev/null | tail -1)
 [ -n "$team" ] || { echo "Set TEAM_ID in $local_config first (your Apple Developer team ID)." >&2; exit 1; }
 
-out=build/ios/release
+out=iosApp/build/release
 auth=()
 if [ -n "${ASC_KEY_PATH:-}" ]; then
     auth=(-authenticationKeyPath "$ASC_KEY_PATH" -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID")

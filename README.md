@@ -264,7 +264,7 @@ TEAM_ID = ABCDE12345
 ```
 
 *Build iOS release* (`scripts/ios-release.sh`) archives and exports a signed `.ipa` for
-TestFlight and the App Store into `build/ios/release/export/` (`scripts/ios-release.sh
+TestFlight and the App Store into `iosApp/build/release/export/` (`scripts/ios-release.sh
 release-testing` for an ad hoc build). Signing is automatic, with the Apple ID in *Xcode >
 Settings > Accounts* or an App Store Connect API key (see the script).
 

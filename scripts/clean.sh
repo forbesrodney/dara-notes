@@ -12,7 +12,7 @@ cd "$(dirname "$0")/.."
 ./gradlew --stop >/dev/null 2>&1 || true
 
 removed=0
-for d in build androidApp/build desktopApp/build shared/build ui/build .gradle .kotlin; do
+for d in build androidApp/build desktopApp/build iosApp/build shared/build ui/build .gradle .kotlin; do
   if [ -e "$d" ]; then
     rm -rf -- "$d"
     echo "  removed $d"
