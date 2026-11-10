@@ -1,13 +1,6 @@
 package app.foamforandroid.ui
 
-import android.annotation.SuppressLint
-import android.os.Handler
-import android.os.Looper
-import android.webkit.JavascriptInterface
-import android.webkit.WebResourceRequest
-import android.webkit.WebResourceResponse
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import app.foamforandroid.core.ioDispatcher
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,14 +41,18 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.addPathNodes
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.webkit.WebViewAssetLoader
 import app.foamforandroid.MainViewModel
 import app.foamforandroid.Screen
 import app.foamforandroid.core.Graph
-import kotlinx.coroutines.Dispatchers
+import app.foamforandroid.core.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlin.math.roundToInt
+import kotlinx.serialization.json.Json as JsonParser
 import kotlinx.coroutines.withContext
-import org.json.JSONObject
 
 /** Material "account tree" icon (not in material-icons-core), used for the graph. */
 val GraphIcon: ImageVector by lazy {
@@ -67,26 +64,24 @@ val GraphIcon: ImageVector by lazy {
 
 private data class Selected(val id: String, val type: String, val label: String, val path: String?, val degree: Int)
 
-/** Holds the graph WebView and pushes data to it once the page is ready. */
-private class GraphView {
-    var webView: WebView? = null
-    var ready = false
-    var pending: (() -> Unit)? = null
-
-    fun call(script: String) {
-        val wv = webView
-        if (wv == null || !ready) { val prev = pending; pending = { prev?.invoke(); call(script) }; return }
-        wv.evaluateJavascript(script, null)
-    }
+/** Parses the page's selection JSON; null when nothing is selected. */
+private fun parseSelected(json: String): Selected? {
+    if (json.isEmpty()) return null
+    val o: JsonObject = runCatching { JsonParser.parseToJsonElement(json).jsonObject }.getOrNull() ?: return null
+    fun str(key: String) = (o[key] as? JsonPrimitive)?.contentOrNull
+    return Selected(
+        str("id") ?: return null, str("type") ?: "note", str("label") ?: "",
+        str("path")?.takeIf { it.isNotEmpty() && it != "null" },
+        (o["degree"] as? JsonPrimitive)?.intOrNull ?: 0,
+    )
 }
 
 private fun css(c: Color): String {
     val argb = c.toArgb()
-    return "rgba(${(argb shr 16) and 255},${(argb shr 8) and 255},${argb and 255},${"%.3f".format(c.alpha)})"
+    return "rgba(${(argb shr 16) and 255},${(argb shr 8) and 255},${argb and 255},${(c.alpha * 1000).roundToInt() / 1000.0})"
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
-@SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun GraphScreen(vm: MainViewModel, screen: Screen.Graph, snackbar: SnackbarHostState) {
     val notes by vm.notes.collectAsState()
@@ -94,25 +89,25 @@ fun GraphScreen(vm: MainViewModel, screen: Screen.Graph, snackbar: SnackbarHostS
     var selected by remember { mutableStateOf<Selected?>(null) }
     var showTags by remember { mutableStateOf(vm.settings.graphTags) }
     var showMissing by remember { mutableStateOf(vm.settings.graphPlaceholders) }
-    val view = remember { GraphView() }
+    val view = remember { GraphPage() }
     val scheme = MaterialTheme.colorScheme
 
     // Rebuild whenever the note list changes (edits, syncs, new notes).
-    LaunchedEffect(notes) { graph = withContext(Dispatchers.IO) { vm.repo.graph() } }
+    LaunchedEffect(notes) { graph = withContext(ioDispatcher) { vm.repo.graph() } }
 
-    val theme = JSONObject()
-        .put("fg", css(scheme.onSurface)).put("note", css(scheme.primary)).put("tag", css(scheme.tertiary))
-        .put("placeholder", css(scheme.outline)).put("link", css(scheme.outline.copy(alpha = 0.35f)))
-        .put("linkHi", css(scheme.primary)).toString()
+    val theme = listOf(
+        "fg" to scheme.onSurface, "note" to scheme.primary, "tag" to scheme.tertiary,
+        "placeholder" to scheme.outline, "link" to scheme.outline.copy(alpha = 0.35f), "linkHi" to scheme.primary,
+    ).joinToString(",", "{", "}") { (k, c) -> "${Json.quote(k)}:${Json.quote(css(c))}" }
     LaunchedEffect(theme) { view.call("setTheme($theme)") }
 
     LaunchedEffect(graph, showTags, showMissing) {
         val g = graph ?: return@LaunchedEffect
-        val opts = JSONObject().put("tags", showTags).put("placeholders", showMissing)
+        val opts = "{\"tags\":$showTags,\"placeholders\":$showMissing}"
         view.call("setGraph(${g.toJson()}, $opts, ${vm.graphLayout ?: "null"})")
     }
     LaunchedEffect(graph != null) {
-        if (graph != null && screen.focus != null) view.call("focusNode(${JSONObject.quote(screen.focus)})")
+        if (graph != null && screen.focus != null) view.call("focusNode(${Json.quote(screen.focus)})")
     }
 
     Scaffold(
@@ -143,48 +138,12 @@ fun GraphScreen(vm: MainViewModel, screen: Screen.Graph, snackbar: SnackbarHostS
                 )
             }
             Box(Modifier.weight(1f).fillMaxWidth()) {
-                AndroidView(
+                GraphWebView(
+                    page = view,
+                    background = scheme.surface,
+                    onSelected = { selected = parseSelected(it) },
+                    onLayout = { vm.graphLayout = it },
                     modifier = Modifier.fillMaxSize(),
-                    factory = { ctx ->
-                        val loader = WebViewAssetLoader.Builder()
-                            .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(ctx))
-                            .build()
-                        val main = Handler(Looper.getMainLooper())
-                        WebView(ctx).apply {
-                            setBackgroundColor(scheme.surface.toArgb())
-                            settings.javaScriptEnabled = true
-                            settings.allowFileAccess = false
-                            settings.allowContentAccess = false
-                            webViewClient = object : WebViewClient() {
-                                override fun shouldInterceptRequest(v: WebView, r: WebResourceRequest): WebResourceResponse? =
-                                    loader.shouldInterceptRequest(r.url)
-                                override fun shouldOverrideUrlLoading(v: WebView, r: WebResourceRequest) = true
-                            }
-                            addJavascriptInterface(object {
-                                @JavascriptInterface fun ready() {
-                                    main.post {
-                                        view.ready = true
-                                        val p = view.pending; view.pending = null; p?.invoke()
-                                    }
-                                }
-                                @JavascriptInterface fun selected(json: String) {
-                                    main.post {
-                                        selected = if (json.isEmpty()) null else JSONObject(json).let {
-                                            Selected(
-                                                it.getString("id"), it.getString("type"), it.getString("label"),
-                                                it.optString("path").takeIf { p -> p.isNotEmpty() && p != "null" },
-                                                it.optInt("degree"),
-                                            )
-                                        }
-                                    }
-                                }
-                                @JavascriptInterface fun layout(json: String) { main.post { vm.graphLayout = json } }
-                            }, "Android")
-                            loadUrl("https://appassets.androidplatform.net/assets/graph.html")
-                            view.webView = this
-                        }
-                    },
-                    onRelease = { wv -> view.webView = null; view.ready = false; wv.destroy() },
                 )
                 if (graph == null) CircularProgressIndicator(Modifier.align(Alignment.Center))
                 selected?.let { s -> SelectedCard(s, vm, Modifier.align(Alignment.BottomCenter)) }

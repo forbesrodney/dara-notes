@@ -60,8 +60,8 @@ dependencies {
     implementation("androidx.webkit:webkit:1.12.1")
     implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-    // Note logic, Git sync (JGit) and coroutines come from :shared.
-    implementation(project(":shared"))
+    // The screens (Compose Multiplatform) come from :ui; note logic and Git sync from :shared.
+    implementation(project(":ui"))
     // JGit logs through SLF4J; discard it.
     implementation("org.slf4j:slf4j-nop:1.7.36")
     debugImplementation("androidx.compose.ui:ui-tooling")

@@ -1,11 +1,12 @@
 package app.foamforandroid
 
-import android.app.Application
+import app.foamforandroid.core.ioDispatcher
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
-import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.foamforandroid.core.Dates
 import app.foamforandroid.core.GitErrors
 import app.foamforandroid.core.GitSync
 import app.foamforandroid.core.Graph
@@ -13,7 +14,6 @@ import app.foamforandroid.core.Note
 import app.foamforandroid.core.NoteRepository
 import app.foamforandroid.core.Settings
 import app.foamforandroid.core.SyncState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,9 +38,9 @@ sealed interface Screen {
     data class Connections(val path: String) : Screen
 }
 
-class MainViewModel(app: Application) : AndroidViewModel(app) {
-    val settings: Settings = AndroidSettings(app)
-    val repo = NoteRepository(repoDir(app), settings)
+class MainViewModel(val platform: AppPlatform) : ViewModel() {
+    val settings: Settings = platform.settings
+    val repo = NoteRepository(platform.fs, platform.repoDir, settings)
     val syncState: StateFlow<SyncState> = GitSync.state
 
     val backStack = mutableStateListOf<Screen>(if (settings.isConfigured) Screen.Notes else Screen.Settings)
@@ -86,7 +86,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun refresh() {
-        viewModelScope.launch(Dispatchers.IO) { _notes.value = repo.listNotes() }
+        viewModelScope.launch(ioDispatcher) { _notes.value = repo.listNotes() }
     }
 
     // ---- navigation ----------------------------------------------------------------------
@@ -115,7 +115,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Called when the app comes to the foreground; pulls changes made elsewhere. */
     fun onForeground() {
         val last = syncState.value.lastSyncAt
-        if (settings.isConfigured && !syncState.value.running && System.currentTimeMillis() - last > 60_000) {
+        if (settings.isConfigured && !syncState.value.running && Dates.nowMillis() - last > 60_000) {
             syncNow()
         }
     }
@@ -124,7 +124,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             GitSync.cloneFresh(repo.root, settings)
                 .onSuccess {
-                    SyncScheduler.schedulePeriodic(getApplication(), settings)
+                    platform.scheduleSync()
                     messages.emit("Repository ready")
                     backStack.clear()
                     backStack.add(Screen.Notes)
@@ -134,18 +134,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun applySyncSchedule() = SyncScheduler.schedulePeriodic(getApplication(), settings)
+    fun applySyncSchedule() = platform.scheduleSync()
 
     private fun afterEdit() {
         refresh()
-        if (settings.syncAfterEdit && settings.remoteUrl.isNotBlank()) SyncScheduler.syncSoon(getApplication())
+        if (settings.syncAfterEdit && settings.remoteUrl.isNotBlank()) platform.syncSoon()
     }
 
     // ---- notes ---------------------------------------------------------------------------
 
     fun createNote(title: String) {
         viewModelScope.launch {
-            val path = withContext(Dispatchers.IO) { repo.createNoteFromTitle(title) }
+            val path = withContext(ioDispatcher) { repo.createNoteFromTitle(title) }
             afterEdit()
             openPath(path, startEditing = true)
         }
@@ -153,7 +153,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openDailyNote() {
         viewModelScope.launch {
-            val path = withContext(Dispatchers.IO) { repo.dailyNote() }
+            val path = withContext(ioDispatcher) { repo.dailyNote() }
             afterEdit()
             openPath(path, startEditing = true)
         }
@@ -161,7 +161,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openWikilink(target: String) {
         viewModelScope.launch {
-            val (path, created) = withContext(Dispatchers.IO) {
+            val (path, created) = withContext(ioDispatcher) {
                 repo.resolve(target)?.let { it to false } ?: (repo.createFromWikilink(target) to true)
             }
             if (created) {
@@ -174,7 +174,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun save(path: String, text: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             repo.write(path, text)
             afterEdit()
         }
@@ -182,7 +182,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun deleteNote(path: String) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { repo.delete(path) }
+            withContext(ioDispatcher) { repo.delete(path) }
             if ((current as? Screen.Editor)?.path == path) back()
             afterEdit()
             messages.emit("Deleted $path")
@@ -218,7 +218,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     /** Links [path] from the index file, so it's no longer an orphan. */
     fun addToIndex(path: String) {
         viewModelScope.launch {
-            withContext(Dispatchers.IO) { repo.addToIndex(path) }
+            withContext(ioDispatcher) { repo.addToIndex(path) }
             afterEdit()
             messages.emit("Linked from ${settings.indexFile}")
         }
@@ -226,7 +226,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun rebuildIndex() {
         viewModelScope.launch {
-            val n = withContext(Dispatchers.IO) { repo.rebuildIndex() }
+            val n = withContext(ioDispatcher) { repo.rebuildIndex() }
             afterEdit()
             messages.emit(if (n == 0) "${settings.indexFile} is up to date" else "Added $n note(s) to ${settings.indexFile}")
         }

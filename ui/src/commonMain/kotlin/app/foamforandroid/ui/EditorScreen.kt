@@ -1,5 +1,6 @@
 package app.foamforandroid.ui
 
+import app.foamforandroid.core.ioDispatcher
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -60,7 +61,6 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalClipboardManager
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextLayoutResult
@@ -69,14 +69,11 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import app.foamforandroid.Linter
 import app.foamforandroid.MainViewModel
 import app.foamforandroid.Screen
-import app.foamforandroid.core.LintConfig
 import app.foamforandroid.core.LintResult
 import app.foamforandroid.core.TaskStyle
 import app.foamforandroid.core.Tasks
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.debounce
@@ -102,7 +99,6 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     val editorPadPx = with(LocalDensity.current) { 12.dp.toPx() }
     var lint by remember(path) { mutableStateOf<LintResult?>(null) }
     var showIssues by remember { mutableStateOf(false) }
-    val context = LocalContext.current
     val scope = rememberCoroutineScope()
     val lintOn = vm.settings.lintEnabled
     var moving by remember { mutableStateOf(false) }
@@ -150,14 +146,14 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     LaunchedEffect(path, editing, lintOn) {
         if (!lintOn || !editing) { lint = null; return@LaunchedEffect }
         snapshotFlow { value.text }.debounce(600).collectLatest { text ->
-            val config = withContext(Dispatchers.IO) { LintConfig.find(vm.repo.root) }
-            lint = runCatching { Linter.lint(context, text, config) }.getOrNull()
+            val config = withContext(ioDispatcher) { vm.repo.lintConfig() }
+            lint = runCatching { vm.platform.lint(text, config) }.getOrNull()
         }
     }
     // After a sync, reload the note if it changed on disk and there are no unsaved edits.
     LaunchedEffect(path) {
         vm.syncState.map { it.generation }.distinctUntilChanged().collect {
-            val disk = withContext(Dispatchers.IO) { vm.repo.read(path) }
+            val disk = withContext(ioDispatcher) { vm.repo.read(path) }
             if (value.text == saved && disk != saved) {
                 val c = value.selection.start.coerceAtMost(disk.length)
                 value = TextFieldValue(disk, TextRange(c))
@@ -344,8 +340,8 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
             onFixAll = {
                 showIssues = false
                 scope.launch {
-                    val config = withContext(Dispatchers.IO) { LintConfig.find(vm.repo.root) }
-                    val fixed = runCatching { Linter.fixAll(context, value.text, config) }.getOrNull()
+                    val config = withContext(ioDispatcher) { vm.repo.lintConfig() }
+                    val fixed = runCatching { vm.platform.fixAll(value.text, config) }.getOrNull()
                     if (fixed != null && fixed != value.text) {
                         value = TextFieldValue(fixed, TextRange(value.selection.start.coerceAtMost(fixed.length)))
                     }

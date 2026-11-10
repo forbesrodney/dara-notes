@@ -1,6 +1,6 @@
 package app.foamforandroid.ui
 
-import android.text.format.DateUtils
+import app.foamforandroid.core.ioDispatcher
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
@@ -75,7 +75,6 @@ import app.foamforandroid.core.FolderNode
 import app.foamforandroid.core.Note
 import app.foamforandroid.core.NoteTree
 import app.foamforandroid.core.SyncState
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -96,7 +95,7 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     LaunchedEffect(Unit) { vm.refresh() }
     val listState = vm.notesListState
     LaunchedEffect(notes, query) {
-        val updated = withContext(Dispatchers.IO) { vm.repo.search(query, notes) }
+        val updated = withContext(ioDispatcher) { vm.repo.search(query, notes) }
         // The list keeps its place by item, so a note that moves to the top (just edited or
         // synced) would land above the visible area. If we were at the top, stay there.
         val atTop = listState.firstVisibleItemIndex == 0
@@ -190,7 +189,7 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                         headlineContent = { Text(note.title, maxLines = 1, overflow = TextOverflow.Ellipsis) },
                         supportingContent = {
                             Text(
-                                details + " · " + DateUtils.getRelativeTimeSpanString(note.modified),
+                                details + " · " + relativeTime(note.modified),
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                                 style = MaterialTheme.typography.bodySmall,
@@ -311,7 +310,7 @@ fun SyncStatusLine(sync: SyncState) {
         sync.running -> "Syncing…"
         sync.lastError != null -> "Sync error: ${sync.lastHint ?: sync.lastError}"
         sync.conflicts.isNotEmpty() -> "Conflicts to resolve: ${sync.conflicts.joinToString()}"
-        sync.lastSyncAt > 0 -> "Synced ${DateUtils.getRelativeTimeSpanString(sync.lastSyncAt)}"
+        sync.lastSyncAt > 0 -> "Synced ${relativeTime(sync.lastSyncAt)}"
         else -> null
     } ?: return
     val isProblem = sync.lastError != null || sync.conflicts.isNotEmpty()

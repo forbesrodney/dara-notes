@@ -1,14 +1,10 @@
 package app.foamforandroid.core
 
-import java.net.SocketTimeoutException
-import java.net.UnknownHostException
-
 /** Plain-language hints for the Git errors people actually hit (wrong URL, bad token, offline…). */
 object GitErrors {
     fun hint(t: Throwable): String? {
         val chain = generateSequence(t) { it.cause }.take(10).toList()
-        if (chain.any { it is UnknownHostException }) return OFFLINE
-        if (chain.any { it is SocketTimeoutException }) return TIMEOUT
+        chain.firstNotNullOfOrNull(::networkErrorHint)?.let { return it }
         return hint(chain.mapNotNull { it.message }.joinToString(" "))
     }
 

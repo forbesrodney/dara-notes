@@ -30,7 +30,7 @@ jobs:
           sed -i.bak "s|^distributionUrl=.*|distributionUrl=file\\://$zip|" "$props" && rm "$props.bak"
           ./gradlew --version
       - name: Build and run unit tests
-        run: ./gradlew --no-daemon assembleDebug :shared:jvmTest testDebugUnitTest
+        run: ./gradlew --no-daemon assembleDebug :ui:compileKotlinJvm :shared:jvmTest testDebugUnitTest
       - uses: actions/upload-artifact@v7
         with:
           name: foamforandroid-debug

@@ -1,6 +1,6 @@
 package app.foamforandroid.ui
 
-import androidx.activity.compose.BackHandler
+import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
@@ -54,8 +54,8 @@ import androidx.compose.ui.unit.dp
 import app.foamforandroid.MainViewModel
 import app.foamforandroid.core.CompletionDate
 import app.foamforandroid.core.DateOrder
+import app.foamforandroid.core.Dates
 import kotlinx.coroutines.launch
-import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -262,7 +262,7 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                     Toggle("Add completion date to checked items", addDate) { addDate = it }
                     val (localeOrder, localeSep) = remember { CompletionDate.localeDefaults() }
                     val (order, sep) = CompletionDate.resolve(dateOrder, dateSep)
-                    val today = remember { LocalDate.now() }
+                    val today = remember { Dates.today() }
                     val sample = { o: DateOrder, sp: String -> CompletionDate.format(today, o, sp) }
                     Text("Date format", style = MaterialTheme.typography.bodyLarge)
                     ChipRow(

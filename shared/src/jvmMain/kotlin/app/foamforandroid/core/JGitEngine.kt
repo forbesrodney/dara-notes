@@ -1,12 +1,5 @@
 package app.foamforandroid.core
 
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withContext
 import org.eclipse.jgit.api.Git
 import org.eclipse.jgit.api.MergeCommand
 import org.eclipse.jgit.api.MergeResult
@@ -17,88 +10,29 @@ import org.eclipse.jgit.merge.MergeStrategy
 import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.RemoteRefUpdate
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
+import okio.Path
 import java.io.File
 
-data class SyncState(
-    val running: Boolean = false,
-    val lastSyncAt: Long = 0,
-    val lastMessage: String? = null,
-    val lastError: String? = null,
-    /** Plain-language explanation of [lastError], when it is a common one. */
-    val lastHint: String? = null,
-    /** Files that were committed with conflict markers during the last sync. */
-    val conflicts: List<String> = emptyList(),
-    /** Increments whenever a sync may have changed files on disk. */
-    val generation: Int = 0,
-)
-
-/**
- * Git synchronization: stage everything, commit, fetch, merge (fast-forward when possible),
- * push. Merge conflicts never lose data: conflicting files are committed with conflict
- * markers and reported so the user can tidy them up in the editor.
- */
-object GitSync {
-    private val mutex = Mutex()
-    private val _state = MutableStateFlow(SyncState())
-    val state: StateFlow<SyncState> = _state
-
-
-    /** Runs [block] while no sync is touching the working tree (e.g. rewriting many files). */
-    suspend fun <T> exclusive(block: () -> T): T = withContext(Dispatchers.IO) { mutex.withLock { block() } }
-
-    /** Clone the remote (or init a local repo when no remote is set), replacing any local copy. */
-    suspend fun cloneFresh(dir: File, s: Settings): Result<String> = run {
-        dir.deleteRecursively()
-        s.cloned = false
+/** Git for the JVM (Android and desktop), using JGit. */
+internal object JGitEngine : GitEngine {
+    override fun cloneFresh(dir: Path, s: Settings) {
+        val d = dir.toFile()
+        d.deleteRecursively()
         if (s.remoteUrl.isBlank()) {
-            Git.init().setDirectory(dir).setInitialBranch(s.branch).call().close()
+            Git.init().setDirectory(d).setInitialBranch(s.branch).call().close()
         } else {
             Git.cloneRepository()
                 .setURI(s.remoteUrl.trim())
-                .setDirectory(dir)
+                .setDirectory(d)
                 .setBranch(s.branch)
                 .setCredentialsProvider(credentials(s))
                 .setTimeout(60)
                 .call()
                 .close()
         }
-        s.cloned = true
-        doSync(dir, s)
     }
 
-    suspend fun sync(dir: File, s: Settings): Result<String> {
-        if (!s.isConfigured) return Result.failure(IllegalStateException("Repository not set up"))
-        return run { doSync(dir, s) }
-    }
-
-    private suspend fun run(block: () -> String): Result<String> =
-        withContext(Dispatchers.IO) {
-            mutex.withLock {
-                _state.update { it.copy(running = true, lastError = null, lastHint = null) }
-                val result = runCatching(block)
-                _state.update {
-                    it.copy(
-                        running = false,
-                        lastSyncAt = if (result.isSuccess) System.currentTimeMillis() else it.lastSyncAt,
-                        lastMessage = result.getOrNull() ?: it.lastMessage,
-                        lastError = result.exceptionOrNull()?.let(::describe),
-                        lastHint = result.exceptionOrNull()?.let(GitErrors::hint),
-                        generation = it.generation + 1,
-                    )
-                }
-                result
-            }
-        }
-
-    private fun describe(t: Throwable): String {
-        var e: Throwable = t
-        val parts = mutableListOf<String>()
-        while (true) {
-            e.message?.let { if (it !in parts) parts += it }
-            e = e.cause ?: break
-        }
-        return parts.joinToString(": ").ifBlank { t.javaClass.simpleName }
-    }
+    override fun sync(dir: Path, s: Settings): SyncResult = doSync(dir.toFile(), s)
 
     private fun credentials(s: Settings) =
         if (s.token.isNotBlank()) UsernamePasswordCredentialsProvider(s.username.ifBlank { "git" }, s.token)
@@ -109,7 +43,7 @@ object GitSync {
         s.authorEmail.ifBlank { "foam-notes@android.local" },
     )
 
-    private fun doSync(dir: File, s: Settings): String {
+    private fun doSync(dir: File, s: Settings): SyncResult {
         if (!File(dir, ".git").exists()) {
             Git.init().setDirectory(dir).setInitialBranch(s.branch).call().close()
         }
@@ -127,8 +61,7 @@ object GitSync {
 
             val committed = commitAll(git, s)
             if (!hasRemote) {
-                _state.update { it.copy(conflicts = emptyList()) }
-                return if (committed > 0) "Committed $committed file(s) locally" else "No changes"
+                return SyncResult(if (committed > 0) "Committed $committed file(s) locally" else "No changes")
             }
 
             var conflicts: List<String> = emptyList()
@@ -198,12 +131,12 @@ object GitSync {
                     error("Push rejected: " + rejected.joinToString { "${it.status} ${it.message ?: ""}".trim() })
                 }
             }
-            _state.update { it.copy(conflicts = conflicts) }
-            return buildString {
+            val message = buildString {
                 append(if (committed > 0) "Committed $committed file(s)" else "No local changes")
                 if (pushed) append(", synced")
                 if (conflicts.isNotEmpty()) append(" — conflicts in ${conflicts.joinToString()}")
             }
+            return SyncResult(message, conflicts)
         }
     }
 

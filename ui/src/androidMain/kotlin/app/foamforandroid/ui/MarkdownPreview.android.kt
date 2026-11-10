@@ -22,18 +22,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.webkit.WebViewAssetLoader
 import org.json.JSONObject
 import java.io.File
+import okio.Path
 
 private const val HOST = "appassets.androidplatform.net"
 private const val PAGE = "https://$HOST/assets/preview.html"
-
-/** Callbacks from the preview page. Held in a mutable holder so the WebView never goes stale. */
-class PreviewCallbacks {
-    var resolve: (String) -> String? = { null }
-    var readNote: (String) -> String = { "" }
-    var openWikilink: (String) -> Unit = {}
-    var openPath: (String) -> Unit = {}
-    var toggleTask: (Int) -> Unit = {}
-}
 
 private class PreviewState(val callbacks: PreviewCallbacks) {
     var webView: WebView? = null
@@ -52,13 +44,14 @@ private class PreviewState(val callbacks: PreviewCallbacks) {
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun MarkdownPreview(
+actual fun MarkdownPreview(
     markdown: String,
     notePath: String,
-    repoRoot: File,
+    repoRoot: Path,
     callbacks: PreviewCallbacks,
-    modifier: Modifier = Modifier,
+    modifier: Modifier,
 ) {
+    val repoDir = repoRoot.toFile()
     val context = LocalContext.current
     val dark = isSystemInDarkTheme()
     val state = remember { PreviewState(callbacks) }
@@ -71,7 +64,7 @@ fun MarkdownPreview(
             val loader = WebViewAssetLoader.Builder()
                 .setDomain(HOST)
                 .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(ctx))
-                .addPathHandler("/repo/", WebViewAssetLoader.InternalStoragePathHandler(ctx, repoRoot))
+                .addPathHandler("/repo/", WebViewAssetLoader.InternalStoragePathHandler(ctx, repoDir))
                 .build()
             val main = Handler(Looper.getMainLooper())
             // Debug builds: inspect the preview from chrome://inspect on a computer.
@@ -91,7 +84,7 @@ fun MarkdownPreview(
                     override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
                         val url = request.url.toString()
                         if (url == PAGE) return false
-                        handleLink(ctx, url, repoRoot, state.callbacks)
+                        handleLink(ctx, url, repoDir, state.callbacks)
                         return true
                     }
                 }
@@ -109,7 +102,7 @@ fun MarkdownPreview(
                         main.post { state.callbacks.openWikilink(target) }
                     }
                     @JavascriptInterface fun openLink(url: String) {
-                        main.post { handleLink(ctx, url, repoRoot, state.callbacks) }
+                        main.post { handleLink(ctx, url, repoDir, state.callbacks) }
                     }
                     @JavascriptInterface fun toggleTask(line: Int) {
                         main.post { state.callbacks.toggleTask(line) }

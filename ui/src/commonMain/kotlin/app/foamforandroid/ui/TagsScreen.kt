@@ -1,5 +1,6 @@
 package app.foamforandroid.ui
 
+import app.foamforandroid.core.ioDispatcher
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -45,7 +46,6 @@ import app.foamforandroid.MainViewModel
 import app.foamforandroid.core.Note
 import app.foamforandroid.core.TagNode
 import app.foamforandroid.core.Tags
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 private sealed interface TagRow {
@@ -69,7 +69,7 @@ fun TagsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     var query by vm.tagsQuery
 
     LaunchedEffect(Unit) { vm.refresh() }
-    LaunchedEffect(notes) { tree = withContext(Dispatchers.IO) { vm.repo.tags() } }
+    LaunchedEffect(notes) { tree = withContext(ioDispatcher) { vm.repo.tags() } }
 
     val byPath = remember(notes) { notes.associateBy { it.path } }
     val shown = remember(tree, query) { tree?.let { Tags.filter(it, query) } }

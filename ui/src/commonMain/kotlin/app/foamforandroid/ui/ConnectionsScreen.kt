@@ -1,5 +1,6 @@
 package app.foamforandroid.ui
 
+import app.foamforandroid.core.ioDispatcher
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -48,7 +49,6 @@ import app.foamforandroid.MainViewModel
 import app.foamforandroid.Screen
 import app.foamforandroid.core.Backlink
 import app.foamforandroid.core.NoteLink
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -81,7 +81,7 @@ fun ConnectionsScreen(vm: MainViewModel, screen: Screen.Connections, snackbar: S
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) { vm.refresh() }
-    LaunchedEffect(notes, path) { data = withContext(Dispatchers.IO) { vm.repo.connections(path) } }
+    LaunchedEffect(notes, path) { data = withContext(ioDispatcher) { vm.repo.connections(path) } }
 
     Scaffold(
         topBar = {

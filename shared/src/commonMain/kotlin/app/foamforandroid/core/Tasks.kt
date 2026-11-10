@@ -1,11 +1,7 @@
 package app.foamforandroid.core
 
-import java.time.LocalDate
-import java.time.chrono.IsoChronology
-import java.time.format.DateTimeFormatterBuilder
-import java.time.format.FormatStyle
-import java.time.format.TextStyle
-import java.util.Locale
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.number
 
 /** Completion date formats, as stored in settings. */
 enum class DateOrder(val key: String, val label: String, val usesSeparator: Boolean = true) {
@@ -29,12 +25,7 @@ object CompletionDate {
     val separators = listOf("-", "/", ".")
 
     /** Order and separator of the device locale's short date, e.g. US → MDY "/", Germany → DMY ".". */
-    fun localeDefaults(locale: Locale = Locale.getDefault()): Pair<DateOrder, String> {
-        val pattern = runCatching {
-            DateTimeFormatterBuilder.getLocalizedDateTimePattern(
-                FormatStyle.SHORT, null, IsoChronology.INSTANCE, locale,
-            )
-        }.getOrDefault("y-MM-dd")
+    fun localeDefaults(pattern: String = PlatformDates.shortDatePattern()): Pair<DateOrder, String> {
         val y = pattern.indexOf('y')
         val m = pattern.indexOf('M')
         val d = pattern.indexOf('d')
@@ -56,17 +47,22 @@ object CompletionDate {
         return order to sep
     }
 
-    fun format(date: LocalDate, order: DateOrder, sep: String, locale: Locale = Locale.getDefault()): String {
-        val y = "%04d".format(date.year)
-        val m = "%02d".format(date.monthValue)
-        val d = "%02d".format(date.dayOfMonth)
-        val mon = date.month.getDisplayName(TextStyle.SHORT, locale)
+    fun format(
+        date: LocalDate,
+        order: DateOrder,
+        sep: String,
+        monthName: (Int) -> String = { PlatformDates.monthName(it, short = true) },
+    ): String {
+        val y = Dates.pad(date.year, 4)
+        val m = Dates.pad(date.month.number)
+        val d = Dates.pad(date.day)
+        val mon = monthName(date.month.number)
         return when (order) {
             DateOrder.YMD -> "$y$sep$m$sep$d"
             DateOrder.MDY -> "$m$sep$d$sep$y"
             DateOrder.DMY -> "$d$sep$m$sep$y"
-            DateOrder.D_MON_Y -> "${date.dayOfMonth} $mon $y"
-            DateOrder.MON_D_Y -> "$mon ${date.dayOfMonth}, $y"
+            DateOrder.D_MON_Y -> "${date.day} $mon $y"
+            DateOrder.MON_D_Y -> "$mon ${date.day}, $y"
             DateOrder.Y_MON_D -> "$y$sep$mon$sep$d"
         }
     }
@@ -105,7 +101,7 @@ object Tasks {
     fun isTask(line: String) = task.containsMatchIn(line)
 
     /** Checks or unchecks a task line. Returns null if [line] is not a task item. */
-    fun toggle(line: String, style: TaskStyle, today: LocalDate = LocalDate.now()): String? {
+    fun toggle(line: String, style: TaskStyle, today: LocalDate = Dates.today()): String? {
         val m = task.find(line) ?: return null
         val (prefix, mark, close, content) = m.destructured
         val checking = mark == " "

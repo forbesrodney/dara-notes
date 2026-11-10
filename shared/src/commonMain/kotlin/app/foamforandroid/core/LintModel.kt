@@ -1,7 +1,9 @@
 package app.foamforandroid.core
 
-import org.json.JSONObject
-import java.io.File
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
+import okio.FileSystem
+import okio.Path
 
 data class LintIssue(
     /** 1-based line number. */
@@ -21,8 +23,11 @@ data class LintResult(val issues: List<LintIssue>, val configFile: String?, val 
 
 /** markdownlint config found in the repository, in the order the VS Code extension uses. */
 data class LintConfig(val file: String?, val raw: String, val format: String, val kind: String) {
-    fun toJson(): String = JSONObject()
-        .put("raw", raw).put("format", format).put("kind", kind).toString()
+    fun toJson(): String = buildJsonObject {
+        put("raw", raw)
+        put("format", format)
+        put("kind", kind)
+    }.toString()
 
     companion object {
         private val candidates = listOf(
@@ -34,14 +39,15 @@ data class LintConfig(val file: String?, val raw: String, val format: String, va
             Triple(".markdownlint.yml", "yaml", "markdownlint"),
         )
 
-        fun find(root: File): LintConfig {
+        fun find(fs: FileSystem, root: Path): LintConfig {
+            fun text(name: String): String? = (root / name).takeIf { fs.metadataOrNull(it)?.isRegularFile == true }
+                ?.let { runCatching { fs.read(it) { readUtf8() } }.getOrNull() }
             for ((name, format, kind) in candidates) {
-                val f = File(root, name)
-                if (f.isFile) return LintConfig(name, f.readText(), format, kind)
+                text(name)?.let { return LintConfig(name, it, format, kind) }
             }
-            val vscode = File(root, ".vscode/settings.json")
-            if (vscode.isFile && vscode.readText().contains("\"markdownlint.config\"")) {
-                return LintConfig(".vscode/settings.json", vscode.readText(), "json", "vscode")
+            val vscode = text(".vscode/settings.json")
+            if (vscode != null && vscode.contains("\"markdownlint.config\"")) {
+                return LintConfig(".vscode/settings.json", vscode, "json", "vscode")
             }
             return LintConfig(null, "", "json", "markdownlint")
         }

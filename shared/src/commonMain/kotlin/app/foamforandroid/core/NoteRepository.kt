@@ -1,12 +1,20 @@
 package app.foamforandroid.core
 
-import java.io.File
-import java.time.LocalDate
-import java.time.LocalDateTime
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalDateTime
+import okio.FileSystem
+import okio.Path
 
-/** File-level operations on the notes repository (the local clone at [root]), following Foam conventions. */
-class NoteRepository(val root: File, private val settings: Settings) {
-    private val foam get() = FoamConfig(root)
+/**
+ * File-level operations on the notes repository (the local clone at [root]), following Foam
+ * conventions. [fs] is the file system ([FileSystem.SYSTEM] in the apps, a fake in tests).
+ */
+class NoteRepository(val fs: FileSystem, val root: Path, private val settings: Settings) {
+    /** Foam's settings and templates in this repository. Re-read on each use. */
+    val foam get() = FoamConfig(fs, root)
+
+    /** The markdownlint configuration in this repository. */
+    fun lintConfig(): LintConfig = LintConfig.find(fs, root)
 
     private val ignoredDirs = setOf(".git", ".foam", ".vscode", ".github", "node_modules", "_site", "_layouts")
     private val titleCache = HashMap<String, Pair<Long, String>>()
@@ -15,35 +23,53 @@ class NoteRepository(val root: File, private val settings: Settings) {
         const val INVALID_CHARS = "\\:*?\"<>|"
     }
 
-    fun file(path: String) = File(root, path)
+    fun file(path: String): Path = root / path
+
+    private fun exists(path: String) = fs.exists(file(path))
+
+    private fun modified(f: Path): Long = fs.metadataOrNull(f)?.lastModifiedAtMillis ?: 0L
+
+    private fun relative(p: Path) = p.relativeTo(root).segments.joinToString("/")
+
+    /** Files (or, with [folders], folders) under [dir], skipping Git/Foam/VS Code internals. */
+    private fun walk(dir: Path, folders: Boolean, out: MutableList<Path> = mutableListOf()): List<Path> {
+        for (child in runCatching { fs.list(dir) }.getOrDefault(emptyList())) {
+            val meta = fs.metadataOrNull(child) ?: continue
+            if (meta.isDirectory) {
+                if (child.name in ignoredDirs) continue
+                if (folders) out += child
+                walk(child, folders, out)
+            } else if (!folders && meta.isRegularFile) {
+                out += child
+            }
+        }
+        return out
+    }
 
     // ---- listing -------------------------------------------------------------------------
 
     fun allFiles(): List<String> {
-        if (!root.exists()) return emptyList()
-        return root.walkTopDown()
-            .onEnter { it == root || it.name !in ignoredDirs }
-            .filter { it.isFile }
-            .map { it.relativeTo(root).invariantSeparatorsPath }
-            .toList()
+        if (!fs.exists(root)) return emptyList()
+        return walk(root, folders = false).map(::relative)
     }
 
     fun listNotes(): List<Note> = allFiles()
         .filter { it.endsWith(".md", ignoreCase = true) }
         .map { path ->
             val f = file(path)
-            Note(path, titleOf(path, f), f.lastModified())
+            Note(path, titleOf(path, f), modified(f))
         }
         .sortedByDescending { it.modified }
 
-    @Synchronized
-    private fun titleOf(path: String, f: File): String {
-        val mod = f.lastModified()
-        titleCache[path]?.let { (m, t) -> if (m == mod) return t }
-        val title = extractTitle(runCatching { f.useLines { it.take(60).toList() } }.getOrDefault(emptyList()))
-            ?: f.nameWithoutExtension
+    private fun titleOf(path: String, f: Path): String = locked(titleCache) {
+        val mod = modified(f)
+        titleCache[path]?.let { (m, t) -> if (m == mod) return@locked t }
+        val lines = runCatching {
+            fs.read(f) { generateSequence { readUtf8Line() }.take(60).toList() }
+        }.getOrDefault(emptyList())
+        val title = extractTitle(lines) ?: f.name.substringBeforeLast('.')
         titleCache[path] = mod to title
-        return title
+        title
     }
 
     private fun extractTitle(lines: List<String>): String? {
@@ -66,22 +92,23 @@ class NoteRepository(val root: File, private val settings: Settings) {
         val q = query.trim().lowercase()
         if (q.isEmpty()) return notes
         val byName = notes.filter { q in it.title.lowercase() || q in it.path.lowercase() }
-        val byContent = notes.filter { it !in byName && runCatching { q in file(it.path).readText().lowercase() }.getOrDefault(false) }
+        val byContent = notes.filter { it !in byName && runCatching { q in read(it.path).lowercase() }.getOrDefault(false) }
         return byName + byContent
     }
 
     // ---- read / write --------------------------------------------------------------------
 
-    fun read(path: String): String = file(path).takeIf { it.exists() }?.readText() ?: ""
+    fun read(path: String): String =
+        runCatching { fs.read(file(path)) { readUtf8() } }.getOrDefault("")
 
     fun write(path: String, text: String) {
         val f = file(path)
-        f.parentFile?.mkdirs()
-        f.writeText(text)
+        f.parent?.let(fs::createDirectories)
+        fs.write(f) { writeUtf8(text) }
     }
 
     fun delete(path: String) {
-        file(path).delete()
+        fs.delete(file(path), mustExist = false)
         removeFromIndex(path)
     }
 
@@ -157,13 +184,8 @@ class NoteRepository(val root: File, private val settings: Settings) {
 
     /** Folders in the repository (excluding Git/Foam/VS Code internals), sorted. */
     fun folders(): List<String> {
-        if (!root.exists()) return emptyList()
-        return root.walkTopDown()
-            .onEnter { it == root || it.name !in ignoredDirs }
-            .filter { it.isDirectory && it != root && it.name !in ignoredDirs }
-            .map { it.relativeTo(root).invariantSeparatorsPath }
-            .sorted()
-            .toList()
+        if (!fs.exists(root)) return emptyList()
+        return walk(root, folders = true).map(::relative).sorted()
     }
 
     data class Relocated(val path: String, val links: Int, val notes: Int)
@@ -191,13 +213,13 @@ class NoteRepository(val root: File, private val settings: Settings) {
         val newPath = newPathRaw.trim().trim('/').let { if (it.endsWith(".md", ignoreCase = true)) it else "$it.md" }
         relocateError(oldPath, newPath)?.let { throw IllegalArgumentException(it) }
         val from = file(oldPath)
-        if (!from.exists()) throw IllegalArgumentException("$oldPath no longer exists")
+        if (!fs.exists(from)) throw IllegalArgumentException("$oldPath no longer exists")
 
         val before = allFiles()
         val fixer = LinkFixer(before, oldPath, newPath)
         val to = file(newPath)
-        to.parentFile?.mkdirs()
-        if (!from.renameTo(to)) throw IllegalStateException("Couldn't move $oldPath")
+        to.parent?.let(fs::createDirectories)
+        runCatching { fs.atomicMove(from, to) }.onFailure { throw IllegalStateException("Couldn't move $oldPath", it) }
         titleCache.remove(oldPath)
 
         var links = 0
@@ -212,10 +234,10 @@ class NoteRepository(val root: File, private val settings: Settings) {
             }
         }
         // Remove folders the move left empty (Git doesn't track empty folders anyway).
-        var dir = from.parentFile
-        while (dir != null && dir != root && dir.listFiles()?.isEmpty() == true) {
-            dir.delete()
-            dir = dir.parentFile
+        var dir = from.parent
+        while (dir != null && dir != root && runCatching { fs.list(dir).isEmpty() }.getOrDefault(false)) {
+            fs.delete(dir)
+            dir = dir.parent
         }
         return Relocated(newPath, links, notes)
     }
@@ -248,8 +270,8 @@ class NoteRepository(val root: File, private val settings: Settings) {
     }
 
     /** Opens (creating if needed) the daily note for [date]. Returns its path. */
-    fun dailyNote(date: LocalDate = LocalDate.now()): String {
-        val now = LocalDateTime.of(date, java.time.LocalTime.now())
+    fun dailyNote(date: LocalDate = Dates.today()): String {
+        val now = LocalDateTime(date, Dates.now().time)
         val cfg = foam
         val template = cfg.template("daily-note")
         val title = date.toString() // yyyy-mm-dd, as Foam names daily notes
@@ -259,7 +281,7 @@ class NoteRepository(val root: File, private val settings: Settings) {
                 val name = "$title.md"
                 joinPath(dir, name)
             }
-        if (!file(path).exists()) {
+        if (!exists(path)) {
             val body = if (template != null) FoamVariables.resolve(template.body, title, now)
             else "# $title\n\n"
             write(path, body)
@@ -289,10 +311,10 @@ class NoteRepository(val root: File, private val settings: Settings) {
     }
 
     private fun uniquePath(path: String): String {
-        if (!file(path).exists()) return path
+        if (!exists(path)) return path
         val base = path.removeSuffix(".md")
         var n = 2
-        while (file("$base-$n.md").exists()) n++
+        while (exists("$base-$n.md")) n++
         return "$base-$n.md"
     }
 
@@ -310,8 +332,7 @@ class NoteRepository(val root: File, private val settings: Settings) {
     fun addToIndex(path: String) {
         if (isIndex(path) || !path.endsWith(".md")) return
         val id = linkId(path)
-        val f = file(indexPath)
-        val text = if (f.exists()) f.readText() else "# Index\n\n"
+        val text = if (exists(indexPath)) read(indexPath) else "# Index\n\n"
         if (linkPattern(id).containsMatchIn(text)) return
         val rel = RepoPaths.relative(RepoPaths.dir(indexPath), path)
         val def = IndexEditor.definition(id, rel, titleOf(path, file(path)))
@@ -319,10 +340,9 @@ class NoteRepository(val root: File, private val settings: Settings) {
     }
 
     fun removeFromIndex(path: String) {
-        val f = file(indexPath)
-        if (!f.exists()) return
+        if (!exists(indexPath)) return
         val ids = setOf(path.substringAfterLast('/').removeSuffix(".md"), path.removeSuffix(".md"))
-        val text = f.readText()
+        val text = read(indexPath)
         val updated = IndexEditor.remove(text, ids)
         if (updated != text) write(indexPath, updated)
     }
@@ -335,9 +355,9 @@ class NoteRepository(val root: File, private val settings: Settings) {
         for (path in files.filter { it.endsWith(".md") }.sorted()) {
             if (isIndex(path)) continue
             if (!settings.indexDailyNotes && dailyDir.isNotEmpty() && path.startsWith("$dailyDir/")) continue
-            val before = file(indexPath).takeIf { it.exists() }?.readText()
+            val before = if (exists(indexPath)) read(indexPath) else null
             addToIndex(path)
-            if (file(indexPath).readText() != before) added++
+            if (read(indexPath) != before) added++
         }
         return added
     }

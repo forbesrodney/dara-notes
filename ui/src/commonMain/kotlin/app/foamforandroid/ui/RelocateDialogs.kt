@@ -1,5 +1,6 @@
 package app.foamforandroid.ui
 
+import app.foamforandroid.core.ioDispatcher
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -35,7 +36,6 @@ import androidx.compose.ui.text.TextRange
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import app.foamforandroid.MainViewModel
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 /** Material "folder" icon (not in material-icons-core). */
@@ -99,7 +99,7 @@ fun MoveNoteDialog(vm: MainViewModel, path: String, onDismiss: () -> Unit, onCon
     val current = folderOf(path)
     var folder by remember { mutableStateOf(current) }
     var folders by remember { mutableStateOf(emptyList<String>()) }
-    LaunchedEffect(Unit) { folders = withContext(Dispatchers.IO) { vm.repo.folders() } }
+    LaunchedEffect(Unit) { folders = withContext(ioDispatcher) { vm.repo.folders() } }
     val newPath = join(folder, nameOf(path))
     val unchanged = folder.trim().trim('/') == current
     val error = if (unchanged) null else vm.repo.relocateError(path, newPath)

@@ -5,6 +5,8 @@ import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 import app.foamforandroid.core.Settings
+import okio.Path
+import okio.Path.Companion.toOkioPath
 import java.io.File
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -79,4 +81,5 @@ class AndroidSettings(context: Context) : Settings {
 }
 
 /** Where the notes repository is cloned: app-private storage. */
-fun repoDir(context: Context) = File(context.filesDir, "repo")
+/** Where the notes repository is cloned, in the app's private storage. */
+fun repoDir(context: Context): Path = File(context.filesDir, "repo").toOkioPath()

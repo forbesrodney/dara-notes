@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "FoamForAndroid"
-include(":app", ":shared")
+include(":app", ":shared", ":ui")

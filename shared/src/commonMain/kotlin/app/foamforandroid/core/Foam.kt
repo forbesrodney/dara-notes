@@ -1,18 +1,23 @@
 package app.foamforandroid.core
 
-import org.json.JSONObject
-import java.io.File
-import java.time.LocalDateTime
-import java.time.format.TextStyle
-import java.time.temporal.IsoFields
-import java.util.Locale
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.isoDayNumber
+import kotlinx.datetime.number
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.jsonObject
+import okio.FileSystem
+import okio.Path
+import kotlinx.serialization.json.Json as JsonParser
 
 /** Foam workspace conventions: settings, templates and template variables. */
-class FoamConfig(private val root: File) {
-    private val vscode: JSONObject by lazy {
-        val f = File(root, ".vscode/settings.json")
-        if (!f.exists()) JSONObject()
-        else runCatching { JSONObject(stripJsonc(f.readText())) }.getOrElse { JSONObject() }
+class FoamConfig(private val fs: FileSystem, private val root: Path) {
+    private val vscode: JsonObject by lazy {
+        runCatching {
+            val text = fs.read(root / ".vscode/settings.json") { readUtf8() }
+            JsonParser.parseToJsonElement(stripJsonc(text)).jsonObject
+        }.getOrElse { JsonObject(emptyMap()) }
     }
 
     /** Globs for notes Foam leaves out of its Orphans panel (`foam.orphans.exclude`). */
@@ -20,7 +25,8 @@ class FoamConfig(private val root: File) {
         get() = globs("foam.orphans.exclude")
 
     private fun globs(key: String): List<String> =
-        vscode.optJSONArray(key)?.let { a -> (0 until a.length()).mapNotNull { a.optString(it).trim().ifBlank { null } } }
+        (vscode[key] as? JsonArray)
+            ?.mapNotNull { (it as? JsonPrimitive)?.takeIf { p -> p.isString }?.content?.trim()?.ifBlank { null } }
             ?: emptyList()
 
     /** Globs for notes whose links Foam leaves out of its Placeholders panel (`foam.placeholders.exclude`). */
@@ -28,9 +34,10 @@ class FoamConfig(private val root: File) {
         get() = globs("foam.placeholders.exclude")
 
     fun template(name: String): Template? {
-        val dir = File(root, ".foam/templates")
-        val f = listOf("$name.md", name).map { File(dir, it) }.firstOrNull { it.isFile } ?: return null
-        return Template.parse(f.readText())
+        val dir = root / ".foam/templates"
+        val f = listOf("$name.md", name).map { dir / it }
+            .firstOrNull { fs.metadataOrNull(it)?.isRegularFile == true } ?: return null
+        return Template.parse(fs.read(f) { readUtf8() })
     }
 
     companion object {
@@ -96,29 +103,31 @@ class Template(val filepath: String?, val body: String) {
 }
 
 object FoamVariables {
-    fun resolve(text: String, title: String, now: LocalDateTime = LocalDateTime.now()): String {
-        val en = Locale.getDefault()
+    fun resolve(text: String, title: String, now: LocalDateTime = Dates.now()): String {
+        val pad = Dates::pad
+        val month = now.month.number
+        val day = now.dayOfWeek.isoDayNumber
         val vars = mapOf(
             "FOAM_TITLE" to title,
             "FOAM_SLUG" to slugify(title),
             "FOAM_TITLE_SAFE" to title.replace(Regex("[\\\\/:*?\"<>|#^\\[\\]]"), "-"),
             "FOAM_SELECTED_TEXT" to "",
-            "FOAM_DATE_YEAR" to "%04d".format(now.year),
-            "FOAM_DATE_YEAR_SHORT" to "%02d".format(now.year % 100),
-            "FOAM_DATE_MONTH" to "%02d".format(now.monthValue),
-            "FOAM_DATE_MONTH_NAME" to now.month.getDisplayName(TextStyle.FULL, en),
-            "FOAM_DATE_MONTH_NAME_SHORT" to now.month.getDisplayName(TextStyle.SHORT, en),
-            "FOAM_DATE_DATE" to "%02d".format(now.dayOfMonth),
-            "FOAM_DATE_DAY_NAME" to now.dayOfWeek.getDisplayName(TextStyle.FULL, en),
-            "FOAM_DATE_DAY_NAME_SHORT" to now.dayOfWeek.getDisplayName(TextStyle.SHORT, en),
-            "FOAM_DATE_HOUR" to "%02d".format(now.hour),
-            "FOAM_DATE_MINUTE" to "%02d".format(now.minute),
-            "FOAM_DATE_SECOND" to "%02d".format(now.second),
-            "FOAM_DATE_WEEK" to "%02d".format(now.get(IsoFields.WEEK_OF_WEEK_BASED_YEAR)),
-            "FOAM_DATE_SECONDS_UNIX" to (System.currentTimeMillis() / 1000).toString(),
-            "CURRENT_YEAR" to "%04d".format(now.year),
-            "CURRENT_MONTH" to "%02d".format(now.monthValue),
-            "CURRENT_DATE" to "%02d".format(now.dayOfMonth),
+            "FOAM_DATE_YEAR" to pad(now.year, 4),
+            "FOAM_DATE_YEAR_SHORT" to pad(now.year % 100, 2),
+            "FOAM_DATE_MONTH" to pad(month, 2),
+            "FOAM_DATE_MONTH_NAME" to PlatformDates.monthName(month, short = false),
+            "FOAM_DATE_MONTH_NAME_SHORT" to PlatformDates.monthName(month, short = true),
+            "FOAM_DATE_DATE" to pad(now.day, 2),
+            "FOAM_DATE_DAY_NAME" to PlatformDates.dayName(day, short = false),
+            "FOAM_DATE_DAY_NAME_SHORT" to PlatformDates.dayName(day, short = true),
+            "FOAM_DATE_HOUR" to pad(now.hour, 2),
+            "FOAM_DATE_MINUTE" to pad(now.minute, 2),
+            "FOAM_DATE_SECOND" to pad(now.second, 2),
+            "FOAM_DATE_WEEK" to pad(Dates.isoWeek(now.date), 2),
+            "FOAM_DATE_SECONDS_UNIX" to Dates.nowSeconds().toString(),
+            "CURRENT_YEAR" to pad(now.year, 4),
+            "CURRENT_MONTH" to pad(month, 2),
+            "CURRENT_DATE" to pad(now.day, 2),
         )
         var out = Regex("\\$\\{([A-Z_]+)(?::([^}]*))?\\}").replace(text) { m ->
             vars[m.groupValues[1]] ?: m.groupValues[2]

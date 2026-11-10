@@ -206,19 +206,25 @@ folder), run the script, test, and commit the result.
 
 ## Layout
 
-There are two Gradle modules:
+There are three Gradle modules. `shared` and `ui` are Kotlin Multiplatform modules, so the same
+code can later build the desktop and iOS apps; `app` is the Android app around them.
 
-- **`shared/`**: the note logic (package `app.foamforandroid.core`), a Kotlin Multiplatform
-  module with no Android dependencies. `src/commonMain` uses only the Kotlin standard library
-  (links, graph, tags, folder tree, index editing, globs), so it can be built for any platform;
-  `src/jvmMain` still needs Java libraries (Git sync with JGit, file access, Foam config and
-  templates, checklists and dates). All unit tests are here, in `src/commonTest` and
-  `src/jvmTest` (`./gradlew :shared:jvmTest`).
-- **`app/`**: the Android app: Compose screens, WebViews, settings storage and background sync.
+- **`shared/`**: the note logic (package `app.foamforandroid.core`), with no UI and no Android
+  dependencies. Nearly all of it is in `src/commonMain`, using multiplatform libraries: Okio for
+  files, kotlinx-datetime and kotlinx.serialization. `src/jvmMain` holds the JVM pieces: Git
+  with JGit, and month names and date formats from `java.time`. All unit tests are here, in
+  `src/commonTest` and `src/jvmTest` (`./gradlew :shared:jvmTest`).
+- **`ui/`**: every screen and the view model, in Compose Multiplatform (`src/commonMain`). The
+  few platform pieces are `expect` declarations with Android versions in `src/androidMain` (the
+  preview and graph WebViews, wallpaper colors) and placeholders in `src/jvmMain` for the
+  desktop app. Other platform services come through the `AppPlatform` interface.
+- **`app/`**: the Android app: `MainActivity`, settings storage, background sync, markdownlint
+  in a WebView, and the web assets (`app/src/main/assets`).
 
 | File | Purpose |
 | --- | --- |
-| `shared/.../GitSync.kt` | clone / commit / fetch / merge / push, conflict handling |
+| `shared/.../GitSync.kt` | one sync at a time, sync status; `GitEngine`, what each platform's Git provides |
+| `shared/jvmMain/.../JGitEngine.kt` | clone / commit / fetch / merge / push with JGit, conflict handling |
 | `shared/.../GitErrors.kt` | plain-language hints for common Git errors |
 | `shared/.../NoteRepository.kt` | listing, search, rename/move, Index.md, daily notes, task toggling |
 | `shared/.../Links.kt` | wikilink resolution and link fixing for rename/move |
@@ -232,12 +238,18 @@ There are two Gradle modules:
 | `shared/.../LintModel.kt` | markdownlint results and config lookup |
 | `shared/.../Foam.kt` | Foam settings, templates, `$FOAM_*` variables |
 | `shared/.../Settings.kt` | the settings each platform must store |
+| `shared/.../Platform.kt` | what each platform supplies: Git, locks, month names, date formats |
+| `ui/.../MainViewModel.kt` | navigation, note actions, sync; `AppPlatform.kt`, what each app supplies |
+| `ui/.../ui/App.kt` | theme, back navigation and the current screen |
+| `ui/.../ui/*Screen.kt` | the screens |
+| `ui/.../ui/PlatformViews.kt` | the preview and graph web views each platform provides |
+| `app/.../AndroidPlatform.kt` | the Android `AppPlatform`: storage, WorkManager sync, markdownlint |
 | `app/.../AndroidSettings.kt` | settings in SharedPreferences; the token in encrypted preferences |
 | `app/.../SyncWorker.kt` | periodic and after-edit background sync |
 | `app/.../Lint.kt`, `assets/lint.html` | markdownlint in a background WebView |
-| `app/.../ui/GraphScreen.kt`, `assets/graph.html` | the force-graph view |
-| `app/.../ui/` | Compose screens and the WebView preview |
+| `assets/graph.html` | the force-graph page |
 | `assets/preview.*` | markdown-it pipeline with wikilink, task-list and mermaid plugins |
 
-`...` is `src/main/kotlin/app/foamforandroid/core` in `shared/` and `src/main/java/app/foamforandroid`
-in `app/`; `assets/` is `app/src/main/assets`.
+`...` is `src/commonMain/kotlin/app/foamforandroid/core` in `shared/` (or `jvmMain` where
+shown), `src/commonMain/kotlin/app/foamforandroid` in `ui/`, and
+`src/main/java/app/foamforandroid` in `app/`; `assets/` is `app/src/main/assets`.
