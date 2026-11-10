@@ -60,6 +60,16 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.AnnotatedString
@@ -305,6 +315,14 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                             .heightIn(min = viewport)
                             .padding(12.dp)
                             .onFocusChanged { editorFocused = it.isFocused }
+                            .onPreviewKeyEvent { e ->
+                                val action = shortcut(e, vm.settings.bullet) { TaskStyle.from(vm.settings) }
+                                    ?: return@onPreviewKeyEvent false
+                                // Act on the key press; swallow the release and typed character too,
+                                // so Option-C on a Mac doesn't also type a ç.
+                                if (e.type == KeyEventType.KeyDown) value = action(value)
+                                true
+                            }
                             .focusRequester(focus),
                     )
                   }
@@ -394,8 +412,8 @@ private fun FormatToolbar(bullet: String, taskStyle: () -> TaskStyle, onAction: 
     )
     val actions: List<Pair<String, (TextFieldValue) -> TextFieldValue>> = listOf(
         "H" to { v: TextFieldValue -> v.toggleLinePrefix("# ") },
-        "B" to { v: TextFieldValue -> v.wrap("**", "**", "bold") },
-        "I" to { v: TextFieldValue -> v.wrap("*", "*", "italic") },
+        "B" to { v: TextFieldValue -> v.toggleWrap("**", "bold") },
+        "I" to { v: TextFieldValue -> v.toggleWrap("*", "italic") },
         "☐" to { v: TextFieldValue -> v.toggleCheckbox(bullet, taskStyle()) },
         "•" to { v: TextFieldValue -> v.toggleListPrefix(bullet, task = false) },
         "[[ ]]" to { v: TextFieldValue -> v.wrap("[[", "]]") },
@@ -422,6 +440,24 @@ private fun FormatToolbar(bullet: String, taskStyle: () -> TaskStyle, onAction: 
                 Text(label, fontFamily = if (label.length <= 2) FontFamily.Serif else FontFamily.Monospace)
             }
         }
+    }
+}
+
+/**
+ * Hardware-keyboard shortcuts, matching VS Code's Markdown All in One: Ctrl or Cmd with B
+ * (bold) and I (italic), and Alt (Option on a Mac) with S (strike-through) and C (check the
+ * line's task). Returns the edit for [e], or null if it isn't a shortcut.
+ */
+private fun shortcut(e: KeyEvent, bullet: String, taskStyle: () -> TaskStyle): ((TextFieldValue) -> TextFieldValue)? {
+    if (e.isShiftPressed) return null
+    val command = (e.isCtrlPressed || e.isMetaPressed) && !e.isAltPressed
+    val alt = e.isAltPressed && !e.isCtrlPressed && !e.isMetaPressed
+    return when {
+        command && e.key == Key.B -> { v -> v.toggleWrap("**", "bold") }
+        command && e.key == Key.I -> { v -> v.toggleWrap("*", "italic") }
+        alt && e.key == Key.S -> { v -> v.toggleWrap("~~", "strike") }
+        alt && e.key == Key.C -> { v -> v.toggleCheckbox(bullet, taskStyle()) }
+        else -> null
     }
 }
 
@@ -454,6 +490,41 @@ fun TextFieldValue.wrap(prefix: String, suffix: String, placeholder: String = ""
     val newText = text.substring(0, s) + prefix + inner + suffix + text.substring(e)
     val start = s + prefix.length
     return TextFieldValue(newText, TextRange(start, start + inner.length))
+}
+
+/**
+ * Bold, italic or strike-through as a toggle: removes [marker] if the selection is already
+ * wrapped in it (just inside or just outside the selection), and adds it otherwise. With
+ * nothing selected it applies to the word at the cursor, or inserts [placeholder]. A `*`
+ * marker treats `**bold**` as not italic, and `***both***` as italic.
+ */
+fun TextFieldValue.toggleWrap(marker: String, placeholder: String): TextFieldValue {
+    var s = selection.min
+    var e = selection.max
+    if (s == e) {
+        while (s > 0 && text[s - 1].isLetterOrDigit()) s--
+        while (e < text.length && text[e].isLetterOrDigit()) e++
+        if (s == e) return wrap(marker, marker, placeholder)
+    }
+    val c = marker[0]
+    val m = marker.length
+    fun present(run: Int) = if (m == 1) run % 2 == 1 else run >= m
+    fun runBack(from: Int, limit: Int): Int { var i = from; while (i > limit && text[i - 1] == c) i--; return from - i }
+    fun runFwd(from: Int, limit: Int): Int { var i = from; while (i < limit && text[i] == c) i++; return i - from }
+
+    // Markers just outside the selection: **[bold]**
+    val outside = minOf(runBack(s, 0), runFwd(e, text.length))
+    if (present(outside)) {
+        val t = text.substring(0, s - m) + text.substring(s, e) + text.substring(e + m)
+        return TextFieldValue(t, TextRange(s - m, e - m))
+    }
+    // Markers just inside it: [**bold**]
+    val inside = minOf(runFwd(s, e), runBack(e, s))
+    if (e - s > 2 * m && present(inside)) {
+        val t = text.substring(0, s) + text.substring(s + m, e - m) + text.substring(e)
+        return TextFieldValue(t, TextRange(s, e - 2 * m))
+    }
+    return TextFieldValue(this.text, TextRange(s, e)).wrap(marker, marker)
 }
 
 fun TextFieldValue.toggleLinePrefix(prefix: String): TextFieldValue {

@@ -66,6 +66,9 @@ kotlin {
             implementation("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
             implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.12.0")
         }
+        jvmTest.dependencies {
+            implementation(kotlin("test"))
+        }
         androidMain.dependencies {
             implementation("androidx.webkit:webkit:1.12.1")
         }
