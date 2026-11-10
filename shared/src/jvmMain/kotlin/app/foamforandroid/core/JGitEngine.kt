@@ -52,6 +52,9 @@ internal object JGitEngine : GitEngine {
             val config = repo.config
             config.setString("user", null, "name", ident(s).name)
             config.setString("user", null, "email", ident(s).emailAddress)
+            // JGit reads your global Git config too; commit.gpgsign = true there would make every
+            // sync commit fail ("Signing service is not available"), as the app can't sign.
+            config.setBoolean("commit", null, "gpgsign", false)
             val hasRemote = s.remoteUrl.isNotBlank()
             if (hasRemote) {
                 config.setString("remote", "origin", "url", s.remoteUrl.trim())
