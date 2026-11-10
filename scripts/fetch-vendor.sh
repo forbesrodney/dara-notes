@@ -2,7 +2,7 @@
 # Downloads the JavaScript libraries used by the Markdown preview into app assets.
 set -euo pipefail
 cd "$(dirname "$0")/.."
-V=app/src/main/assets/vendor
+V=web/vendor
 CDN=https://cdn.jsdelivr.net/npm
 mkdir -p "$V/katex/fonts"
 get() { curl -fsSL "$1" -o "$2"; echo "  $2"; }

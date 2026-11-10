@@ -11,3 +11,7 @@ captures/
 
 # We use git-cliff to generate this
 CHANGELOG.md
+
+# Xcode: per-user state, and the local team ID (iosApp/Configuration/Config.xcconfig)
+xcuserdata/
+iosApp/Configuration/Local.xcconfig

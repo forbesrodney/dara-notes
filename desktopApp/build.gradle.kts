@@ -31,9 +31,9 @@ dependencies {
     implementation("org.slf4j:slf4j-nop:2.0.7")
 }
 
-// The web pages (preview, graph, markdownlint) are the Android app's assets; bundle them.
+// The web pages (preview, graph, markdownlint), served to the web views at /assets/.
 tasks.processResources {
-    from(rootProject.file("app/src/main/assets")) { into("assets") }
+    from(rootProject.file("web")) { into("assets") }
 }
 
 compose.desktop {
@@ -59,7 +59,7 @@ compose.desktop {
             packageVersion = "1.0.0"
             description = "Markdown notes compatible with Foam, synced with Git"
             vendor = "Foam for Android"
-            // The parts of Java the app uses (from ./gradlew :desktop:suggestRuntimeModules, plus
+            // The parts of Java the app uses (from ./gradlew :desktopApp:suggestRuntimeModules, plus
             // java.naming and jdk.crypto.ec for HTTPS). java.management: JGit; jdk.jsobject:
             // JavaFX's web view talks to JavaScript through it.
             modules(
@@ -67,7 +67,7 @@ compose.desktop {
                 "java.security.jgss", "java.sql", "jdk.crypto.ec", "jdk.jfr", "jdk.jsobject",
                 "jdk.security.auth", "jdk.unsupported", "jdk.unsupported.desktop", "jdk.xml.dom",
             )
-            // Drawn from art/foam_icon.svg by scripts/desktop-icons.py.
+            // Drawn from art/foam_icon.svg by scripts/app-icons.py.
             macOS {
                 bundleID = "app.foamforandroid"
                 iconFile.set(project.file("icons/foam.icns"))

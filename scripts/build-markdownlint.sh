@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Bundles markdownlint (and js-yaml, for YAML configs) into a single offline script for the
-# editor's Markdown checks: app/src/main/assets/vendor/markdownlint.min.js
+# editor's Markdown checks: web/vendor/markdownlint.min.js
 #
 # Versions are pinned in scripts/markdownlint/package.json, and every sub-dependency in
 # scripts/markdownlint/package-lock.json, so a rebuild produces the same file. To upgrade,
@@ -9,7 +9,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 SRC="$PWD/scripts/markdownlint"
-OUT="$PWD/app/src/main/assets/vendor/markdownlint.min.js"
+OUT="$PWD/web/vendor/markdownlint.min.js"
 
 # Build in a temporary copy so node_modules never lands in the repository.
 work=$(mktemp -d)

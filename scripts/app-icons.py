@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""Draws the desktop app icons from the app's artwork, art/foam_icon.svg.
+"""Draws the desktop and iOS app icons from the app's artwork, art/foam_icon.svg.
 
 The artwork is filled circles (<circle cx cy r fill>), which this reads and draws
 anti-aliased at each size. It writes:
-  desktop/icons/foam.icns (macOS, via iconutil), foam.ico (Windows), foam.png (Linux),
-  and desktop/src/main/resources/foam-icon.png (the window and Dock icon).
+  desktopApp/icons/foam.icns (macOS, via iconutil), foam.ico (Windows), foam.png (Linux),
+  desktopApp/src/main/resources/foam-icon.png (the window and Dock icon), and the iOS icon
+  iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/foam-1024.png (opaque, as iOS requires;
+  iOS rounds the corners itself).
 Uses only the Python standard library.
 """
 import os, re, shutil, struct, subprocess, sys, tempfile, zlib
@@ -12,7 +14,7 @@ import xml.etree.ElementTree as ET
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
 SRC = os.path.join(ROOT, "art/foam_icon.svg")
-OUT = os.path.join(ROOT, "desktop/icons")
+OUT = os.path.join(ROOT, "desktopApp/icons")
 SVG = "{http://www.w3.org/2000/svg}"
 
 
@@ -32,8 +34,9 @@ def circles():
     return out
 
 
-def render(px, margin):
-    """RGBA bytes of the icon at px x px, with [margin] (fraction) of empty space on each side."""
+def render(px, margin, background=None):
+    """RGBA bytes of the icon at px x px, with [margin] (fraction) of empty space on each side,
+    over an opaque [background] (r, g, b) if given."""
     shapes = circles()
     scale = px * (1 - 2 * margin)
     offset = px * margin
@@ -41,7 +44,11 @@ def render(px, margin):
     for y in range(px):
         row = bytearray([0])  # PNG filter: none
         for x in range(px):
-            r = g = b = a = 0.0
+            if background:
+                r, g, b = background
+                a = 1.0
+            else:
+                r = g = b = a = 0.0
             for cx, cy, cr, (cr_, cg, cb) in shapes:
                 d = ((x + 0.5 - offset - cx * scale) ** 2 + (y + 0.5 - offset - cy * scale) ** 2) ** 0.5
                 cov = min(1.0, max(0.0, cr * scale - d + 0.5))
@@ -59,11 +66,11 @@ def render(px, margin):
     return b"".join(rows)
 
 
-def png(px, margin):
+def png(px, margin, background=None):
     def chunk(kind, data):
         return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
     return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", px, px, 8, 6, 0, 0, 0))
-            + chunk(b"IDAT", zlib.compress(render(px, margin), 9)) + chunk(b"IEND", b""))
+            + chunk(b"IDAT", zlib.compress(render(px, margin, background), 9)) + chunk(b"IEND", b""))
 
 
 def main():
@@ -105,11 +112,16 @@ def main():
     # Linux, and the window icon.
     with open(os.path.join(OUT, "foam.png"), "wb") as f:
         f.write(get(512, other_margin))
-    res = os.path.join(ROOT, "desktop/src/main/resources")
+    res = os.path.join(ROOT, "desktopApp/src/main/resources")
     os.makedirs(res, exist_ok=True)
     with open(os.path.join(res, "foam-icon.png"), "wb") as f:
         f.write(get(512, mac_margin))
-    print("Wrote desktop/icons/foam.icns, foam.ico, foam.png and desktop/src/main/resources/foam-icon.png")
+    ios = os.path.join(ROOT, "iosApp/iosApp/Assets.xcassets/AppIcon.appiconset")
+    os.makedirs(ios, exist_ok=True)
+    with open(os.path.join(ios, "foam-1024.png"), "wb") as f:
+        f.write(png(1024, 0.12, background=(255, 255, 255)))
+    print("Wrote desktopApp/icons/foam.icns, foam.ico, foam.png, desktopApp/src/main/resources/foam-icon.png")
+    print("  and iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/foam-1024.png")
 
 
 if __name__ == "__main__":

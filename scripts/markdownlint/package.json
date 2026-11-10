@@ -1,7 +1,7 @@
 {
   "name": "foam-for-android-markdownlint-bundle",
   "private": true,
-  "description": "Builds app/src/main/assets/vendor/markdownlint.min.js; see scripts/build-markdownlint.sh",
+  "description": "Builds web/vendor/markdownlint.min.js; see scripts/build-markdownlint.sh",
   "dependencies": {
     "esbuild": "0.24.2",
     "js-yaml": "4.1.0",

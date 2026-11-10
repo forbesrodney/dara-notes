@@ -15,10 +15,10 @@ echo "== markdownlint"
 scripts/build-markdownlint.sh
 
 echo "== Changes to committed libraries"
-changes=$(git status --short -- app/src/main/assets/vendor)
+changes=$(git status --short -- web/vendor)
 if [ -z "$changes" ]; then
   echo "  none: the committed libraries match the pinned versions"
 else
   echo "$changes"
-  echo "  Review with: git diff --stat -- app/src/main/assets/vendor"
+  echo "  Review with: git diff --stat -- web/vendor"
 fi

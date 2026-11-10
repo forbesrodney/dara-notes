@@ -8,7 +8,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-# Keep in step with compileSdk in app/build.gradle.kts and the build tools AGP uses.
+# Keep in step with compileSdk in androidApp/build.gradle.kts and the build tools AGP uses.
 SDK_PACKAGES=("platform-tools" "platforms;android-37.0" "build-tools;36.0.0")
 
 # Android Studio's standard SDK location, unless ANDROID_HOME says otherwise.

@@ -2,4 +2,4 @@
 # which need CRLF. Bundled third-party libraries are kept byte for byte as downloaded.
 * text=auto eol=lf
 *.bat text eol=crlf
-app/src/main/assets/vendor/** -text
+web/vendor/** -text

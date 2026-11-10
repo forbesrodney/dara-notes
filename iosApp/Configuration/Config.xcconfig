@@ -1,0 +1,13 @@
+// App identity. TEAM_ID is your Apple Developer team (needed to run on a device and for
+// release builds; the simulator doesn't need it). Set it here or in Local.xcconfig, which is
+// not committed.
+APP_NAME = Foam for iOS
+BUNDLE_ID = app.foamforandroid
+TEAM_ID =
+MARKETING_VERSION = 1.0
+CURRENT_PROJECT_VERSION = 1
+
+// The Kotlin framework is built for Apple silicon only (iosSimulatorArm64), not Intel Macs.
+EXCLUDED_ARCHS[sdk=iphonesimulator*] = x86_64
+
+#include? "Local.xcconfig"

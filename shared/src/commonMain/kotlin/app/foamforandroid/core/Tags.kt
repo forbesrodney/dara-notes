@@ -24,7 +24,7 @@ object Tags {
     fun tree(tagsByNote: Map<String, Set<String>>): List<TagNode> {
         val spelling = HashMap<String, String>()          // lowercase full tag -> display
         val notes = HashMap<String, MutableSet<String>>()  // lowercase full tag -> paths
-        for ((path, tags) in tagsByNote.toSortedMap()) {
+        for ((path, tags) in tagsByNote.entries.sortedBy { it.key }) {
             for (raw in tags) {
                 val tag = raw.trim('/')
                 if (tag.isEmpty()) continue
@@ -32,9 +32,9 @@ object Tags {
                 val parts = tag.split('/').filter { it.isNotEmpty() }
                 for (i in parts.indices) {
                     val prefix = parts.subList(0, i + 1).joinToString("/")
-                    spelling.putIfAbsent(prefix.lowercase(), prefix)
+                    spelling.getOrPut(prefix.lowercase()) { prefix }
                 }
-                notes.getOrPut(parts.joinToString("/").lowercase()) { sortedSetOf() } += path
+                notes.getOrPut(parts.joinToString("/").lowercase()) { mutableSetOf() } += path
             }
         }
 
@@ -46,7 +46,7 @@ object Tags {
                 }
                 .map { key ->
                     val kids = build(key)
-                    val own = notes[key].orEmpty().toList()
+                    val own = notes[key].orEmpty().sorted()
                     val all = HashSet(own)
                     fun collect(n: TagNode) { all += n.notes; n.children.forEach(::collect) }
                     kids.forEach(::collect)

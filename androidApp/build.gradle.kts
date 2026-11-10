@@ -34,6 +34,11 @@ android {
     buildFeatures {
         compose = true
     }
+    sourceSets {
+        // The web pages (preview, graph, markdownlint) are shared by every app; Android serves
+        // its assets folder to the WebViews at /assets/.
+        getByName("main") { assets.srcDir(rootProject.file("web")) }
+    }
     packaging {
         resources {
             excludes += setOf(

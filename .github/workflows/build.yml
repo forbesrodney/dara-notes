@@ -30,11 +30,11 @@ jobs:
           sed -i.bak "s|^distributionUrl=.*|distributionUrl=file\\://$zip|" "$props" && rm "$props.bak"
           ./gradlew --version
       - name: Build and run unit tests
-        run: ./gradlew --no-daemon assembleDebug :desktop:compileKotlin :shared:jvmTest testDebugUnitTest
+        run: ./gradlew --no-daemon assembleDebug :desktopApp:compileKotlin :shared:jvmTest testDebugUnitTest
       - uses: actions/upload-artifact@v7
         with:
           name: foamforandroid-debug
-          path: app/build/outputs/apk/debug/*.apk
+          path: androidApp/build/outputs/apk/debug/*.apk
           if-no-files-found: error
       - name: Upload test reports
         if: failure()
@@ -43,5 +43,5 @@ jobs:
           name: test-reports
           path: |
             shared/build/reports/tests/
-            app/build/reports/tests/
+            androidApp/build/reports/tests/
           if-no-files-found: ignore

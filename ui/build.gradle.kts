@@ -1,7 +1,7 @@
 // The app's screens and their state, shared by every platform: Compose Multiplatform UI on top
 // of :shared. The few platform pieces (WebViews for the preview and graph, colors, background
 // sync, markdownlint) come from AppPlatform or expect/actual declarations, implemented in
-// androidMain and jvmMain (the desktop app).
+// androidMain, jvmMain (the desktop app) and iosMain.
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
@@ -34,15 +34,26 @@ kotlin {
     jvm {
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
     }
+    // iOS: built as the FoamUI framework that the Xcode project (iosApp/) links.
+    listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
+        target.binaries.framework {
+            baseName = "FoamUI"
+            isStatic = true
+        }
+    }
 
     compilerOptions {
         optIn.add("androidx.compose.material3.ExperimentalMaterial3Api")
         optIn.add("kotlin.time.ExperimentalTime")
+        // expect/actual objects (PlatformDates); stable in practice, still labeled Beta.
+        freeCompilerArgs.add("-Xexpect-actual-classes")
         // BackHandler in Compose Multiplatform.
         optIn.add("androidx.compose.ui.ExperimentalComposeUiApi")
     }
 
     sourceSets {
+        // Calling Apple's C and Objective-C APIs.
+        matching { s -> listOf("apple", "ios", "macos", "native").any(s.name::startsWith) }.configureEach { languageSettings.optIn("kotlinx.cinterop.ExperimentalForeignApi") }
         commonMain.dependencies {
             api(project(":shared"))
             api("org.jetbrains.compose.runtime:runtime:1.12.2")
