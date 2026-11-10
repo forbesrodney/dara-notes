@@ -83,10 +83,9 @@ same code runs on Windows and Linux) shares the screens and note logic.
   the same kind (bullet, numbered with the same number, or unchecked checkbox); Enter on an
   empty item ends the list.
 - **Keyboard shortcuts** in the editor, with a hardware keyboard: Ctrl+B or Cmd+B for bold,
-  Ctrl+I or Cmd+I for italic, Ctrl+Shift+X or Cmd+Shift+X for strike-through, and Ctrl+L,
-  Cmd+L, Ctrl+Enter or Cmd+Enter to check or uncheck the task on the current line. Bold,
-  italic and strike-through toggle, and with nothing selected apply to the word at the
-  cursor. On Android, use Ctrl: the system may claim some Cmd (Meta) shortcuts.
+  Ctrl+I or Cmd+I for italic, Ctrl+Shift+X or Cmd+Shift+X for strike-through, and Ctrl+Enter
+  or Cmd+Enter to check or uncheck the task on the current line. Bold, italic and
+  strike-through toggle, and with nothing selected apply to the word at the cursor. On Android, use Ctrl: the system may claim some Cmd (Meta) shortcuts.
 
 ## Privacy
 

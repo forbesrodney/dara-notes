@@ -453,9 +453,8 @@ private fun FormatToolbar(bullet: String, taskStyle: () -> TaskStyle, onAction: 
 
 /**
  * Hardware-keyboard shortcuts, with Ctrl or Cmd: B bold, I italic, Shift+X strike-through,
- * and L or Enter to check the line's task (as in Obsidian and Notion). Returns the edit for
- * [e], or null if it isn't a shortcut. Option/Alt is left alone: many keyboard layouts type
- * letters with it.
+ * and Enter to check the line's task (as in Notion). Returns the edit for [e], or null if
+ * it isn't a shortcut. Option/Alt is left alone: many keyboard layouts type letters with it.
  */
 private fun shortcut(e: KeyEvent, bullet: String, taskStyle: () -> TaskStyle): ((TextFieldValue) -> TextFieldValue)? {
     if (!(e.isCtrlPressed || e.isMetaPressed) || e.isAltPressed) return null
@@ -465,7 +464,7 @@ private fun shortcut(e: KeyEvent, bullet: String, taskStyle: () -> TaskStyle): (
     } else when (e.key) {
         Key.B -> { v -> v.toggleWrap("**", "bold") }
         Key.I -> { v -> v.toggleWrap("*", "italic") }
-        Key.L, Key.Enter, Key.NumPadEnter -> { v -> v.toggleCheckbox(bullet, taskStyle()) }
+        Key.Enter, Key.NumPadEnter -> { v -> v.toggleCheckbox(bullet, taskStyle()) }
         else -> null
     }
 }
