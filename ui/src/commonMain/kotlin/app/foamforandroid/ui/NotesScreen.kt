@@ -64,6 +64,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.vector.addPathNodes
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.text.style.TextOverflow
@@ -151,12 +154,13 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                     IconButton(onClick = { vm.navigate(Screen.Graph()) }) {
                         Icon(GraphIcon, contentDescription = "Graph")
                     }
-                    IconButton(onClick = vm::syncNow, enabled = !sync.running) {
-                        if (sync.running) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                        else Icon(Icons.Default.Refresh, contentDescription = "Sync now")
-                    }
-                    IconButton(onClick = { vm.navigate(Screen.Settings) }) {
-                        Icon(Icons.Default.Settings, contentDescription = "Settings")
+                    // Sync stays on the desktop's toolbar; phones and tablets have pull to
+                    // refresh, so there it's in the menu with the screens you visit less.
+                    if (desktop) {
+                        IconButton(onClick = vm::syncNow, enabled = !sync.running) {
+                            if (sync.running) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                            else Icon(Icons.Default.Refresh, contentDescription = "Sync now")
+                        }
                     }
                     Box {
                         var more by remember { mutableStateOf(false) }
@@ -164,17 +168,35 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                             Icon(Icons.Default.MoreVert, contentDescription = "More options")
                         }
                         DropdownMenu(expanded = more, onDismissRequest = { more = false }) {
+                            if (!desktop) {
+                                DropdownMenuItem(
+                                    text = { Text("Sync now") },
+                                    leadingIcon = { Icon(Icons.Default.Refresh, null) },
+                                    enabled = !sync.running,
+                                    onClick = { more = false; vm.syncNow() },
+                                )
+                                HorizontalDivider()
+                            }
                             DropdownMenuItem(
                                 text = { Text("Tags") },
+                                leadingIcon = { Icon(TagIcon, null) },
                                 onClick = { more = false; vm.navigate(Screen.Tags) },
                             )
                             DropdownMenuItem(
                                 text = { Text("Orphaned notes") },
+                                leadingIcon = { Icon(OrphanIcon, null) },
                                 onClick = { more = false; vm.navigate(Screen.Orphans) },
                             )
                             DropdownMenuItem(
                                 text = { Text("Placeholders") },
+                                leadingIcon = { Icon(PlaceholderIcon, null) },
                                 onClick = { more = false; vm.navigate(Screen.Placeholders) },
+                            )
+                            HorizontalDivider()
+                            DropdownMenuItem(
+                                text = { Text("Settings") },
+                                leadingIcon = { Icon(Icons.Default.Settings, null) },
+                                onClick = { more = false; vm.navigate(Screen.Settings) },
                             )
                         }
                     }
@@ -467,4 +489,38 @@ private fun ListActionButton(icon: ImageVector, label: String, onClick: () -> Un
         Text(label)
         Spacer(Modifier.weight(1f))
     }
+}
+
+private fun menuIcon(name: String, path: String): ImageVector =
+    ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f)
+        .addPath(pathData = addPathNodes(path), fill = SolidColor(Color.Black))
+        .build()
+
+/** Material "label" icon, for Tags (not in material-icons-core). */
+val TagIcon: ImageVector by lazy {
+    menuIcon(
+        "Tag",
+        "M17.63,5.84C17.27,5.33 16.67,5 16,5L5,5.01C3.9,5.01 3,5.9 3,7v10c0,1.1 0.9,1.99 2,1.99L16,19" +
+            "c0.67,0 1.27,-0.33 1.63,-0.84L22,12l-4.37,-6.16z",
+    )
+}
+
+/** Material "link_off" icon, for Orphaned notes (notes nothing links to). */
+val OrphanIcon: ImageVector by lazy {
+    menuIcon(
+        "Orphan",
+        "M17,7h-4v1.9h4c1.71,0 3.1,1.39 3.1,3.1 0,1.43 -0.98,2.63 -2.31,2.98l1.46,1.46C20.88,15.61 22,13.95 22,12" +
+            "c0,-2.76 -2.24,-5 -5,-5zM16,11h-2.19l2,2L16,13zM2,4.27l3.11,3.11C3.29,8.12 2,9.91 2,12" +
+            "c0,2.76 2.24,5 5,5h4v-1.9L7,15.1c-1.71,0 -3.1,-1.39 -3.1,-3.1 0,-1.59 1.21,-2.9 2.76,-3.07L8.73,11L8,11" +
+            "v2h2.73L13,15.27L13,17h1.73l4.01,4L20,19.74L3.27,3L2,4.27z",
+    )
+}
+
+/** Material "note_add" icon, for Placeholders (links to notes not yet written). */
+val PlaceholderIcon: ImageVector by lazy {
+    menuIcon(
+        "Placeholder",
+        "M14,2L6,2c-1.1,0 -1.99,0.9 -1.99,2L4,20c0,1.1 0.89,2 1.99,2L18,22c1.1,0 2,-0.9 2,-2L20,8l-6,-6z" +
+            "M16,16h-3v3h-2v-3L8,16v-2h3v-3h2v3h3v2zM13,9L13,3.5L18.5,9L13,9z",
+    )
 }

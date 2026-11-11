@@ -5,6 +5,10 @@ import app.foamforandroid.BackgroundSync
 import app.foamforandroid.IosPlatform
 import app.foamforandroid.MainViewModel
 import app.foamforandroid.core.GitSync
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.launch
+import platform.UIKit.UIApplication
+import platform.UIKit.UIBackgroundTaskInvalid
 import platform.UIKit.UIViewController
 
 private val platform: IosPlatform by lazy {
@@ -28,3 +32,25 @@ fun startBackgroundSync() {
 /** Call when the app comes to the foreground: pulls changes made elsewhere. */
 @Suppress("unused")
 fun onForeground() = vm.onForeground()
+
+/**
+ * Call when the app goes to the background: pushes edits not yet synced. iOS suspends the
+ * app soon after, so this asks for a little background time (about 30 seconds) to finish.
+ */
+@Suppress("unused")
+fun onBackground() {
+    val app = UIApplication.sharedApplication
+    var task = UIBackgroundTaskInvalid
+    task = app.beginBackgroundTaskWithName("Sync") {
+        // Out of time: iOS is about to suspend the app.
+        app.endBackgroundTask(task)
+        task = UIBackgroundTaskInvalid
+    }
+    MainScope().launch {
+        vm.syncBeforeLeaving(timeoutMillis = 25_000)
+        if (task != UIBackgroundTaskInvalid) {
+            app.endBackgroundTask(task)
+            task = UIBackgroundTaskInvalid
+        }
+    }
+}

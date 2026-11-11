@@ -17,8 +17,10 @@ struct FoamApp: App {
             ComposeView().ignoresSafeArea()
         }
         .onChange(of: scenePhase) { _, phase in
-            // Pull changes made elsewhere, as the Android app does when it opens.
+            // Pull changes made elsewhere, as the Android app does when it opens; push edits
+            // not yet synced when it goes to the background.
             if phase == .active { MainViewControllerKt.onForeground() }
+            if phase == .background { MainViewControllerKt.onBackground() }
         }
     }
 }

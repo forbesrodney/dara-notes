@@ -36,6 +36,13 @@ class IosPlatform : AppPlatform {
     /** Asks iOS for a background refresh after the "Sync every" interval (iOS picks the time). */
     override fun scheduleSync() = BackgroundSync.schedule(settings)
 
+    override fun takePendingSync(): Boolean {
+        val pending = soon?.isActive == true
+        soon?.cancel()
+        soon = null
+        return pending
+    }
+
     /** Debounced: each call pushes the sync back by 30 seconds. */
     override fun syncSoon() {
         soon?.cancel()

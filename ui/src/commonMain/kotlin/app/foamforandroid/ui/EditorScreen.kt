@@ -153,7 +153,10 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     val latestBaseline by rememberUpdatedState(baseline)
     val latestFlush by rememberUpdatedState(flushOnLeave)
     DisposableEffect(path) {
+        // Lets the app save it before going to the background or quitting.
+        vm.unsavedEdit = { if (latestFlush && latest != saved) path to latest else null }
         onDispose {
+            vm.unsavedEdit = null
             if (!latestFlush) return@onDispose
             val text = if (latest != latestBaseline) Toc.update(latest, bullet)?.text ?: latest else latest
             if (text != saved) vm.save(path, text)

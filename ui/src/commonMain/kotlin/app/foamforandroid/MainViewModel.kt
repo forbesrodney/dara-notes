@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.withTimeoutOrNull
 
 sealed interface Screen {
     data object Notes : Screen
@@ -136,6 +137,23 @@ class MainViewModel(val platform: AppPlatform) : ViewModel() {
     }
 
     fun applySyncSchedule() = platform.scheduleSync()
+
+    /** The open note's unsaved text (path to text), if any; the editor sets this. */
+    var unsavedEdit: (() -> Pair<String, String>?)? = null
+
+    /**
+     * For when the app goes to the background or quits (iOS, desktop): writes the editor's
+     * unsaved text and, if there are edits not yet pushed, syncs now. The usual sync 30
+     * seconds after an edit wouldn't run once the app is suspended or gone, and changes left
+     * unpushed make merge conflicts likelier. Gives up after [timeoutMillis].
+     */
+    suspend fun syncBeforeLeaving(timeoutMillis: Long) {
+        val edit = unsavedEdit?.invoke()
+        if (edit != null) withContext(ioDispatcher) { repo.write(edit.first, edit.second) }
+        val pending = platform.takePendingSync() || (edit != null && settings.syncAfterEdit)
+        if (!pending || !settings.isConfigured || settings.remoteUrl.isBlank()) return
+        withTimeoutOrNull(timeoutMillis) { GitSync.sync(repo.root, settings) }
+    }
 
     private fun afterEdit() {
         refresh()

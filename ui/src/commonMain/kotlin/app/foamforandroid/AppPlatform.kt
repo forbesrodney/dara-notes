@@ -20,6 +20,13 @@ interface AppPlatform {
     /** Syncs shortly, in the background, e.g. after an edit. */
     fun syncSoon()
 
+    /**
+     * Cancels a sync that [syncSoon] has waiting, and says whether there was one, so it can be
+     * run straight away instead (before the app is suspended or quits). Android's waiting
+     * sync is run by the system even after the app has gone, so it keeps it.
+     */
+    fun takePendingSync(): Boolean = false
+
     /** Checks [text] with markdownlint. */
     suspend fun lint(text: String, config: LintConfig): LintResult
 

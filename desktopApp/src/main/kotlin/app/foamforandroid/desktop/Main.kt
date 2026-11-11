@@ -1,6 +1,8 @@
 package app.foamforandroid.desktop
 
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.input.key.Key
@@ -20,6 +22,7 @@ import app.foamforandroid.MainViewModel
 import app.foamforandroid.core.GitSync
 import app.foamforandroid.ui.App
 import app.foamforandroid.ui.Fx
+import java.awt.Desktop
 import java.awt.event.WindowAdapter
 import java.awt.Taskbar
 import java.awt.event.WindowEvent
@@ -47,9 +50,27 @@ fun main() {
     val vm = MainViewModel(platform)
     platform.scheduleSync()
 
+    // Quitting (closing the window, or Cmd+Q on a Mac) first pushes edits not yet synced, so
+    // they don't wait for the next launch and risk a merge conflict meanwhile. The window is
+    // hidden while that runs.
+    val quitting = mutableStateOf(false)
+    if (Desktop.isDesktopSupported() && Desktop.getDesktop().isSupported(Desktop.Action.APP_QUIT_HANDLER)) {
+        Desktop.getDesktop().setQuitHandler { _, response ->
+            response.cancelQuit()
+            quitting.value = true
+        }
+    }
+
     application {
+        if (quitting.value) {
+            LaunchedEffect(Unit) {
+                vm.syncBeforeLeaving(timeoutMillis = 20_000)
+                exitApplication()
+            }
+        }
         Window(
-            onCloseRequest = ::exitApplication,
+            onCloseRequest = { quitting.value = true },
+            visible = !quitting.value,
             title = appName(),
             icon = icon?.let { BitmapPainter(it.toComposeImageBitmap()) },
             state = rememberWindowState(width = 1000.dp, height = 760.dp),

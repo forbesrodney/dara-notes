@@ -41,6 +41,13 @@ class DesktopPlatform : AppPlatform {
         }
     }
 
+    override fun takePendingSync(): Boolean {
+        val pending = soon?.isActive == true
+        soon?.cancel()
+        soon = null
+        return pending
+    }
+
     /** Debounced: each call pushes the sync back by 30 seconds. */
     override fun syncSoon() {
         soon?.cancel()

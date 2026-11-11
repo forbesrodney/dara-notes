@@ -7,8 +7,8 @@ same code runs on Windows and Linux) shares the screens and note logic.
 ## Features
 
 - **Git auto-sync** (JGit, HTTPS + personal access token): commit, fetch, merge, push.
-  - on app open, ~30 s after you stop editing, on pull-to-refresh, and in the
-    background every N minutes (WorkManager, 15 min minimum).
+  - on app open, ~30 s after you stop editing, on pull-to-refresh (or *Sync now* in the
+    note list's menu), and in the background every N minutes (WorkManager, 15 min minimum).
   - Merge conflicts never lose data: conflicting files are committed with conflict
     markers and shown in the note list so you can tidy them up.
 - **Index.md maintenance**: every new note (from the *New note* button or by following a
@@ -260,7 +260,9 @@ How it differs from Android:
   Settings are in Java preferences, and the access token in the system keychain (macOS
   Keychain, Windows Credential Manager, or the Secret Service on Linux).
 - **Sync:** *Sync every* runs on a timer while the app is open, with no 15-minute minimum; the
-  app also syncs when its window comes to the front. Commits say "from macOS".
+  app also syncs when its window comes to the front, and before it quits if edits are waiting
+  to be pushed (the window closes first; it gives up after 20 seconds). The toolbar keeps a
+  sync button. Commits say "from macOS".
 - **Preview, graph and markdownlint:** the same web pages as on Android, in JavaFX's WebView.
 
 ### iOS app
@@ -293,8 +295,9 @@ How it differs from Android:
   in `NSUserDefaults` and the access token in the Keychain (this device only, readable after
   the first unlock so background sync can use it).
 - **Sync:** *Sync every* asks iOS for a background refresh no sooner than that; iOS decides when
-  it runs (usually while the phone is idle and online). The app also syncs when it opens and 30
-  seconds after an edit while it's open. Commits say "from iOS".
+  it runs (usually while the phone is idle and online). The app also syncs when it opens, 30
+  seconds after an edit while it's open, and when it goes to the background if edits are
+  waiting to be pushed (iOS allows about 30 seconds for that). Commits say "from iOS".
 - **Preview, graph and markdownlint:** the same pages in WKWebView, served under a private
   `foam:` scheme. The pages' synchronous calls (resolving wikilinks, reading embedded notes)
   are answered through that scheme too.
