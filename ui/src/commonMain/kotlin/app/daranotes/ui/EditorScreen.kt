@@ -2,6 +2,20 @@ package app.daranotes.ui
 
 import app.daranotes.core.ioDispatcher
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
+import app.daranotes.core.Note
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -13,8 +27,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
@@ -36,7 +48,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -125,6 +136,9 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     val sync by vm.syncState.collectAsState()
     val focus = remember { FocusRequester() }
     var swallowTyped by remember { mutableStateOf(false) }
+    // The wikilink suggestions: which one is picked, and an unfinished link whose list was closed.
+    var pick by remember { mutableStateOf(0) }
+    var closedAt by remember { mutableStateOf(-1) }
 
     // New notes open straight into the editor with the cursor at the end.
     LaunchedEffect(Unit) {
@@ -135,11 +149,18 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     }
 
     val bullet = vm.settings.bullet
-    // Brings the table of contents up to date when an edited note goes to Preview or is left,
-    // so it never changes under the cursor while typing.
+    // The table of contents and Foam's link reference definitions, brought up to date.
+    fun tidied(text: String): String {
+        val t = Toc.update(text, bullet)?.text ?: text
+        return vm.repo.withLinkReferences(path, t)
+    }
+    // Tidies an edited note when it goes to Preview or is left, so the table of contents and
+    // link definitions never change under the cursor while typing.
     fun refreshToc() {
         if (value.text == baseline) return
         Toc.update(value.text, bullet)?.let { value = value.applying(it) }
+        val text = vm.repo.withLinkReferences(path, value.text)
+        if (text != value.text) value = TextFieldValue(text, TextRange(value.selection.start.coerceAtMost(text.length), value.selection.end.coerceAtMost(text.length)))
     }
 
     // Auto-save shortly after typing stops.
@@ -158,7 +179,7 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
         onDispose {
             vm.unsavedEdit = null
             if (!latestFlush) return@onDispose
-            val text = if (latest != latestBaseline) Toc.update(latest, bullet)?.text ?: latest else latest
+            val text = if (latest != latestBaseline) tidied(latest) else latest
             if (text != saved) vm.save(path, text)
         }
     }
@@ -309,27 +330,6 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize().imePadding()) {
             if (editing) {
-                val query = wikilinkQuery(value)
-                if (query != null) {
-                    val q = query.second.lowercase()
-                    val matches = notes.asSequence()
-                        .filter { q.isEmpty() || q in it.id.lowercase() || q in it.title.lowercase() }
-                        .take(12).toList()
-                    if (matches.isNotEmpty()) {
-                        LazyRow(
-                            contentPadding = PaddingValues(horizontal = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        ) {
-                            items(matches, key = { it.path }) { note ->
-                                SuggestionChip(
-                                    onClick = { value = completeWikilink(value, query.first, vm.repo.linkId(note.path)) },
-                                    modifier = Modifier.keepEditorFocus(),
-                                    label = { Text(note.id) },
-                                )
-                            }
-                        }
-                    }
-                }
                 FormatToolbar(bullet = vm.settings.bullet, taskStyle = { TaskStyle.from(vm.settings) }, onAction = { value = it(value) })
                 HorizontalDivider()
                 lint?.let { result ->
@@ -344,6 +344,16 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                   BoxWithConstraints(Modifier.fillMaxSize()) {
                     val viewport = maxHeight
                     viewportPx = constraints.maxHeight
+                    val query = wikilinkQuery(value)?.takeIf { editorFocused && it.first != closedAt }
+                    val matches = remember(query?.second, notes) {
+                        query?.let { wikilinkMatches(notes, it.second) }.orEmpty()
+                    }
+                    LaunchedEffect(query?.second) { pick = 0 }
+                    LaunchedEffect(query?.first) { if (query == null) closedAt = -1 }
+                    fun complete(note: Note) {
+                        val q = query ?: return
+                        value = completeWikilink(value, q.first, vm.repo.linkId(note.path))
+                    }
                     BasicTextField(
                         value = value,
                         onValueChange = { value = continueList(value, it) },
@@ -371,6 +381,21 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                                 if (e.type != KeyEventType.KeyDown && e.type != KeyEventType.KeyUp) {
                                     return@onPreviewKeyEvent swallowTyped.also { swallowTyped = false }
                                 }
+                                // The wikilink suggestions: arrows pick, Enter or Tab completes, Esc closes.
+                                if (matches.isNotEmpty() && query != null &&
+                                    (e.key in setOf(Key.DirectionUp, Key.DirectionDown, Key.Enter, Key.NumPadEnter, Key.Tab, Key.Escape))
+                                ) {
+                                    if (e.type == KeyEventType.KeyDown) {
+                                        when (e.key) {
+                                            Key.DirectionDown -> pick = (pick + 1) % matches.size
+                                            Key.DirectionUp -> pick = (pick - 1 + matches.size) % matches.size
+                                            Key.Escape -> closedAt = query.first
+                                            else -> complete(matches[pick.coerceIn(matches.indices)])
+                                        }
+                                        swallowTyped = true
+                                    }
+                                    return@onPreviewKeyEvent true
+                                }
                                 val action = shortcut(e, vm.settings.bullet) { TaskStyle.from(vm.settings) }
                                     ?: return@onPreviewKeyEvent false
                                 if (e.type == KeyEventType.KeyDown) {
@@ -381,6 +406,21 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                             }
                             .focusRequester(focus),
                     )
+                    val layout = textLayout
+                    if (matches.isNotEmpty() && query != null && layout != null) {
+                        val c = layout.getCursorRect(value.selection.start.coerceIn(0, layout.layoutInput.text.length))
+                        WikilinkPopup(
+                            matches = matches,
+                            picked = pick.coerceIn(matches.indices),
+                            caret = IntRect(
+                                (c.left + editorPadPx).toInt(),
+                                (c.top + editorPadPx - editorScroll.value).toInt(),
+                                (c.right + editorPadPx).toInt(),
+                                (c.bottom + editorPadPx - editorScroll.value).toInt(),
+                            ),
+                            onPick = ::complete,
+                        )
+                    }
                   }
                 }
             } else {
@@ -543,6 +583,89 @@ fun TextFieldValue.applying(edit: Toc.Edit): TextFieldValue {
         else -> p
     }
     return TextFieldValue(edit.text, TextRange(map(selection.start), map(selection.end)))
+}
+
+/**
+ * The notes matching an unfinished wikilink, best first: names that start with [query], then
+ * titles that do, then names, titles and paths that contain it.
+ */
+fun wikilinkMatches(notes: List<Note>, query: String, limit: Int = 50): List<Note> {
+    val q = query.trim().lowercase()
+    if (q.isEmpty()) return notes.take(limit)
+    fun rank(n: Note): Int {
+        val id = n.id.lowercase()
+        val title = n.title.lowercase()
+        return when {
+            id.startsWith(q) -> 0
+            title.startsWith(q) -> 1
+            q in id -> 2
+            q in title -> 3
+            q in n.path.lowercase() -> 4
+            else -> -1
+        }
+    }
+    return notes.map { it to rank(it) }.filter { it.second >= 0 }
+        .sortedWith(compareBy<Pair<Note, Int>> { it.second }.thenBy { it.first.id.lowercase() })
+        .take(limit).map { it.first }
+}
+
+/**
+ * Suggestions for the wikilink being typed, in a list at the cursor ([caret], relative to the
+ * editor's visible area): below it, or above it when there's no room below. It doesn't take
+ * the focus, so typing goes on narrowing the list.
+ */
+@Composable
+private fun WikilinkPopup(matches: List<Note>, picked: Int, caret: IntRect, onPick: (Note) -> Unit) {
+    val listState = rememberLazyListState()
+    LaunchedEffect(picked) { listState.animateScrollToItem(picked) }
+    val gap = with(LocalDensity.current) { 4.dp.roundToPx() }
+    val position = remember(caret, gap) {
+        object : PopupPositionProvider {
+            override fun calculatePosition(anchorBounds: IntRect, windowSize: IntSize, layoutDirection: LayoutDirection, popupContentSize: IntSize): IntOffset {
+                val x = (anchorBounds.left + caret.left).coerceIn(0, (windowSize.width - popupContentSize.width).coerceAtLeast(0))
+                val below = anchorBounds.top + caret.bottom + gap
+                val above = anchorBounds.top + caret.top - gap - popupContentSize.height
+                val y = if (below + popupContentSize.height <= minOf(anchorBounds.bottom, windowSize.height) || above < 0) below else above
+                return IntOffset(x, y)
+            }
+        }
+    }
+    Popup(popupPositionProvider = position, properties = PopupProperties(focusable = false)) {
+        Surface(
+            shape = MaterialTheme.shapes.small,
+            tonalElevation = 3.dp,
+            shadowElevation = 6.dp,
+            modifier = Modifier.widthIn(min = 200.dp, max = 360.dp).heightIn(max = 260.dp),
+        ) {
+            LazyColumn(state = listState) {
+                itemsIndexed(matches, key = { _, n -> n.path }) { i, note ->
+                    val selected = i == picked
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .then(if (selected) Modifier.background(MaterialTheme.colorScheme.secondaryContainer) else Modifier)
+                            .keepEditorFocus()
+                            .clickable { onPick(note) }
+                            .padding(horizontal = 12.dp, vertical = 6.dp),
+                    ) {
+                        Text(
+                            (if (selected) "› " else "") + note.title,
+                            style = MaterialTheme.typography.bodyMedium,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                        Text(
+                            note.path,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 // ---- text editing helpers -------------------------------------------------------------------

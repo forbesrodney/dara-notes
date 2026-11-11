@@ -45,7 +45,7 @@ class IndexEditorTest {
             [Let's Encrypt]: <Let's Encrypt.md> "Let's Encrypt"
             [TODO]: <TODO.md> "TODO"
             [Shopping]: Shopping.md "Shopping"
-            [Tea & Biscuits]: <Tea %26 Biscuits.md> "Tea & Biscuits"
+            [Tea & Biscuits]: <Tea & Biscuits.md> "Tea & Biscuits"
 
             """.trimIndent(),
             out,

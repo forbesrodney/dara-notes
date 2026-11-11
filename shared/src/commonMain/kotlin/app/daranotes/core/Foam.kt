@@ -33,6 +33,17 @@ class FoamConfig(private val fs: FileSystem, private val root: Path) {
     val placeholdersExclude: List<String>
         get() = globs("foam.placeholders.exclude")
 
+    /**
+     * How Foam writes link reference definitions for wikilinks (`foam.edit.linkReferenceDefinitions`):
+     * "withExtensions" (Foam's default), "withoutExtensions" or "off".
+     */
+    val linkReferenceDefinitions: LinkReferences.Mode
+        get() = when ((vscode["foam.edit.linkReferenceDefinitions"] as? JsonPrimitive)?.content?.trim()) {
+            "off" -> LinkReferences.Mode.OFF
+            "withoutExtensions" -> LinkReferences.Mode.WITHOUT_EXTENSIONS
+            else -> LinkReferences.Mode.WITH_EXTENSIONS
+        }
+
     fun template(name: String): Template? {
         val dir = root / ".foam/templates"
         val f = listOf("$name.md", name).map { dir / it }

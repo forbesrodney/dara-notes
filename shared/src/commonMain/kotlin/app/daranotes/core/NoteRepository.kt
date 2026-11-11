@@ -123,6 +123,13 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
     /** The shortest wikilink identifier that resolves uniquely to [path]. */
     fun linkId(path: String, files: List<String> = allFiles()): String = Wikilinks.linkId(path, files)
 
+    /**
+     * [text] (the note at [path]) with Foam's link reference definitions for its wikilinks
+     * brought up to date, per the workspace's `foam.edit.linkReferenceDefinitions`.
+     */
+    fun withLinkReferences(path: String, text: String): String =
+        LinkReferences.update(text, path, allFiles(), { titleOf(it, file(it)) }, foam.linkReferenceDefinitions) ?: text
+
     // ---- graph ---------------------------------------------------------------------------
 
     /** Notes, tags and missing notes, with the links between them (Foam's graph). */

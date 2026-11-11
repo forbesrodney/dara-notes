@@ -66,8 +66,7 @@ object IndexEditor {
 
     /** A definition in Foam's style: `[id]: <path with spaces.md> "Title"`. */
     fun definition(id: String, relPath: String, title: String): String {
-        val p = relPath.replace("&", "%26")
-        val dest = if (p.contains(' ')) "<$p>" else p
+        val dest = if (relPath.contains(' ')) "<$relPath>" else relPath
         return "[$id]: $dest \"${title.replace("\"", "'")}\""
     }
 }

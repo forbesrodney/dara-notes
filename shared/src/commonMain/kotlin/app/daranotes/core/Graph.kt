@@ -121,16 +121,7 @@ object NoteParser {
         }
         val wikilinks = ArrayList<String>()
         val mdLinks = ArrayList<String>()
-        var fence: String? = null
-        while (i < lines.size) {
-            val line = lines[i++]
-            val f = FENCE.find(line)
-            if (fence != null) {
-                if (f != null && f.groupValues[1].startsWith(fence)) fence = null
-                continue
-            }
-            if (f != null) { fence = f.groupValues[1].take(3); continue }
-            val prose = INLINE_CODE.replace(line, " ")
+        for (prose in prose(lines, i)) {
             WIKILINK.findAll(prose).forEach { wikilinks += it.groupValues[1].trim() }
             MD_LINK.findAll(prose).forEach { m ->
                 var d = m.groupValues[1]
@@ -144,6 +135,36 @@ object NoteParser {
             HASHTAG.findAll(WIKILINK.replace(prose, " ")).forEach { tags += it.groupValues[1].trimEnd('/') }
         }
         return Parsed(wikilinks, mdLinks, tags.filter { it.isNotEmpty() }.toSet())
+    }
+
+    /** Lines from [from] on outside fenced code, with inline code blanked out. */
+    private fun prose(lines: List<String>, from: Int): List<String> {
+        val out = ArrayList<String>()
+        var fence: String? = null
+        for (i in from until lines.size) {
+            val line = lines[i]
+            val f = FENCE.find(line)
+            if (fence != null) {
+                if (f != null && f.groupValues[1].startsWith(fence)) fence = null
+                continue
+            }
+            if (f != null) { fence = f.groupValues[1].take(3); continue }
+            out += INLINE_CODE.replace(line, " ")
+        }
+        return out
+    }
+
+    private val WIKILINK_TEXT = Regex("""!?\[\[([^\[\]]+)]]""")
+
+    /** The text inside each wikilink or embed, as written (`Plan#Goals|the plan`), skipping code. */
+    fun wikilinkTexts(text: String): List<String> {
+        val lines = text.replace("\r\n", "\n").split("\n")
+        var i = 0
+        if (lines.firstOrNull()?.trim() == "---") {
+            val end = (1 until lines.size).firstOrNull { lines[it].trim() == "---" || lines[it].trim() == "..." }
+            if (end != null) i = end + 1
+        }
+        return prose(lines, i).flatMap { line -> WIKILINK_TEXT.findAll(line).map { it.groupValues[1] } }
     }
 
     /** `tags: [a, b]`, `tags: a, b`, `tags: a b` or a YAML list under `tags:`. */
