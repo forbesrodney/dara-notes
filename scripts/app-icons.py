@@ -1,78 +1,26 @@
 #!/usr/bin/env python3
-"""Draws the desktop and iOS app icons from the app's artwork, art/foam_icon.svg.
+"""Draws the app icons: a gold Celtic knot on navy (scripts/KnotIcon.java holds the design).
 
-The artwork is filled circles (<circle cx cy r fill>), which this reads and draws
-anti-aliased at each size. It writes:
-  desktopApp/icons/foam.icns (macOS, via iconutil), foam.ico (Windows), foam.png (Linux),
-  desktopApp/src/main/resources/foam-icon.png (the window and Dock icon), and the iOS icon
-  iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/foam-1024.png (opaque, as iOS requires;
-  iOS rounds the corners itself).
+It writes:
+  desktopApp/icons/app.icns (macOS, via iconutil), app.ico (Windows), app.png (Linux),
+  desktopApp/src/main/resources/app-icon.png (the window and Dock icon), the iOS icon
+  iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png (opaque, as iOS requires;
+  iOS rounds the corners itself), the Android adaptive icon (androidApp/src/main/res:
+  mipmap-anydpi-v26/ic_launcher.xml and its layers) and the artwork, art/dara_icon.svg.
 It also draws the window background of the macOS .dmg, an arrow from the app to the
 Applications folder: desktopApp/packaging/dmg-background.tiff (1x and 2x, via tiffutil).
-Uses only the Python standard library.
+Needs a JDK (java on the PATH) for KnotIcon.java; otherwise only the Python standard library.
 """
-import os, re, shutil, struct, subprocess, sys, tempfile, zlib
-import xml.etree.ElementTree as ET
+import os, shutil, struct, subprocess, sys, tempfile, zlib
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..")
-SRC = os.path.join(ROOT, "art/foam_icon.svg")
 OUT = os.path.join(ROOT, "desktopApp/icons")
-SVG = "{http://www.w3.org/2000/svg}"
 
 
-def circles():
-    """The circles as (cx, cy, r, rgb), with positions as fractions of the canvas."""
-    root = ET.parse(SRC).getroot()
-    size = float(root.get("viewBox").split()[2])
-    out = []
-    for c in root.iter(SVG + "circle"):
-        color = c.get("fill").lstrip("#")
-        if len(color) == 3:
-            color = "".join(ch * 2 for ch in color)
-        rgb = tuple(int(color[i:i + 2], 16) for i in (0, 2, 4))
-        out.append((float(c.get("cx")) / size, float(c.get("cy")) / size, float(c.get("r")) / size, rgb))
-    if not out:
-        sys.exit(f"No <circle> elements in {SRC}; this script only draws circles.")
-    return out
-
-
-def render(px, margin, background=None):
-    """RGBA bytes of the icon at px x px, with [margin] (fraction) of empty space on each side,
-    over an opaque [background] (r, g, b) if given."""
-    shapes = circles()
-    scale = px * (1 - 2 * margin)
-    offset = px * margin
-    rows = []
-    for y in range(px):
-        row = bytearray([0])  # PNG filter: none
-        for x in range(px):
-            if background:
-                r, g, b = background
-                a = 1.0
-            else:
-                r = g = b = a = 0.0
-            for cx, cy, cr, (cr_, cg, cb) in shapes:
-                d = ((x + 0.5 - offset - cx * scale) ** 2 + (y + 0.5 - offset - cy * scale) ** 2) ** 0.5
-                cov = min(1.0, max(0.0, cr * scale - d + 0.5))
-                if cov:
-                    # "over" compositing, premultiplied
-                    r = cr_ * cov + r * (1 - cov)
-                    g = cg * cov + g * (1 - cov)
-                    b = cb * cov + b * (1 - cov)
-                    a = cov + a * (1 - cov)
-            if a:
-                row += bytes((round(r / a), round(g / a), round(b / a), round(a * 255)))
-            else:
-                row += b"\0\0\0\0"
-        rows.append(bytes(row))
-    return b"".join(rows)
-
-
-def png(px, margin, background=None):
-    def chunk(kind, data):
-        return struct.pack(">I", len(data)) + kind + data + struct.pack(">I", zlib.crc32(kind + data) & 0xFFFFFFFF)
-    return (b"\x89PNG\r\n\x1a\n" + chunk(b"IHDR", struct.pack(">IIBBBBB", px, px, 8, 6, 0, 0, 0))
-            + chunk(b"IDAT", zlib.compress(render(px, margin, background), 9)) + chunk(b"IEND", b""))
+def knot(*jobs):
+    """Runs KnotIcon.java with [jobs] (each a list of its arguments)."""
+    args = [a for job in jobs for a in job]
+    subprocess.run(["java", os.path.join(ROOT, "scripts/KnotIcon.java"), *args], check=True)
 
 
 # The .dmg window, in points; scripts/macos-dmg.sh places the icons to match.
@@ -143,52 +91,48 @@ def write_dmg_background():
 def main():
     os.makedirs(OUT, exist_ok=True)
     # macOS icons leave about a tenth of the canvas empty around the artwork.
-    mac_margin, other_margin = 0.1, 0.03
-    cache = {}
-
-    def get(px, margin):
-        if (px, margin) not in cache:
-            cache[(px, margin)] = png(px, margin)
-        return cache[(px, margin)]
-
-    # macOS .icns from an .iconset folder.
-    if shutil.which("iconutil"):
-        with tempfile.TemporaryDirectory() as tmp:
-            iconset = os.path.join(tmp, "foam.iconset")
-            os.mkdir(iconset)
-            for base in (16, 32, 128, 256, 512):
-                for mult, suffix in ((1, ""), (2, "@2x")):
-                    with open(os.path.join(iconset, f"icon_{base}x{base}{suffix}.png"), "wb") as f:
-                        f.write(get(base * mult, mac_margin))
-            subprocess.run(["iconutil", "-c", "icns", iconset, "-o", os.path.join(OUT, "foam.icns")], check=True)
-    else:
-        print("iconutil not found (macOS only): skipped foam.icns", file=sys.stderr)
-
-    # Windows .ico holding PNG images.
-    sizes = (16, 24, 32, 48, 64, 128, 256)
-    images = [get(s, other_margin) for s in sizes]
-    header = struct.pack("<HHH", 0, 1, len(sizes))
-    offset = 6 + 16 * len(sizes)
-    entries = b""
-    for s, data in zip(sizes, images):
-        entries += struct.pack("<BBBBHHII", s % 256, s % 256, 0, 0, 1, 32, len(data), offset)
-        offset += len(data)
-    with open(os.path.join(OUT, "foam.ico"), "wb") as f:
-        f.write(header + entries + b"".join(images))
-
-    # Linux, and the window icon.
-    with open(os.path.join(OUT, "foam.png"), "wb") as f:
-        f.write(get(512, other_margin))
+    mac_margin, other_margin = "0.1", "0.03"
     res = os.path.join(ROOT, "desktopApp/src/main/resources")
-    os.makedirs(res, exist_ok=True)
-    with open(os.path.join(res, "foam-icon.png"), "wb") as f:
-        f.write(get(512, mac_margin))
     ios = os.path.join(ROOT, "iosApp/iosApp/Assets.xcassets/AppIcon.appiconset")
+    os.makedirs(res, exist_ok=True)
     os.makedirs(ios, exist_ok=True)
-    with open(os.path.join(ios, "foam-1024.png"), "wb") as f:
-        f.write(png(1024, 0.12, background=(255, 255, 255)))
-    print("Wrote desktopApp/icons/foam.icns, foam.ico, foam.png, desktopApp/src/main/resources/foam-icon.png")
-    print("  and iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/foam-1024.png")
+    os.makedirs(os.path.join(ROOT, "art"), exist_ok=True)
+    with tempfile.TemporaryDirectory() as tmp:
+        jobs, ico = [], []
+        iconset = os.path.join(tmp, "app.iconset")
+        os.mkdir(iconset)
+        for base in (16, 32, 128, 256, 512):
+            for mult, suffix in ((1, ""), (2, "@2x")):
+                jobs.append(["png", str(base * mult), "tile", mac_margin, os.path.join(iconset, f"icon_{base}x{base}{suffix}.png")])
+        for size in (16, 24, 32, 48, 64, 128, 256):
+            ico.append((size, os.path.join(tmp, f"ico{size}.png")))
+            jobs.append(["png", str(size), "tile", other_margin, ico[-1][1]])
+        jobs += [
+            ["png", "512", "tile", other_margin, os.path.join(OUT, "app.png")],
+            ["png", "512", "tile", mac_margin, os.path.join(res, "app-icon.png")],
+            ["png", "1024", "full", os.path.join(ios, "AppIcon-1024.png")],
+            ["svg", os.path.join(ROOT, "art/dara_icon.svg")],
+            ["android", os.path.join(ROOT, "androidApp/src/main/res")],
+        ]
+        knot(*jobs)
+        # macOS .icns from the .iconset folder.
+        if shutil.which("iconutil"):
+            subprocess.run(["iconutil", "-c", "icns", iconset, "-o", os.path.join(OUT, "app.icns")], check=True)
+        else:
+            print("iconutil not found (macOS only): skipped app.icns", file=sys.stderr)
+        # Windows .ico holding PNG images.
+        images = [open(path, "rb").read() for _, path in ico]
+        header = struct.pack("<HHH", 0, 1, len(ico))
+        offset = 6 + 16 * len(ico)
+        entries = b""
+        for (s, _), data in zip(ico, images):
+            entries += struct.pack("<BBBBHHII", s % 256, s % 256, 0, 0, 1, 32, len(data), offset)
+            offset += len(data)
+        with open(os.path.join(OUT, "app.ico"), "wb") as f:
+            f.write(header + entries + b"".join(images))
+    print("Wrote desktopApp/icons/app.icns, app.ico, app.png, desktopApp/src/main/resources/app-icon.png,")
+    print("  iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png, the Android adaptive icon")
+    print("  and art/dara_icon.svg")
     write_dmg_background()
 
 

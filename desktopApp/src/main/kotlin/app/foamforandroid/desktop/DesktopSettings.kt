@@ -64,13 +64,13 @@ class DesktopSettings : Settings {
     }
 
     /**
-     * The access token in the system keychain, under the app's name ("Foam for macOS"), read
+     * The access token in the system keychain, under the app's name ("Dara Notes"), read
      * once and then kept in memory.
      */
     private object Token {
         private val SERVICE = appName()
-        /** The name earlier versions used; a token found there is moved to [SERVICE]. */
-        private const val OLD_SERVICE = "Foam for Android"
+        /** The names earlier versions used; a token found under one is moved to [SERVICE]. */
+        private val OLD_SERVICES = oldAppNames()
         private const val ACCOUNT = "git-access-token"
         @Volatile private var cached: String? = null
 
@@ -79,11 +79,12 @@ class DesktopSettings : Settings {
         private val secrets = Secrets.system()
 
         private fun load(): String? = runCatching {
-            secrets.get(SERVICE, ACCOUNT)
-                ?: secrets.get(OLD_SERVICE, ACCOUNT)?.also { token ->
+            secrets.get(SERVICE, ACCOUNT) ?: OLD_SERVICES.firstNotNullOfOrNull { old ->
+                secrets.get(old, ACCOUNT)?.also { token ->
                     secrets.set(SERVICE, ACCOUNT, token)
-                    runCatching { secrets.delete(OLD_SERVICE, ACCOUNT) }
+                    runCatching { secrets.delete(old, ACCOUNT) }
                 }
+            }
         }.getOrNull()
 
         fun set(value: String) {

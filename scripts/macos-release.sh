@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds the signed macOS .dmg (with scripts/macos-dmg.sh), has Apple notarize it, and staples the ticket, so it opens on
 # any Mac without the "unidentified developer" warning.
-# Output: desktopApp/build/compose/binaries/main/dmg/Foam for macOS-<version>.dmg
+# Output: desktopApp/build/compose/binaries/main/dmg/Dara Notes-<version>.dmg
 #
 # Needs, once:
 #   - apple.teamId=<your team ID> in local.properties, and your "Developer ID Application"
@@ -24,7 +24,7 @@ fi
 echo "== Building the signed app"
 rm -rf desktopApp/build/compose/binaries/main/dmg
 ./gradlew -q :desktopApp:createDistributable
-app="desktopApp/build/compose/binaries/main/app/Foam for macOS.app"
+app="desktopApp/build/compose/binaries/main/app/Dara Notes.app"
 codesign --verify --deep --strict "$app" || { echo "The app isn't signed: is apple.teamId set in local.properties?" >&2; exit 1; }
 
 # Apple also checks native code inside the jars, whatever its file name; catch unsigned ones

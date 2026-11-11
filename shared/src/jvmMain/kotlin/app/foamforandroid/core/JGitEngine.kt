@@ -39,8 +39,8 @@ internal object JGitEngine : GitEngine {
         else null
 
     private fun ident(s: Settings) = PersonIdent(
-        s.authorName.ifBlank { "Foam Notes (${GitSync.clientName})" },
-        s.authorEmail.ifBlank { "foam-notes@${GitSync.clientName.lowercase()}.local" },
+        s.authorName.ifBlank { "Dara Notes (${GitSync.clientName})" },
+        s.authorEmail.ifBlank { "dara-notes@${GitSync.clientName.lowercase()}.local" },
     )
 
     private fun doSync(dir: File, s: Settings): SyncResult {

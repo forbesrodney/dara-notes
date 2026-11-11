@@ -1,8 +1,13 @@
-# Foam for Android
+# Dara Notes
 
-An Android app for managing Markdown notes kept in a Git repository, compatible with
-[Foam](https://foambubble.github.io/foam/) workspaces. A desktop version (macOS for now; the
-same code runs on Windows and Linux) shares the screens and note logic.
+An app for Markdown notes kept in a Git repository, for Android, iOS and the desktop (macOS
+for now; the same code runs on Windows and Linux). It works with
+[Foam](https://foambubble.github.io/foam/) workspaces: it reads Foam's settings and
+templates and follows its conventions for links, tags and daily notes. Dara Notes is an
+independent project, not made by or affiliated with the Foam developers.
+
+The name and icon come from the Dara knot (Irish *doire*, oak), a Celtic knot whose
+interlacing is read as an oak's roots: notes tied together by links.
 
 ## Features
 
@@ -204,7 +209,7 @@ Needs JDK 17 or newer (JDK 21 recommended) and the Android SDK (platform 37, bui
 ```
 
 The APK lands in `androidApp/build/outputs/apk/debug/`. Install with
-`adb install androidApp/build/outputs/apk/debug/foamforandroid-debug.apk`. The scripts below look for
+`adb install androidApp/build/outputs/apk/debug/daranotes-debug.apk`. The scripts below look for
 the SDK in `$ANDROID_HOME`, else `~/Library/Android/sdk`.
 
 Alternatively push this folder to GitHub: `.github/workflows/build.yml` builds the APK, runs the
@@ -212,8 +217,7 @@ unit tests (`./gradlew :shared:jvmTest testDebugUnitTest`) and attaches the APK 
 
 ### Desktop app
 
-The desktop app is the `desktopApp/` module: the same screens in a Compose Desktop window, named
-for its system (*Foam for macOS*, *Foam for Windows*, *Foam for Linux*). Run it
+The desktop app is the `desktopApp/` module: the same screens in a Compose Desktop window. Run it
 with the *Run desktop app* configuration, or:
 
 ```bash
@@ -260,8 +264,9 @@ To use another JDK, set `foam.packagingJdk=/path/to/jdk/Contents/Home` in
 
 How it differs from Android:
 
-- **Storage:** the repository is cloned into `~/Library/Application Support/Foam for macOS/repo`
-  (Windows: `%APPDATA%\Foam for Windows\repo`; Linux: `~/.local/share/foam-for-linux/repo`).
+- **Storage:** the repository is cloned into `~/Library/Application Support/Dara Notes/repo`
+  (Windows: `%APPDATA%\Dara Notes\repo`; Linux: `~/.local/share/dara-notes/repo`). Data from
+  versions named *Foam for macOS* (or Windows, Linux) is moved there on first start.
   Settings are in Java preferences, and the access token in the system keychain (macOS
   Keychain, Windows Credential Manager, or the Secret Service on Linux).
 - **Sync:** *Sync every* runs on a timer while the app is open, with no 15-minute minimum; the
@@ -326,10 +331,10 @@ and *Build release AAB* run the matching Gradle tasks.
 | `scripts/build-markdownlint.sh` | Rebuilds `vendor/markdownlint.min.js` (needs Node.js). Versions are pinned in `scripts/markdownlint/package.json`, and all sub-dependencies in its `package-lock.json`, so a rebuild gives the same file. |
 | `scripts/refresh-all.sh` | Runs `fetch-deps.sh`, `fetch-vendor.sh` and `build-markdownlint.sh`, then reports whether any committed library changed. |
 | `scripts/check-updates.sh` | Lists newer versions of the pinned JavaScript libraries. Changes nothing. |
-| `scripts/app-icons.py` | Draws the desktop and iOS app icons (`desktopApp/icons/`, the iOS asset catalog) from `art/foam_icon.svg`, and the `.dmg` window background. Rerun it after changing the artwork. |
+| `scripts/app-icons.py` | Draws the app icons with `scripts/KnotIcon.java`, which holds the knot's design: the desktop icons (`desktopApp/icons/`), the iOS asset catalog, the Android adaptive icon and `art/dara_icon.svg`; also the `.dmg` window background. Rerun it after changing the design (needs a JDK). |
 | `scripts/build-libgit2.sh` | Builds libgit2 for iPhone, the iOS Simulator and the Mac (Gradle runs it when needed). |
 | `scripts/macos-release.sh` | Builds the signed macOS `.dmg`, notarizes it and staples the ticket. |
-| `scripts/macos-dmg.sh` | Puts the packaged macOS app in a `.dmg` with a link to Applications, the arrow background and the Foam disk icon (`desktopApp/packaging/`), using dmgbuild, which it installs into `desktopApp/build/dmgbuild`. |
+| `scripts/macos-dmg.sh` | Puts the packaged macOS app in a `.dmg` with a link to Applications, the arrow background and the app's disk icon (`desktopApp/packaging/`, `desktopApp/icons/app.icns`), using dmgbuild, which it installs into `desktopApp/build/dmgbuild`. |
 | `scripts/ios-release.sh` | Archives the iOS app and exports a signed `.ipa` (TestFlight/App Store, or ad hoc). |
 | `scripts/ios-run.sh` | Builds the iOS app and runs it in the iOS Simulator (optionally pass a simulator name or ID). |
 | `scripts/bump-version.sh` | Raises the version of all the apps together: `micro` (1.2.3 to 1.2.4), `minor` (1.3.0), `major` (2.0.0), or an exact version such as `1.4.0`. Also adds 1 to the Android `versionCode` and the iOS build number, which `build` raises alone (for another upload of the same version). `--dry-run` shows the change without writing it. Doesn't commit or tag. |
@@ -348,7 +353,7 @@ folder), run the script, test, and commit the result.
 | `ui/` | Every screen and the view model, used by every app |
 | `web/` | The preview, graph and markdownlint pages and their JavaScript libraries, used by every app |
 | `androidApp/` | The Android app |
-| `desktopApp/` | The desktop app (Foam for macOS) |
+| `desktopApp/` | The desktop app |
 | `iosApp/` | The iOS app: the Xcode project around `ui` |
 
 - **`shared/`** has no UI and no platform dependencies. Nearly all of it is in

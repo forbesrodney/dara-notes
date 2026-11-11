@@ -160,8 +160,8 @@ internal object LibGit2Engine : GitEngine {
         }
     }
 
-    private fun authorName(s: Settings) = s.authorName.ifBlank { "Foam Notes (${GitSync.clientName})" }
-    private fun authorEmail(s: Settings) = s.authorEmail.ifBlank { "foam-notes@${GitSync.clientName.lowercase()}.local" }
+    private fun authorName(s: Settings) = s.authorName.ifBlank { "Dara Notes (${GitSync.clientName})" }
+    private fun authorEmail(s: Settings) = s.authorEmail.ifBlank { "dara-notes@${GitSync.clientName.lowercase()}.local" }
 
     private fun MemScope.signature(s: Settings): CPointer<git_signature> {
         val sig = alloc<CPointerVar<git_signature>>()

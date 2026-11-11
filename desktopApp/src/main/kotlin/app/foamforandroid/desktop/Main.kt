@@ -39,7 +39,7 @@ fun main() {
     migrateAppDataDir()
 
     // The app icon, for the window and (when run from Gradle) the Dock.
-    val icon = object {}.javaClass.getResourceAsStream("/foam-icon.png")?.use(ImageIO::read)
+    val icon = object {}.javaClass.getResourceAsStream("/app-icon.png")?.use(ImageIO::read)
     if (icon != null && Taskbar.isTaskbarSupported() &&
         Taskbar.getTaskbar().isSupported(Taskbar.Feature.ICON_IMAGE)
     ) {

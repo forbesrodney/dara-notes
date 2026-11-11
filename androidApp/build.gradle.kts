@@ -4,7 +4,7 @@ plugins {
 }
 
 base {
-    archivesName.set("foamforandroid")
+    archivesName.set("daranotes")
 }
 
 android {

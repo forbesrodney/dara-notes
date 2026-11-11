@@ -54,16 +54,9 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            // Named for the system it's built on: "Foam for macOS", "Foam for Windows", ...
-            packageName = "Foam for " + System.getProperty("os.name").lowercase().let {
-                when {
-                    "mac" in it -> "macOS"
-                    "win" in it -> "Windows"
-                    else -> "Linux"
-                }
-            }
+            packageName = "Dara Notes"
             packageVersion = "1.0.0"
-            description = "Markdown notes compatible with Foam, synced with Git"
+            description = "Markdown notes synced with Git; works with Foam workspaces"
             vendor = "Snakepit Software"
             // The parts of Java the app uses (from ./gradlew :desktopApp:suggestRuntimeModules, plus
             // java.naming and jdk.crypto.ec for HTTPS). java.management: JGit; jdk.jsobject:
@@ -73,10 +66,10 @@ compose.desktop {
                 "java.security.jgss", "java.sql", "jdk.crypto.ec", "jdk.jfr", "jdk.jsobject",
                 "jdk.security.auth", "jdk.unsupported", "jdk.unsupported.desktop", "jdk.xml.dom",
             )
-            // Drawn from art/foam_icon.svg by scripts/app-icons.py.
+            // Drawn by scripts/app-icons.py (the design is in scripts/KnotIcon.java).
             macOS {
                 bundleID = "app.foamformacos"
-                iconFile.set(project.file("icons/foam.icns"))
+                iconFile.set(project.file("icons/app.icns"))
                 // Signed with your Developer ID certificate when local.properties has
                 // apple.teamId (scripts/macos-release.sh then notarizes the .dmg).
                 developerIdName()?.let { name ->
@@ -87,10 +80,10 @@ compose.desktop {
                 }
             }
             windows {
-                iconFile.set(project.file("icons/foam.ico"))
+                iconFile.set(project.file("icons/app.ico"))
             }
             linux {
-                iconFile.set(project.file("icons/foam.png"))
+                iconFile.set(project.file("icons/app.png"))
             }
         }
     }

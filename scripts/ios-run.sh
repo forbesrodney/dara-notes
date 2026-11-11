@@ -16,7 +16,7 @@ echo "== Building"
 xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Debug \
     -destination "platform=iOS Simulator,id=$device" -derivedDataPath iosApp/build -quiet build 2>&1 \
     | grep -vE "Metadata extraction skipped" || true
-app=iosApp/build/Build/Products/Debug-iphonesimulator/FoamForiOS.app
+app=iosApp/build/Build/Products/Debug-iphonesimulator/DaraNotes.app
 [ -d "$app" ] || { echo "Build failed" >&2; exit 1; }
 
 echo "== Starting the simulator"

@@ -1,6 +1,6 @@
 # LICENSE
 
-## Foam for Android
+## Dara Notes
 
 ### MIT License
 

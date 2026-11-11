@@ -7,7 +7,7 @@
   <application
     android:name=".FoamForAndroidApp"
     android:allowBackup="false"
-    android:icon="@drawable/foam_icon"
+    android:icon="@mipmap/ic_launcher"
     android:label="@string/app_name"
     android:supportsRtl="true"
     android:theme="@style/Theme.FoamForAndroid">

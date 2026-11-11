@@ -2,7 +2,7 @@
 # Builds a signed release of the iOS app: an archive, then an .ipa exported from it.
 #   scripts/ios-release.sh                 # .ipa for TestFlight / the App Store
 #   scripts/ios-release.sh release-testing # .ipa for registered devices (ad hoc)
-# Output: iosApp/build/release/FoamForiOS.xcarchive and iosApp/build/release/export/*.ipa
+# Output: iosApp/build/release/DaraNotes.xcarchive and iosApp/build/release/export/*.ipa
 #
 # Needs your Apple Developer team ID as TEAM_ID in iosApp/Configuration/Local.xcconfig
 # (not committed), e.g.  TEAM_ID = ABCDE12345
@@ -28,7 +28,7 @@ fi
 echo "== Archiving (Release, team $team)"
 rm -rf "$out"
 xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Release \
-    -destination 'generic/platform=iOS' -archivePath "$out/FoamForiOS.xcarchive" \
+    -destination 'generic/platform=iOS' -archivePath "$out/DaraNotes.xcarchive" \
     CODE_SIGNING_ALLOWED=NO archive -quiet
 
 echo "== Exporting ($method)"
@@ -44,7 +44,7 @@ cat > "$out/ExportOptions.plist" <<EOF
 </dict>
 </plist>
 EOF
-xcodebuild -exportArchive -archivePath "$out/FoamForiOS.xcarchive" -exportPath "$out/export" \
+xcodebuild -exportArchive -archivePath "$out/DaraNotes.xcarchive" -exportPath "$out/export" \
     -exportOptionsPlist "$out/ExportOptions.plist" -allowProvisioningUpdates ${auth[@]+"${auth[@]}"} -quiet
 
 ls "$out"/export/*.ipa

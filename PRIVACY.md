@@ -2,7 +2,7 @@
 
 Effective November 10, 2026
 
-This policy covers Foam for Android, Foam for iOS and Foam for macOS (together, "the app"), made
+This policy covers Dara Notes for Android, iOS and macOS (together, "the app"), made
 by Snakepit Software. In short: your notes stay on your device and in the Git repository you
 choose. The app has no accounts, no analytics, no advertising and no tracking, and the
 developer never receives your notes or your settings.

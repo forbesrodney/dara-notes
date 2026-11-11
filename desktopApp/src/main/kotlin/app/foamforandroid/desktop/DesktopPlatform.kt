@@ -64,8 +64,8 @@ class DesktopPlatform : AppPlatform {
 
 /**
  * Where the app keeps its data, following each platform's convention:
- * `~/Library/Application Support/Foam for macOS`, `%APPDATA%\Foam for Windows`,
- * `~/.local/share/foam-for-linux`.
+ * `~/Library/Application Support/Dara Notes`, `%APPDATA%\Dara Notes`,
+ * `~/.local/share/dara-notes`.
  */
 fun appDataDir(): File = dataDir(appName())
 
@@ -82,18 +82,20 @@ private fun dataDir(name: String): File {
     }
 }
 
-/** Moves data from the folder earlier versions used ("Foam for Android") to [appDataDir]. */
+/** Moves data from a folder earlier versions used (see [oldAppNames]) to [appDataDir]. */
 fun migrateAppDataDir() {
-    val old = dataDir("Foam for Android")
     val new = appDataDir()
-    if (old.isDirectory && !new.exists()) {
-        new.parentFile?.mkdirs()
-        if (!old.renameTo(new)) System.err.println("Couldn't move $old to $new")
-    }
+    if (new.exists()) return
+    val old = oldAppNames().map(::dataDir).firstOrNull { it.isDirectory } ?: return
+    new.parentFile?.mkdirs()
+    if (!old.renameTo(new)) System.err.println("Couldn't move $old to $new")
 }
 
-/** The app's name on this platform: "Foam for macOS", "Foam for Windows" or "Foam for Linux". */
-fun appName(): String = "Foam for ${clientName()}"
+/** The app's name, used for its data folder and keychain entry. */
+fun appName(): String = "Dara Notes"
+
+/** Names earlier versions used, newest first: "Foam for macOS" (or Windows, Linux), "Foam for Android". */
+fun oldAppNames(): List<String> = listOf("Foam for ${clientName()}", "Foam for Android")
 
 /** The platform's name for commit messages: "macOS", "Windows" or "Linux". */
 fun clientName(): String {

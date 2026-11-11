@@ -17,7 +17,7 @@
 		A1000000000000000000F002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1000000000000000000F003 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		A1000000000000000000F005 /* web */ = {isa = PBXFileReference; lastKnownFileType = folder; name = web; path = ../web; sourceTree = "<group>"; };
-		A1000000000000000000F004 /* FoamForiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FoamForiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1000000000000000000F004 /* DaraNotes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DaraNotes.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -61,7 +61,7 @@
 		A1000000000000000000E003 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				A1000000000000000000F004 /* FoamForiOS.app */,
+				A1000000000000000000F004 /* DaraNotes.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -84,7 +84,7 @@
 			);
 			name = iosApp;
 			productName = iosApp;
-			productReference = A1000000000000000000F004 /* FoamForiOS.app */;
+			productReference = A1000000000000000000F004 /* DaraNotes.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -217,7 +217,7 @@
 					FoamUI,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID)";
-				PRODUCT_NAME = FoamForiOS;
+				PRODUCT_NAME = DaraNotes;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
@@ -250,7 +250,7 @@
 					FoamUI,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID)";
-				PRODUCT_NAME = FoamForiOS;
+				PRODUCT_NAME = DaraNotes;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
