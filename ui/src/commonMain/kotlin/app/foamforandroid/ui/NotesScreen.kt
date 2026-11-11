@@ -106,6 +106,15 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     val indexPath = vm.settings.indexFile
     val index = notes.firstOrNull { it.path.equals(indexPath, ignoreCase = true) }
 
+    val desktop = vm.platform.desktop
+    // Cmd+N in the desktop app.
+    LaunchedEffect(vm.newNoteRequested.value) {
+        if (vm.newNoteRequested.value) {
+            vm.newNoteRequested.value = false
+            showNew = true
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -114,6 +123,16 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                     if (index != null) {
                         IconButton(onClick = { vm.openPath(index.path) }) {
                             Icon(Icons.Default.Home, contentDescription = "Open ${index.path}")
+                        }
+                    }
+                    // On the desktop, Today (Cmd+D) and New note (Cmd+N) follow Home; on phones
+                    // and tablets they float at the bottom, within thumb's reach.
+                    if (desktop) {
+                        IconButton(onClick = vm::openDailyNote) {
+                            Icon(Icons.Default.DateRange, contentDescription = "Today's note")
+                        }
+                        IconButton(onClick = { showNew = true }) {
+                            Icon(Icons.Default.Add, contentDescription = "New note")
                         }
                     }
                     IconButton(onClick = { vm.navigate(Screen.Graph()) }) {
@@ -150,6 +169,7 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
             )
         },
         floatingActionButton = {
+            if (desktop) return@Scaffold
             // Two matching buttons: the same height, and as wide as the wider of the two.
             Column(Modifier.width(IntrinsicSize.Max), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 ListActionButton(Icons.Default.DateRange, "Today", vm::openDailyNote)

@@ -62,7 +62,7 @@ same code runs on Windows and Linux) shares the screens and note logic.
   Foam's link reference definitions, as are the moved note's own relative links. If a
   new name clashes with another note, links are path-qualified so each still points at
   the right note. Links inside code are left alone.
-- **Daily notes**: calendar button opens/creates today's note. Reads Foam's
+- **Daily notes**: the *Today* button opens/creates today's note. Reads Foam's
   `.foam/templates/daily-note.md` (incl. `foam_template.filepath` and `$FOAM_DATE_*`
   variables). Default: `journal/yyyy-mm-dd.md`.
   `.foam/templates/new-note.md` is used for new notes too.
@@ -93,7 +93,11 @@ same code runs on Windows and Linux) shares the screens and note logic.
 - **Keyboard shortcuts** in the editor, with a hardware keyboard: Ctrl+B or Cmd+B for bold,
   Ctrl+I or Cmd+I for italic, Ctrl+Shift+X or Cmd+Shift+X for strike-through, and Ctrl+Enter
   or Cmd+Enter to check or uncheck the task on the current line. Bold, italic and
-  strike-through toggle, and with nothing selected apply to the word at the cursor. On Android, use Ctrl: the system may claim some Cmd (Meta) shortcuts.
+  strike-through toggle, and with nothing selected apply to the word at the cursor. On
+  Android, use Ctrl: the system may claim some Cmd (Meta) shortcuts. In the desktop app,
+  Cmd+N (Ctrl+N on Windows and Linux) starts a new note and Cmd+D (Ctrl+D) opens today's
+  note, from anywhere; its *Today* and *New note* buttons are in the toolbar rather than
+  floating at the bottom.
 
 ## Privacy
 

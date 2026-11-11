@@ -3,6 +3,15 @@ package app.foamforandroid.desktop
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.graphics.toComposeImageBitmap
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEvent
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
@@ -20,6 +29,7 @@ fun main() {
     // The web views are native (Swing/JavaFX) components. Menus and dialogs drawn inside the
     // window would show over them but lose their clicks to them, so give each its own window.
     System.setProperty("compose.layers.type", "WINDOW")
+    showLayerWindowsOnOpen()
     System.setProperty("compose.interop.blending", "true")
     GitSync.clientName = clientName()
     Fx.start()
@@ -43,6 +53,7 @@ fun main() {
             title = appName(),
             icon = icon?.let { BitmapPainter(it.toComposeImageBitmap()) },
             state = rememberWindowState(width = 1000.dp, height = 760.dp),
+            onPreviewKeyEvent = { e -> appShortcut(e, vm) },
         ) {
             // Pull changes made elsewhere whenever the window comes to the front, as the
             // Android app does when it opens.
@@ -57,3 +68,22 @@ fun main() {
         }
     }
 }
+
+private val isMac = "mac" in System.getProperty("os.name").lowercase()
+
+/**
+ * App-wide shortcuts, wherever the focus is: Cmd+N (Ctrl+N on Windows and Linux) for a new
+ * note and Cmd+D (Ctrl+D) for today's daily note. True if [e] was one.
+ */
+private fun appShortcut(e: KeyEvent, vm: MainViewModel): Boolean {
+    val command = if (isMac) e.isMetaPressed && !e.isCtrlPressed else e.isCtrlPressed && !e.isMetaPressed
+    if (!command || e.isShiftPressed || e.isAltPressed) return false
+    val action: () -> Unit = when (e.key) {
+        Key.N -> vm::requestNewNote
+        Key.D -> vm::openDailyNote
+        else -> return false
+    }
+    if (e.type == KeyEventType.KeyDown) action()
+    return true
+}
+

@@ -23,6 +23,7 @@ class DesktopPlatform : AppPlatform {
     override val settings: Settings = DesktopSettings()
     override val fs: FileSystem = FileSystem.SYSTEM
     override val repoDir: Path = File(appDataDir(), "repo").toOkioPath()
+    override val desktop = true
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var periodic: Job? = null

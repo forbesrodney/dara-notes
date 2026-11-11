@@ -25,4 +25,10 @@ interface AppPlatform {
 
     /** Applies markdownlint's automatic fixes to [text]. */
     suspend fun fixAll(text: String, config: LintConfig): String
+
+    /**
+     * The desktop app (mouse and keyboard, a wide window): actions go in the toolbar rather
+     * than in floating buttons, which suit thumbs on a phone.
+     */
+    val desktop: Boolean get() = false
 }

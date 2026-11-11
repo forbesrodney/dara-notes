@@ -151,7 +151,19 @@ class MainViewModel(val platform: AppPlatform) : ViewModel() {
         }
     }
 
+    /** Set to ask the note list to show its New note dialog; it clears this when it does. */
+    val newNoteRequested = mutableStateOf(false)
+
+    /** The New note dialog, from anywhere (the desktop app's Cmd+N): back to the note list first. */
+    fun requestNewNote() {
+        val list = backStack.indexOf(Screen.Notes)
+        if (list < 0) return // not set up yet
+        while (backStack.lastIndex > list) backStack.removeAt(backStack.lastIndex)
+        newNoteRequested.value = true
+    }
+
     fun openDailyNote() {
+        if (!settings.isConfigured) return
         viewModelScope.launch {
             val path = withContext(ioDispatcher) { repo.dailyNote() }
             afterEdit()
