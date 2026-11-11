@@ -21,6 +21,7 @@ class DesktopSettings : Settings {
     override var authorName by StringPref("author_name", "")
     override var authorEmail by StringPref("author_email", "")
 
+    override var linkFromIndex by BoolPref("link_from_index", false)
     override var indexFile by StringPref("index_file", "Index.md")
     override var indexDailyNotes by BoolPref("index_daily_notes", false)
 

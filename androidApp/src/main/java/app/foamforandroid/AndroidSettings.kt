@@ -31,6 +31,7 @@ class AndroidSettings(context: Context) : Settings {
     override var authorName by StringPref(prefs, "author_name", "")
     override var authorEmail by StringPref(prefs, "author_email", "")
 
+    override var linkFromIndex by BoolPref(prefs, "link_from_index", false)
     override var indexFile by StringPref(prefs, "index_file", "Index.md")
     override var indexDailyNotes by BoolPref(prefs, "index_daily_notes", false)
 

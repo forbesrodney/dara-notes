@@ -99,7 +99,7 @@ fun OrphansScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                                     style = MaterialTheme.typography.bodySmall,
                                 )
                             },
-                            trailingContent = if (note.path.equals(indexPath, ignoreCase = true)) null else {
+                            trailingContent = if (!vm.settings.linkFromIndex || note.path.equals(indexPath, ignoreCase = true)) null else {
                                 {
                                     TextButton(onClick = { vm.addToIndex(note.path) }) { Text("Add to index") }
                                 }

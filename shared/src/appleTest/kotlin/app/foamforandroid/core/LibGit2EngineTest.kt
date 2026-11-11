@@ -33,6 +33,7 @@ class LibGit2EngineTest {
         override var token = ""
         override var authorName = name
         override var authorEmail = "$name@example.com"
+        override var linkFromIndex = false
         override var indexFile = "Index.md"
         override var indexDailyNotes = false
         override var bullet = "-"

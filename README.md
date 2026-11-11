@@ -11,11 +11,16 @@ same code runs on Windows and Linux) shares the screens and note logic.
     note list's menu), and in the background every N minutes (WorkManager, 15 min minimum).
   - Merge conflicts never lose data: conflicting files are committed with conflict
     markers and shown in the note list so you can tidy them up.
-- **Index.md maintenance**: every new note (from the *New note* button or by following a
-  dangling wikilink) gets `- [[note]]` added at the end of the index's list of links, using
-  that list's bullet. If the index has Foam's link reference definitions at the bottom, the
-  entry goes above them and a matching definition is added. Deleting a note removes both. Settings has *Add missing notes to Index.md* for existing repos. Daily
-  notes are left out unless you switch them on.
+- **Index note (optional, off by default)**: Foam gives no file a special role; notes are
+  tied together by the links you write. Settings > Notes > *Index note* (`Index.md` by
+  default) names the note the Home button opens. To have the app maintain it, switch on
+  *Link new notes from the index note*. Then every new note (from the *New note*
+  button or by following a dangling wikilink) gets `- [[note]]` added at the end of the
+  index's list of links, using that list's bullet. If the index has Foam's link reference
+  definitions at the bottom, the entry goes above them and a matching definition is added.
+  Deleting a note removes both. Settings also has *Add missing notes to Index.md* for
+  existing repos. Daily notes are left out unless you switch them on. With linking off,
+  the app never edits the index.
 - **List bullet setting**: choose `-` (default) or `*` for the bullets the app writes in
   Index.md and with the editor's list and checkbox buttons. The buttons remove existing
   items written with either character.
@@ -52,7 +57,7 @@ same code runs on Windows and Linux) shares the screens and note logic.
   list. In the graph, selecting a tag offers *Notes* to jump here.
 - **Orphaned notes** (note list menu > *Orphaned notes*): like Foam's Orphans panel, the
   notes with no links to or from another note (tags don't count). Tap one to open it, or
-  *Add to index* to link it from Index.md. Respects Foam's `foam.orphans.exclude` setting.
+  *Add to index* (when index linking is on) to link it from Index.md. Respects Foam's `foam.orphans.exclude` setting.
 - **Placeholders** (note list menu > *Placeholders*): like Foam's Placeholders panel, the
   wikilinks that point to notes that don't exist yet, each with the notes that link to it.
   *Create* makes the note; tap a linking note to open it. Respects Foam's

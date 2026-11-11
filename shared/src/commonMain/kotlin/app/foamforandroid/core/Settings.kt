@@ -14,7 +14,13 @@ interface Settings {
     var authorName: String
     var authorEmail: String
 
-    /** Index file maintained when notes are created. */
+    /**
+     * Whether the app keeps [indexFile] up to date: links new notes from it and removes deleted
+     * ones. Off by default; Foam itself gives no file a special role.
+     */
+    var linkFromIndex: Boolean
+
+    /** Index file maintained when notes are created (if [linkFromIndex]). */
     var indexFile: String
     var indexDailyNotes: Boolean
 

@@ -325,7 +325,7 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     }
 
     if (showNew) {
-        NewNoteDialog(onDismiss = { showNew = false }, onCreate = { title ->
+        NewNoteDialog(linked = vm.settings.linkFromIndex, onDismiss = { showNew = false }, onCreate = { title ->
             showNew = false
             vm.createNote(title)
         })
@@ -393,7 +393,7 @@ fun SyncStatusLine(sync: SyncState) {
 }
 
 @Composable
-private fun NewNoteDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
+private fun NewNoteDialog(linked: Boolean, onDismiss: () -> Unit, onCreate: (String) -> Unit) {
     var title by remember { mutableStateOf("") }
     val focus = remember { FocusRequester() }
     AlertDialog(
@@ -408,11 +408,13 @@ private fun NewNoteDialog(onDismiss: () -> Unit, onCreate: (String) -> Unit) {
                     singleLine = true,
                     modifier = Modifier.focusRequester(focus),
                 )
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "It will be linked from the index automatically.",
-                    style = MaterialTheme.typography.bodySmall,
-                )
+                if (linked) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "It will be linked from the index automatically.",
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
             }
         },
         confirmButton = {

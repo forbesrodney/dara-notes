@@ -68,6 +68,7 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     var token by remember { mutableStateOf(s.token) }
     var authorName by remember { mutableStateOf(s.authorName) }
     var authorEmail by remember { mutableStateOf(s.authorEmail) }
+    var linkIndex by remember { mutableStateOf(s.linkFromIndex) }
     var indexFile by remember { mutableStateOf(s.indexFile) }
     var indexDaily by remember { mutableStateOf(s.indexDailyNotes) }
     var bullet by remember { mutableStateOf(s.bullet) }
@@ -93,7 +94,7 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     val dirty = remoteUrl.trim() != s.remoteUrl || branch.trim().ifBlank { "main" } != s.branch ||
         username.trim() != s.username || token.trim() != s.token ||
         authorName.trim() != s.authorName || authorEmail.trim() != s.authorEmail ||
-        indexFile.trim().ifBlank { "Index.md" } != s.indexFile || indexDaily != s.indexDailyNotes ||
+        linkIndex != s.linkFromIndex || indexFile.trim().ifBlank { "Index.md" } != s.indexFile || indexDaily != s.indexDailyNotes ||
         bullet != s.bullet || strike != s.strikeCompleted || lintEnabled != s.lintEnabled ||
         addDate != s.dateOnComplete || dateOrder != s.dateOrder || dateSep != s.dateSeparator ||
         newNoteDir.trim().trim('/') != s.newNoteDir || dailyDir.trim().trim('/') != s.dailyDirOverride ||
@@ -106,6 +107,7 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
         s.token = token.trim()
         s.authorName = authorName.trim()
         s.authorEmail = authorEmail.trim()
+        s.linkFromIndex = linkIndex
         s.indexFile = indexFile.trim().ifBlank { "Index.md" }
         s.indexDailyNotes = indexDaily
         s.bullet = bullet
@@ -225,8 +227,20 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                     }
                 }
                 1 -> {
-                    Field("Index file", indexFile, { indexFile = it }, hint = "New notes are linked here as $bullet [[note]]")
-                    Toggle("Add daily notes to the index", indexDaily) { indexDaily = it }
+                    Field(
+                        "Index note", indexFile, { indexFile = it },
+                        hint = if (linkIndex) "Opened by the Home button; new notes are linked here as $bullet [[note]]"
+                        else "Opened by the Home button",
+                    )
+                    Toggle("Link new notes from the index note", linkIndex) { linkIndex = it }
+                    if (linkIndex) {
+                        Toggle("Add daily notes to the index", indexDaily) { indexDaily = it }
+                    } else {
+                        Text(
+                            "Off, as in Foam: notes are tied together only by the links you write.",
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
                     Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Text("List bullet", Modifier.weight(1f))
                         listOf("-" to "Dash  -", "*" to "Asterisk  *").forEach { (c, label) ->
@@ -240,7 +254,7 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                     }
                     Field("Folder for new notes", newNoteDir, { newNoteDir = it }, hint = "Blank = repository root")
                     Field("Daily notes folder", dailyDir, { dailyDir = it }, hint = "Used when the daily-note template has no filepath. Blank = journal")
-                    if (s.isConfigured) {
+                    if (s.isConfigured && linkIndex) {
                         Spacer(Modifier.height(8.dp))
                         OutlinedButton(onClick = { persist(); vm.rebuildIndex() }, modifier = Modifier.fillMaxWidth()) {
                             Text("Add missing notes to ${indexFile.ifBlank { "Index.md" }}")

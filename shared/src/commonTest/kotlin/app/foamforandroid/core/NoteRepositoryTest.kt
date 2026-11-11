@@ -14,6 +14,7 @@ private class TestSettings : Settings {
     override var token = ""
     override var authorName = ""
     override var authorEmail = ""
+    override var linkFromIndex = true
     override var indexFile = "Index.md"
     override var indexDailyNotes = false
     override var bullet = "-"
@@ -43,6 +44,16 @@ class NoteRepositoryTest {
         assertEquals("# Shopping List\n\n", repo.read(path))
         assertTrue("[[shopping-list]]" in repo.read("Index.md"))
         assertEquals(listOf("Shopping List", "Index"), repo.listNotes().map { it.title }.sortedDescending())
+    }
+
+    @Test fun leavesTheIndexAloneWhenLinkingIsOff() {
+        val repo = NoteRepository(fs, root, TestSettings().apply { linkFromIndex = false; indexDailyNotes = true })
+        repo.write("Index.md", "# Index\n\n- [[old]]\n")
+        repo.write("old.md", "# Old\n")
+        repo.createNoteFromTitle("Shopping List")
+        repo.dailyNote()
+        repo.delete("old.md")
+        assertEquals("# Index\n\n- [[old]]\n", repo.read("Index.md"))
     }
 
     @Test fun moveFixesLinksAndRemovesTheEmptyFolder() {

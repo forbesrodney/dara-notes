@@ -109,7 +109,7 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
 
     fun delete(path: String) {
         fs.delete(file(path), mustExist = false)
-        removeFromIndex(path)
+        if (settings.linkFromIndex) removeFromIndex(path)
     }
 
     // ---- wikilinks -----------------------------------------------------------------------
@@ -266,7 +266,7 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
         val body = if (template != null) FoamVariables.resolve(template.body, title)
         else "# $title\n\n"
         write(path, body)
-        addToIndex(path)
+        if (settings.linkFromIndex) addToIndex(path)
     }
 
     /** Opens (creating if needed) the daily note for [date]. Returns its path. */
@@ -285,7 +285,7 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
             val body = if (template != null) FoamVariables.resolve(template.body, title, now)
             else "# $title\n\n"
             write(path, body)
-            if (settings.indexDailyNotes) addToIndex(path)
+            if (settings.linkFromIndex && settings.indexDailyNotes) addToIndex(path)
         }
         return path
     }
