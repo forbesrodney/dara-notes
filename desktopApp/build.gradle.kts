@@ -44,7 +44,7 @@ tasks.processResources {
 
 compose.desktop {
     application {
-        mainClass = "app.foamforandroid.desktop.MainKt"
+        mainClass = "app.daranotes.desktop.MainKt"
 
         // Packaging bundles a Java runtime made from this JDK, so it must be self-contained:
         // Homebrew's openjdk links to Homebrew libraries and would only run on Macs that have
@@ -68,7 +68,7 @@ compose.desktop {
             )
             // Drawn by scripts/app-icons.py (the design is in scripts/KnotIcon.java).
             macOS {
-                bundleID = "app.foamformacos"
+                bundleID = "app.daranotes"
                 iconFile.set(project.file("icons/app.icns"))
                 // Signed with your Developer ID certificate when local.properties has
                 // apple.teamId (scripts/macos-release.sh then notarizes the .dmg).

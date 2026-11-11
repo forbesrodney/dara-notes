@@ -12,7 +12,7 @@
 	<!-- Background sync: an app refresh task (BackgroundSync in ui/src/iosMain). -->
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-		<string>app.foamforios.sync</string>
+		<string>app.daranotes.sync</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

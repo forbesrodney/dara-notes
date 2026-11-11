@@ -26,7 +26,7 @@ val javafxPlatform: String = run {
 
 kotlin {
     android {
-        namespace = "app.foamforandroid.ui"
+        namespace = "app.daranotes.ui"
         compileSdk = 37
         minSdk = 26
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
@@ -34,10 +34,10 @@ kotlin {
     jvm {
         compilerOptions { jvmTarget.set(JvmTarget.JVM_17) }
     }
-    // iOS: built as the FoamUI framework that the Xcode project (iosApp/) links.
+    // iOS: built as the DaraUI framework that the Xcode project (iosApp/) links.
     listOf(iosArm64(), iosSimulatorArm64()).forEach { target ->
         target.binaries.framework {
-            baseName = "FoamUI"
+            baseName = "DaraUI"
             isStatic = true
         }
     }

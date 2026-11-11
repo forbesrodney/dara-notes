@@ -1,5 +1,5 @@
 #!/bin/sh
-# Xcode build phase: compiles the shared Kotlin UI into FoamUI.framework for the platform and
+# Xcode build phase: compiles the shared Kotlin UI into DaraUI.framework for the platform and
 # configuration Xcode is building, using Gradle. Xcode doesn't read your shell profile, so this
 # finds a JDK 21 itself.
 set -e

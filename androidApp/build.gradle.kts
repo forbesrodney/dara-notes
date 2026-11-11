@@ -8,11 +8,11 @@ base {
 }
 
 android {
-    namespace = "app.foamforandroid"
+    namespace = "app.daranotes"
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "app.foamforandroid"
+        applicationId = "app.daranotes"
         minSdk = 26
         targetSdk = 35
         versionCode = 1

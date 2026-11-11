@@ -7,13 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		A1000000000000000000B001 /* FoamApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000F001 /* FoamApp.swift */; };
+		A1000000000000000000B001 /* DaraNotesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000F001 /* DaraNotesApp.swift */; };
 		A1000000000000000000B002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000F002 /* Assets.xcassets */; };
 		A1000000000000000000B003 /* web in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000F005 /* web */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		A1000000000000000000F001 /* FoamApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FoamApp.swift; sourceTree = "<group>"; };
+		A1000000000000000000F001 /* DaraNotesApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaraNotesApp.swift; sourceTree = "<group>"; };
 		A1000000000000000000F002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1000000000000000000F003 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
 		A1000000000000000000F005 /* web */ = {isa = PBXFileReference; lastKnownFileType = folder; name = web; path = ../web; sourceTree = "<group>"; };
@@ -44,7 +44,7 @@
 		A1000000000000000000E001 /* iosApp */ = {
 			isa = PBXGroup;
 			children = (
-				A1000000000000000000F001 /* FoamApp.swift */,
+				A1000000000000000000F001 /* DaraNotesApp.swift */,
 				A1000000000000000000F002 /* Assets.xcassets */,
 			);
 			path = iosApp;
@@ -149,7 +149,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A1000000000000000000B001 /* FoamApp.swift in Sources */,
+				A1000000000000000000B001 /* DaraNotesApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -214,7 +214,7 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",
-					FoamUI,
+					DaraUI,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID)";
 				PRODUCT_NAME = DaraNotes;
@@ -247,7 +247,7 @@
 				OTHER_LDFLAGS = (
 					"$(inherited)",
 					"-framework",
-					FoamUI,
+					DaraUI,
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = "$(BUNDLE_ID)";
 				PRODUCT_NAME = DaraNotes;

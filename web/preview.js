@@ -122,7 +122,7 @@
     .use(mermaidFences);
 
   // GitHub-style heading IDs, for #links and tables of contents. Keep in step with Toc.slug
-  // and Toc.headings in shared/src/commonMain/kotlin/app/foamforandroid/core/Toc.kt.
+  // and Toc.headings in shared/src/commonMain/kotlin/app/daranotes/core/Toc.kt.
   function slug(text) {
     return text.trim().toLowerCase().replace(/[^\p{L}\p{M}\p{N}\p{Pc} -]/gu, '').replace(/ /g, '-');
   }

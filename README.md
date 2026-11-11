@@ -265,8 +265,7 @@ To use another JDK, set `foam.packagingJdk=/path/to/jdk/Contents/Home` in
 How it differs from Android:
 
 - **Storage:** the repository is cloned into `~/Library/Application Support/Dara Notes/repo`
-  (Windows: `%APPDATA%\Dara Notes\repo`; Linux: `~/.local/share/dara-notes/repo`). Data from
-  versions named *Foam for macOS* (or Windows, Linux) is moved there on first start.
+  (Windows: `%APPDATA%\Dara Notes\repo`; Linux: `~/.local/share/dara-notes/repo`).
   Settings are in Java preferences, and the access token in the system keychain (macOS
   Keychain, Windows Credential Manager, or the Secret Service on Linux).
 - **Sync:** *Sync every* runs on a timer while the app is open, with no 15-minute minimum; the
@@ -277,8 +276,8 @@ How it differs from Android:
 
 ### iOS app
 
-`iosApp/` is a small Xcode project around the shared screens: `FoamApp.swift` shows the
-Compose UI from the `FoamUI` framework, which its *Compile Kotlin framework* build phase
+`iosApp/` is a small Xcode project around the shared screens: `DaraNotesApp.swift` shows the
+Compose UI from the `DaraUI` framework, which its *Compile Kotlin framework* build phase
 (`iosApp/build-kotlin.sh`) builds with Gradle; the `web/` pages are bundled as resources. Needs
 Xcode with an iOS simulator runtime (*Xcode > Settings > Components*) and a JDK 21. Run it in
 the simulator with the *Run iOS app (simulator)* configuration, or:
@@ -309,7 +308,7 @@ How it differs from Android:
   seconds after an edit while it's open, and when it goes to the background if edits are
   waiting to be pushed (iOS allows about 30 seconds for that). Commits say "from iOS".
 - **Preview, graph and markdownlint:** the same pages in WKWebView, served under a private
-  `foam:` scheme. The pages' synchronous calls (resolving wikilinks, reading embedded notes)
+  `dara:` scheme. The pages' synchronous calls (resolving wikilinks, reading embedded notes)
   are answered through that scheme too.
 
 Git on iOS uses [libgit2](https://libgit2.org), built from source by
@@ -349,7 +348,7 @@ folder), run the script, test, and commit the result.
 
 | Folder | What it is |
 | --- | --- |
-| `shared/` | The note logic, used by every app (package `app.foamforandroid.core`) |
+| `shared/` | The note logic, used by every app (package `app.daranotes.core`) |
 | `ui/` | Every screen and the view model, used by every app |
 | `web/` | The preview, graph and markdownlint pages and their JavaScript libraries, used by every app |
 | `androidApp/` | The Android app |
@@ -402,6 +401,6 @@ folder), run the script, test, and commit the result.
 | `web/graph.html` | the force-graph page |
 | `web/preview.*` | markdown-it pipeline with wikilink, task-list and mermaid plugins |
 
-`...` is `src/commonMain/kotlin/app/foamforandroid/core` in `shared/` (or `jvmMain` where
-shown), `src/commonMain/kotlin/app/foamforandroid` in `ui/`, and
-`src/main/java/app/foamforandroid` in `androidApp/`.
+`...` is `src/commonMain/kotlin/app/daranotes/core` in `shared/` (or `jvmMain` where
+shown), `src/commonMain/kotlin/app/daranotes` in `ui/`, and
+`src/main/java/app/daranotes` in `androidApp/`.
