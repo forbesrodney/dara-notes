@@ -259,7 +259,7 @@ Macs that have them. Install Eclipse Temurin 21, which the build finds by defaul
 brew install --cask temurin@21
 ```
 
-To use another JDK, set `foam.packagingJdk=/path/to/jdk/Contents/Home` in
+To use another JDK, set `daranotes.packagingJdk=/path/to/jdk/Contents/Home` in
 `~/.gradle/gradle.properties`. Building and running don't need it.
 
 How it differs from Android:

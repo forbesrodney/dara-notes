@@ -48,7 +48,7 @@ compose.desktop {
 
         // Packaging bundles a Java runtime made from this JDK, so it must be self-contained:
         // Homebrew's openjdk links to Homebrew libraries and would only run on Macs that have
-        // them. Uses foam.packagingJdk from ~/.gradle/gradle.properties if set, else a Temurin
+        // them. Uses daranotes.packagingJdk from ~/.gradle/gradle.properties if set, else a Temurin
         // 21 found in the usual places (e.g. from brew install --cask temurin@21).
         packagingJdk()?.let { javaHome = it }
 
@@ -89,9 +89,9 @@ compose.desktop {
     }
 }
 
-/** The JDK to package with: foam.packagingJdk, else the newest Eclipse Temurin 21 installed. */
+/** The JDK to package with: daranotes.packagingJdk, else the newest Eclipse Temurin 21 installed. */
 fun packagingJdk(): String? {
-    (findProperty("foam.packagingJdk") as String?)?.let { return it }
+    (findProperty("daranotes.packagingJdk") as String?)?.let { return it }
     val home = System.getProperty("user.home")
     val roots = listOf(
         "/Library/Java/JavaVirtualMachines", "$home/Library/Java/JavaVirtualMachines", // macOS
