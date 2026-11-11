@@ -1,5 +1,5 @@
 {
-  "name": "foam-for-android-markdownlint-bundle",
+  "name": "dara-notes-markdownlint-bundle",
   "private": true,
   "description": "Builds web/vendor/markdownlint.min.js; see scripts/build-markdownlint.sh",
   "dependencies": {

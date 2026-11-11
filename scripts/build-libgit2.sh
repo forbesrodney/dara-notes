@@ -40,6 +40,7 @@ build() { # name sysroot [cmake args...]
     fi
     echo "== Building $name"
     local dir="$OUT/work/$name"
+    rm -rf "$dir"
     cmake -S "$src" -B "$dir" -DCMAKE_BUILD_TYPE=Release \
         -DCMAKE_OSX_SYSROOT="$sysroot" -DCMAKE_OSX_ARCHITECTURES=arm64 \
         -DCMAKE_INSTALL_PREFIX="$prefix" \
