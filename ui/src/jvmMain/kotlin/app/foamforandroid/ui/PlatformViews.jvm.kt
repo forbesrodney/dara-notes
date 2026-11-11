@@ -78,8 +78,13 @@ internal class DesktopPreview(var callbacks: PreviewCallbacks) {
 
     fun panel(background: Color) = webPanel(
         PREVIEW_PAGE, background,
-        onCreated = { engine = it },
+        onCreated = {
+            // A new web view (the panel can be rebuilt) has yet to load the page.
+            engine = it
+            ready = false
+        },
         onLoaded = { e ->
+            if (e !== engine) return@webPanel // about:blank, loaded on dispose
             (e.executeScript("window") as JSObject).setMember("Android", bridge)
             ready = true
             lastRendered = null
@@ -95,8 +100,9 @@ internal class DesktopPreview(var callbacks: PreviewCallbacks) {
     private fun renderNow(script: String) {
         val e = engine ?: return
         if (!ready || script == lastRendered) return
-        lastRendered = script
-        e.executeScript(script)
+        // Only once the page's render() exists; otherwise it stays pending for onLoaded.
+        val done = e.executeScript("typeof render === 'function' && ($script, true)") == true
+        if (done) lastRendered = script
     }
 
     fun dispose() = Fx.run { engine?.load("about:blank"); engine = null; ready = false }

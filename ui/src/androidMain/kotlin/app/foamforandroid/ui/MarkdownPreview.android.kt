@@ -110,6 +110,7 @@ actual fun MarkdownPreview(
                 }, "Android")
                 loadUrl(PAGE)
                 state.webView = this
+                state.ready = false // a new web view: wait for the page's ready() call
             }
         },
         update = { wv ->

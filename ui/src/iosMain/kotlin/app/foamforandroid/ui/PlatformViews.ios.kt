@@ -30,6 +30,10 @@ private fun uiColor(c: Color): UIColor {
 /** The preview's state: queues the latest render until the page is ready. */
 private class IosPreview(var callbacks: PreviewCallbacks) : WebHost {
     var webView: WKWebView? = null
+        set(value) {
+            field = value
+            ready = false // a new web view: wait for the page's ready() call
+        }
     override var repoDir: String? = null
     private var ready = false
     private var pending: String? = null
