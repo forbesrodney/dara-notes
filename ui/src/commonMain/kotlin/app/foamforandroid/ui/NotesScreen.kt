@@ -118,7 +118,20 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Notes") },
+                title = {
+                    Column {
+                        Text("Notes")
+                        syncSubtitle(sync)?.let {
+                            Text(
+                                it,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
+                    }
+                },
                 actions = {
                     if (index != null) {
                         IconButton(onClick = { vm.openPath(index.path) }) {
@@ -320,26 +333,36 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     }
 }
 
+/** Routine sync status, for under the note list's title: "Syncing…" or "Synced 5 min ago". */
+private fun syncSubtitle(sync: SyncState): String? = when {
+    sync.running -> "Syncing…"
+    sync.lastError != null -> "Sync failed"
+    sync.conflicts.isNotEmpty() -> "Synced, with conflicts"
+    sync.lastSyncAt > 0 -> "Synced ${relativeTime(sync.lastSyncAt)}"
+    else -> null
+}
+
+/**
+ * A sync problem, across the top of the note list: the error or the conflicted files. It's
+ * shown only while there is one, since the routine status fits under the title.
+ */
 @Composable
 fun SyncStatusLine(sync: SyncState) {
     val text = when {
-        sync.running -> "Syncing…"
+        sync.running -> null
         sync.lastError != null -> "Sync error: ${sync.lastHint ?: sync.lastError}"
         sync.conflicts.isNotEmpty() -> "Conflicts to resolve: ${sync.conflicts.joinToString()}"
-        sync.lastSyncAt > 0 -> "Synced ${relativeTime(sync.lastSyncAt)}"
         else -> null
     } ?: return
-    val isProblem = sync.lastError != null || sync.conflicts.isNotEmpty()
-    val icon: (@Composable () -> Unit)? = if (isProblem) {
-        { Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error) }
-    } else null
     ListItem(
-        leadingContent = icon,
+        leadingContent = {
+            Icon(Icons.Default.Warning, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+        },
         headlineContent = {
             Text(
                 text,
                 style = MaterialTheme.typography.bodySmall,
-                color = if (isProblem) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
+                color = MaterialTheme.colorScheme.error,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
             )

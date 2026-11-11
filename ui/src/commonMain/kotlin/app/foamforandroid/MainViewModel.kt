@@ -106,8 +106,9 @@ class MainViewModel(val platform: AppPlatform) : ViewModel() {
     fun syncNow() {
         if (!settings.isConfigured) return
         viewModelScope.launch {
+            // Success shows under the note list's title ("Synced just now"), so only a failure
+            // gets a message.
             GitSync.sync(repo.root, settings)
-                .onSuccess { messages.emit(it) }
                 .onFailure { messages.emit("Sync failed: ${GitErrors.hint(it) ?: it.message}") }
         }
     }
