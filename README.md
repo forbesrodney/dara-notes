@@ -100,6 +100,15 @@ interlacing is read as an oak's roots: notes tied together by links.
   or on the line above, is left out. In the preview, every heading can be linked to with
   `#id` (GitHub-style: lowercase, punctuation removed, spaces as hyphens), so tables of
   contents made elsewhere, such as in VS Code, work too.
+- **Export or share** (a note's menu): on a phone, *Share Markdown file*, *Share as PDF*
+  and *Share as text* open the share sheet (Mail, Gmail, Drive, Files, Messages...). On the
+  desktop, *Save Markdown file...*, *Print or save as PDF...* (on a Mac, the Print dialog's
+  PDF menu saves the PDF or sends it in Mail; printing needs a printer set up), *Email as
+  text* and *Copy as text*. PDFs are laid out for paper (Letter in the US and nearby, A4
+  elsewhere) with math, diagrams and images; links that can't work outside the app
+  (wikilinks, a table of contents) become plain text, while web links stay. Text drops the
+  front matter and Foam's link definitions, with wikilinks and table-of-contents links as
+  plain text.
 - **Keyboard shortcuts** in the editor, with a hardware keyboard: Ctrl+B or Cmd+B for bold,
   Ctrl+I or Cmd+I for italic, Ctrl+Shift+X or Cmd+Shift+X for strike-through, and Ctrl+Enter
   or Cmd+Enter to check or uncheck the task on the current line. Bold, italic and
@@ -238,7 +247,7 @@ apple.teamId=ABCDE12345
 
 *Build macOS release* (`scripts/macos-release.sh`) builds the signed app, puts it in a `.dmg`
 with `scripts/macos-dmg.sh` (a window with the app, a link to Applications and an arrow
-between them, and the Foam disk icon), has Apple notarize it and staples the ticket, so it
+between them, and the app's disk icon), has Apple notarize it and staples the ticket, so it
 opens on any Mac without a warning. That `.dmg` is the one to share: the one *Package desktop
 app* makes on macOS is jpackage's plainer version, for trying the installer locally. It needs
 notarization credentials saved once in the keychain under the profile `foam-notary`, with an
@@ -332,7 +341,7 @@ and *Build release AAB* run the matching Gradle tasks.
 | `scripts/check-updates.sh` | Lists newer versions of the pinned JavaScript libraries. Changes nothing. |
 | `scripts/app-icons.py` | Draws the app icons with `scripts/KnotIcon.java`, which holds the knot's design: the desktop icons (`desktopApp/icons/`), the iOS asset catalog, the Android adaptive icon and `art/dara_icon.svg`; also the `.dmg` window background. Rerun it after changing the design (needs a JDK). |
 | `scripts/build-libgit2.sh` | Builds libgit2 for iPhone, the iOS Simulator and the Mac (Gradle runs it when needed). |
-| `scripts/macos-release.sh` | Builds the signed macOS `.dmg`, notarizes it and staples the ticket. |
+| `scripts/macos-release.sh` | Builds the signed macOS `.dmg`, notarizes it and staples the ticket; also zips it, for apps that won't send a `.dmg` (such as Signal). |
 | `scripts/macos-dmg.sh` | Puts the packaged macOS app in a `.dmg` with a link to Applications, the arrow background and the app's disk icon (`desktopApp/packaging/`, `desktopApp/icons/app.icns`), using dmgbuild, which it installs into `desktopApp/build/dmgbuild`. |
 | `scripts/ios-release.sh` | Archives the iOS app and exports a signed `.ipa` (TestFlight/App Store, or ad hoc). |
 | `scripts/ios-run.sh` | Builds the iOS app and runs it in the iOS Simulator (optionally pass a simulator name or ID). |

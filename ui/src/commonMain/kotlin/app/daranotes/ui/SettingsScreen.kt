@@ -140,8 +140,10 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                     title = { Text(if (s.isConfigured) "Settings" else "Set up repository") },
                     navigationIcon = {
                         if (vm.backStack.size > 1) {
-                            IconButton(onClick = ::leave) {
-                                Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                            Tip("Back") {
+                                IconButton(onClick = ::leave) {
+                                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                                }
                             }
                         }
                     },

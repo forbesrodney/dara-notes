@@ -87,8 +87,10 @@ fun ConnectionsScreen(vm: MainViewModel, screen: Screen.Connections, snackbar: S
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = { vm.back() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Tip("Back") {
+                        IconButton(onClick = { vm.back() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 },
                 title = {

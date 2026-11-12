@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Builds the signed macOS .dmg (with scripts/macos-dmg.sh), has Apple notarize it, and staples the ticket, so it opens on
 # any Mac without the "unidentified developer" warning.
-# Output: desktopApp/build/compose/binaries/main/dmg/Dara Notes-<version>.dmg
+# Output: desktopApp/build/compose/binaries/main/dmg/Dara Notes-<version>.dmg, and the same
+# .dmg in a .zip next to it, for apps that won't send a .dmg.
 #
 # Needs, once:
 #   - apple.teamId=<your team ID> in local.properties, and your "Developer ID Application"
@@ -66,4 +67,10 @@ fi
 echo "== Stapling the ticket"
 xcrun stapler staple "$dmg"
 spctl --assess --type open --context context:primary-signature --verbose "$dmg"
+
+# A zip of the stapled .dmg, for sending through apps that won't take a .dmg (Signal, say).
+zip="${dmg%.dmg}.zip"
+rm -f "$zip"
+ditto -c -k --norsrc --noextattr "$dmg" "$zip"
 echo "Done: $dmg"
+echo "Zip:  $zip"

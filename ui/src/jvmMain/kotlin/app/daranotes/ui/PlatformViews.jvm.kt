@@ -203,3 +203,6 @@ actual fun GraphWebView(
 actual fun platformColorScheme(dark: Boolean): ColorScheme = if (dark) darkColorScheme() else lightColorScheme()
 
 actual val clickableOverWebViews: Boolean = false
+
+actual val shortcutModifier: String? =
+    if (System.getProperty("os.name").orEmpty().startsWith("Mac")) "⌘" else "Ctrl+"

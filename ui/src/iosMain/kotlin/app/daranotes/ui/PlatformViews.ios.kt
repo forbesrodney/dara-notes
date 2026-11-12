@@ -167,3 +167,5 @@ actual val clickableOverWebViews: Boolean = false
 
 @Composable
 actual fun platformColorScheme(dark: Boolean): ColorScheme = if (dark) darkColorScheme() else lightColorScheme()
+
+actual val shortcutModifier: String? = null

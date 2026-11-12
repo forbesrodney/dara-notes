@@ -114,8 +114,10 @@ fun GraphScreen(vm: MainViewModel, screen: Screen.Graph, snackbar: SnackbarHostS
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = { vm.back() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Tip("Back") {
+                        IconButton(onClick = { vm.back() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 },
                 title = { Text("Graph") },

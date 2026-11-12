@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Builds the macOS .dmg from the packaged app: the app, a link to Applications, the arrow
-# background and the Foam disk icon (desktopApp/packaging/). Called by macos-release.sh.
+# background and the app's disk icon (desktopApp/packaging/). Called by macos-release.sh.
 #   scripts/macos-dmg.sh            # after ./gradlew :desktopApp:createDistributable
 #   scripts/macos-dmg.sh --setup    # only install dmgbuild (fetch-deps.sh does this)
 # Output: desktopApp/build/compose/binaries/main/dmg/Dara Notes-<version>.dmg

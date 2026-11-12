@@ -37,6 +37,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Share
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -120,6 +121,8 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     var flushOnLeave by remember(path) { mutableStateOf(true) }
     var editing by rememberSaveable(path) { mutableStateOf(screen.startEditing) }
     var menu by remember { mutableStateOf(false) }
+    var exportMenu by remember { mutableStateOf(false) }
+    val exportActions = rememberExportActions()
     var confirmDelete by remember { mutableStateOf(false) }
     var renaming by remember { mutableStateOf(false) }
     val editorScroll = rememberScrollState()
@@ -239,8 +242,10 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = { vm.back() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Tip("Back") {
+                        IconButton(onClick = { vm.back() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 },
                 title = {
@@ -260,7 +265,26 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                         if (editing) refreshToc()
                         editing = !editing
                     }) { Text(if (editing) "Preview" else "Edit") }
-                    IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "More") }
+                    Tip("More options") {
+                        IconButton(onClick = { menu = true }) { Icon(Icons.Default.MoreVert, contentDescription = "More") }
+                    }
+                    DropdownMenu(expanded = exportMenu, onDismissRequest = { exportMenu = false }) {
+                        for (action in exportActions) {
+                            DropdownMenuItem(
+                                text = { Text(action.label) },
+                                onClick = {
+                                    exportMenu = false
+                                    // As it will be saved: the table of contents and link definitions up to date.
+                                    val note = ExportNote(path, tidied(value.text), vm.repo.root, callbacks)
+                                    scope.launch {
+                                        val message = runCatching { action.run(note) }
+                                            .getOrElse { "Couldn't export: ${it.message ?: it::class.simpleName}" }
+                                        if (message != null) snackbar.showSnackbar(message)
+                                    }
+                                },
+                            )
+                        }
+                    }
                     DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
                         DropdownMenuItem(
                             text = { Text("Sync now") },
@@ -306,6 +330,11 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                                     saved = value.text
                                 }
                             },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Export or share") },
+                            leadingIcon = { Icon(Icons.Default.Share, null) },
+                            onClick = { menu = false; exportMenu = true },
                         )
                         DropdownMenuItem(
                             text = { Text("Rename") },
@@ -485,22 +514,28 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     }
 }
 
+/** A formatting toolbar button: its label, its tooltip and its edit. */
+private data class ToolAction(val label: String, val tip: String, val edit: (TextFieldValue) -> TextFieldValue)
+
+/** The Return key's name in a shortcut: "Return" on a Mac, "Enter" elsewhere. */
+private val RETURN get() = if (shortcutModifier == "⌘") "Return" else "Enter"
+
 @Composable
 private fun FormatToolbar(bullet: String, taskStyle: () -> TaskStyle, onAction: ((TextFieldValue) -> TextFieldValue) -> Unit) {
     val clipboard = LocalClipboardManager.current
-    val editActions: List<Pair<String, (TextFieldValue) -> TextFieldValue>> = listOf(
-        "All" to { v: TextFieldValue -> v.copy(selection = TextRange(0, v.text.length)) },
-        "Cut" to { v: TextFieldValue ->
+    val editActions: List<ToolAction> = listOf(
+        ToolAction("All", "Select all") { v: TextFieldValue -> v.copy(selection = TextRange(0, v.text.length)) },
+        ToolAction("Cut", "Cut the selection, or the line") { v: TextFieldValue ->
             val r = v.selectionOrLine()
             clipboard.setText(AnnotatedString(v.text.substring(r.min, r.max)))
             TextFieldValue(v.text.removeRange(r.min, r.max), TextRange(r.min))
         },
-        "Copy" to { v: TextFieldValue ->
+        ToolAction("Copy", "Copy the selection, or the line") { v: TextFieldValue ->
             val r = v.selectionOrLine()
             clipboard.setText(AnnotatedString(v.text.substring(r.min, r.max)))
             v
         },
-        "Paste" to { v: TextFieldValue ->
+        ToolAction("Paste", "Paste") { v: TextFieldValue ->
             val clip = clipboard.getText()?.text
             if (clip.isNullOrEmpty()) v else {
                 val s = v.selection.min
@@ -508,34 +543,38 @@ private fun FormatToolbar(bullet: String, taskStyle: () -> TaskStyle, onAction: 
             }
         },
     )
-    val actions: List<Pair<String, (TextFieldValue) -> TextFieldValue>> = listOf(
-        "H" to { v: TextFieldValue -> v.toggleLinePrefix("# ") },
-        "B" to { v: TextFieldValue -> v.toggleWrap("**", "bold") },
-        "I" to { v: TextFieldValue -> v.toggleWrap("*", "italic") },
-        "☐" to { v: TextFieldValue -> v.toggleCheckbox(bullet, taskStyle()) },
-        "•" to { v: TextFieldValue -> v.toggleListPrefix(bullet, task = false) },
-        "[[ ]]" to { v: TextFieldValue -> v.wrap("[[", "]]") },
-        "x²" to { v: TextFieldValue -> v.wrap("^", "^", "sup") },
-        "x₂" to { v: TextFieldValue -> v.wrap("~", "~", "sub") },
-        "∑" to { v: TextFieldValue -> v.wrap("$", "$", "x") },
-        "∑∑" to { v: TextFieldValue -> v.insertBlock("$$\n", "\n$$", "E = mc^2") },
-        "fn" to { v: TextFieldValue -> v.addFootnote() },
-        "◇" to { v: TextFieldValue -> v.insertBlock("```mermaid\n", "\n```", "graph TD\n  A --> B") },
-        "<>" to { v: TextFieldValue -> v.wrap("`", "`", "code") },
-        "🔗" to { v: TextFieldValue -> v.wrap("[", "](url)", "text") },
+    val actions: List<ToolAction> = listOf(
+        ToolAction("H", "Heading") { v: TextFieldValue -> v.toggleLinePrefix("# ") },
+        ToolAction("B", withShortcut("Bold", "B")) { v: TextFieldValue -> v.toggleWrap("**", "bold") },
+        ToolAction("I", withShortcut("Italic", "I")) { v: TextFieldValue -> v.toggleWrap("*", "italic") },
+        ToolAction("☐", withShortcut("Checkbox", RETURN)) { v: TextFieldValue -> v.toggleCheckbox(bullet, taskStyle()) },
+        ToolAction("•", "Bulleted list") { v: TextFieldValue -> v.toggleListPrefix(bullet, task = false) },
+        ToolAction("[[ ]]", "Wikilink (or type [[)") { v: TextFieldValue -> v.wrap("[[", "]]") },
+        ToolAction("x²", "Superscript") { v: TextFieldValue -> v.wrap("^", "^", "sup") },
+        ToolAction("x₂", "Subscript") { v: TextFieldValue -> v.wrap("~", "~", "sub") },
+        ToolAction("∑", "Math") { v: TextFieldValue -> v.wrap("$", "$", "x") },
+        ToolAction("∑∑", "Math block") { v: TextFieldValue -> v.insertBlock("$$\n", "\n$$", "E = mc^2") },
+        ToolAction("fn", "Footnote") { v: TextFieldValue -> v.addFootnote() },
+        ToolAction("◇", "Mermaid diagram") { v: TextFieldValue -> v.insertBlock("```mermaid\n", "\n```", "graph TD\n  A --> B") },
+        ToolAction("<>", "Inline code") { v: TextFieldValue -> v.wrap("`", "`", "code") },
+        ToolAction("🔗", "Link") { v: TextFieldValue -> v.wrap("[", "](url)", "text") },
     )
     Row(
         Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp),
     ) {
-        editActions.forEach { (label, transform) ->
-            TextButton(onClick = { onAction(transform) }, Modifier.keepEditorFocus(), contentPadding = PaddingValues(horizontal = 8.dp)) {
-                Text(label)
+        editActions.forEach { (label, tip, transform) ->
+            Tip(tip) {
+                TextButton(onClick = { onAction(transform) }, Modifier.keepEditorFocus(), contentPadding = PaddingValues(horizontal = 8.dp)) {
+                    Text(label)
+                }
             }
         }
         VerticalDivider(Modifier.height(24.dp).align(Alignment.CenterVertically).padding(horizontal = 4.dp))
-        actions.forEach { (label, transform) ->
-            TextButton(onClick = { onAction(transform) }, Modifier.keepEditorFocus(), contentPadding = PaddingValues(horizontal = 10.dp)) {
-                Text(label, fontFamily = if (label.length <= 2) FontFamily.Serif else FontFamily.Monospace)
+        actions.forEach { (label, tip, transform) ->
+            Tip(tip) {
+                TextButton(onClick = { onAction(transform) }, Modifier.keepEditorFocus(), contentPadding = PaddingValues(horizontal = 10.dp)) {
+                    Text(label, fontFamily = if (label.length <= 2) FontFamily.Serif else FontFamily.Monospace)
+                }
             }
         }
     }

@@ -65,6 +65,7 @@ private val BRIDGE_JS = """
     toggleTask: function (n) { post('toggleTask', n); },
     selected: function (j) { post('selected', j); },
     layout: function (j) { post('layout', j); },
+    exported: function () { post('exported'); },
     ready: function () { post('ready'); }
   };
 })();

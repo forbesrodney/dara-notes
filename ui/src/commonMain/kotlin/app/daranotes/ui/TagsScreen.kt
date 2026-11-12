@@ -92,8 +92,10 @@ fun TagsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
         topBar = {
             TopAppBar(
                 navigationIcon = {
-                    IconButton(onClick = { vm.back() }) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    Tip("Back") {
+                        IconButton(onClick = { vm.back() }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
                     }
                 },
                 title = { Text(tree?.let { "Tags (${countTags(it)})" } ?: "Tags") },

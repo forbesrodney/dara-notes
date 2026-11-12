@@ -137,35 +137,47 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                 },
                 actions = {
                     if (index != null) {
-                        IconButton(onClick = { vm.openPath(index.path) }) {
-                            Icon(Icons.Default.Home, contentDescription = "Open ${index.path}")
+                        Tip("Open ${index.path}") {
+                            IconButton(onClick = { vm.openPath(index.path) }) {
+                                Icon(Icons.Default.Home, contentDescription = "Open ${index.path}")
+                            }
                         }
                     }
                     // On the desktop, Today (Cmd+D) and New note (Cmd+N) follow Home; on phones
                     // and tablets they float at the bottom, within thumb's reach.
                     if (desktop) {
-                        IconButton(onClick = vm::openDailyNote) {
-                            Icon(Icons.Default.DateRange, contentDescription = "Today's note")
+                        Tip(withShortcut("Today's note", "D")) {
+                            IconButton(onClick = vm::openDailyNote) {
+                                Icon(Icons.Default.DateRange, contentDescription = "Today's note")
+                            }
                         }
-                        IconButton(onClick = { showNew = true }) {
-                            Icon(Icons.Default.Add, contentDescription = "New note")
+                        Tip(withShortcut("New note", "N")) {
+                            IconButton(onClick = { showNew = true }) {
+                                Icon(Icons.Default.Add, contentDescription = "New note")
+                            }
                         }
                     }
-                    IconButton(onClick = { vm.navigate(Screen.Graph()) }) {
-                        Icon(GraphIcon, contentDescription = "Graph")
+                    Tip("Graph") {
+                        IconButton(onClick = { vm.navigate(Screen.Graph()) }) {
+                            Icon(GraphIcon, contentDescription = "Graph")
+                        }
                     }
                     // Sync stays on the desktop's toolbar; phones and tablets have pull to
                     // refresh, so there it's in the menu with the screens you visit less.
                     if (desktop) {
-                        IconButton(onClick = vm::syncNow, enabled = !sync.running) {
-                            if (sync.running) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
-                            else Icon(Icons.Default.Refresh, contentDescription = "Sync now")
+                        Tip(if (sync.running) "Syncing…" else "Sync now") {
+                            IconButton(onClick = vm::syncNow, enabled = !sync.running) {
+                                if (sync.running) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+                                else Icon(Icons.Default.Refresh, contentDescription = "Sync now")
+                            }
                         }
                     }
                     Box {
                         var more by remember { mutableStateOf(false) }
-                        IconButton(onClick = { more = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                        Tip("More options") {
+                            IconButton(onClick = { more = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                            }
                         }
                         DropdownMenu(expanded = more, onDismissRequest = { more = false }) {
                             if (!desktop) {
@@ -227,9 +239,11 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                     singleLine = true,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = { vm.setNotesTreeView(!treeView) }) {
-                    if (treeView) Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Show as list")
-                    else Icon(FolderIcon, contentDescription = "Show by folder")
+                Tip(if (treeView) "Show as list" else "Show by folder") {
+                    IconButton(onClick = { vm.setNotesTreeView(!treeView) }) {
+                        if (treeView) Icon(Icons.AutoMirrored.Filled.List, contentDescription = "Show as list")
+                        else Icon(FolderIcon, contentDescription = "Show by folder")
+                    }
                 }
             }
 

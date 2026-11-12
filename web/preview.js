@@ -164,8 +164,35 @@
         mermaid.initialize({ startOnLoad: false, theme: theme, securityLevel: 'strict' });
         mermaidTheme = theme;
       }
-      mermaid.run({ nodes: nodes, suppressErrors: false }).catch(err => console.error(err));
+      return mermaid.run({ nodes: nodes, suppressErrors: false }).catch(err => console.error(err));
     }
+    return Promise.resolve();
+  };
+
+  // For exporting (PDF): the note in a light, printable layout, with links that can't lead
+  // anywhere outside the app (wikilinks, links to its own headings) as plain text. Calls
+  // the bridge's exported() once diagrams and images are drawn.
+  window.renderExport = function (src, baseDir) {
+    document.documentElement.classList.add('export');
+    Promise.resolve(window.render(src, baseDir, false)).then(function () {
+      content.querySelectorAll('a').forEach(function (a) {
+        const href = a.getAttribute('href') || '';
+        if (a.classList.contains('wikilink') || href.startsWith('#') || href.startsWith('/repo/') || !/^[a-z][a-z0-9+.-]*:/i.test(href)) {
+          const span = document.createElement('span');
+          span.className = a.className ? 'was-link' : '';
+          while (a.firstChild) span.appendChild(a.firstChild);
+          a.replaceWith(span);
+        }
+      });
+      const empty = content.querySelector('p.empty');
+      if (empty) empty.remove();
+      return Promise.all(Array.from(content.querySelectorAll('img')).map(function (img) {
+        return img.complete ? null : new Promise(function (done) { img.onload = img.onerror = done; });
+      }));
+    }).catch(function (e) { console.error(e); }).then(function () {
+      const b = bridge();
+      if (b.exported) b.exported();
+    });
   };
 
   document.addEventListener('click', function (e) {

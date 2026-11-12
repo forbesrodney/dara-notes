@@ -21,3 +21,5 @@ actual fun platformColorScheme(dark: Boolean): ColorScheme {
 }
 
 actual val clickableOverWebViews: Boolean = true
+
+actual val shortcutModifier: String? = null

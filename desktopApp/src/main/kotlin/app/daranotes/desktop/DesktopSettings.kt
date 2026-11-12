@@ -72,7 +72,9 @@ class DesktopSettings : Settings {
         private const val ACCOUNT = "git-access-token"
         @Volatile private var cached: String? = null
 
-        fun get(): String = cached ?: (load() ?: "").also { cached = it }
+        // One read at a time: the first sync and the settings screen can ask at once at startup,
+        // and each read before the first finishes would be another Keychain prompt.
+        fun get(): String = cached ?: synchronized(this) { cached ?: (load() ?: "").also { cached = it } }
 
         private val secrets = Secrets.system()
 
