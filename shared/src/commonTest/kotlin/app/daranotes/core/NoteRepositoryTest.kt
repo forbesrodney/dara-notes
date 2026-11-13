@@ -43,9 +43,9 @@ class NoteRepositoryTest {
     @Test fun createsNotesAndLinksThemFromTheIndex() {
         val path = repo.createNoteFromTitle("Shopping List")
         assertEquals("shopping-list.md", path)
-        assertEquals("# Shopping List\n\n", repo.read(path))
-        assertTrue("[[shopping-list]]" in repo.read("Index.md"))
-        assertEquals(listOf("Shopping List", "Index"), repo.listNotes().map { it.title }.sortedDescending())
+        assertEquals("", repo.read(path)) // no template, so no heading
+        assertEquals("- [[shopping-list]]\n", repo.read("Index.md")) // a new index has no heading either
+        assertEquals(listOf("shopping-list", "Index"), repo.listNotes().map { it.title }.sortedDescending())
     }
 
     @Test fun leavesTheIndexAloneWhenLinkingIsOff() {
@@ -92,9 +92,10 @@ class NoteRepositoryTest {
 
         settings.useNewNoteTemplate = false
         settings.useDailyNoteTemplate = false
-        assertEquals("# B\n\n", repo.read(repo.createNoteFromTitle("B")))
-        assertEquals("# C\n\n", repo.read(repo.createFromWikilink("C")))
-        assertEquals("# 2026-11-13\n\n", repo.read(repo.dailyNote(kotlinx.datetime.LocalDate(2026, 11, 13))))
+        // Turned off, notes start empty: the heading comes from the template.
+        assertEquals("", repo.read(repo.createNoteFromTitle("B")))
+        assertEquals("", repo.read(repo.createFromWikilink("C")))
+        assertEquals("", repo.read(repo.dailyNote(kotlinx.datetime.LocalDate(2026, 11, 13))))
     }
 
     @Test fun createsNotesFromAPickedTemplate() {

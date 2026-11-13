@@ -265,8 +265,9 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                     Toggle("Start new notes from new-note.md", useNewTemplate) { useNewTemplate = it }
                     Toggle("Start daily notes from daily-note.md", useDailyTemplate) { useDailyTemplate = it }
                     Text(
-                        "When they exist in .foam/templates. Foam uses a template only when you pick one, " +
-                            "which you can do here with Create note from template, in the note list's menu.",
+                        "When they exist in .foam/templates. Otherwise notes start empty. Foam uses a " +
+                            "template only when you pick one, which you can do here with Create note from " +
+                            "template, in the note list's menu.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

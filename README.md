@@ -79,6 +79,7 @@ interlacing is read as an oak's roots: notes tied together by links.
   in `.foam/templates` (by their `foam_template` `name` and `description`, as Foam does)
   and makes a note from the one you pick. New notes and daily notes also start from
   `new-note.md` and `daily-note.md` when they exist; Settings > Notes turns either off.
+  Without a template, a new note starts empty.
 - **Preview** (markdown-it, bundled offline):
   - Wikilinks `[[note]]`, `[[note|alias]]`, `[[note#heading]]`, `[[folder/note]]`;
     unresolved links are highlighted and tapping one creates the note, like Foam.

@@ -278,8 +278,9 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
         if (settings.useNewNoteTemplate) foam.template("new-note") else null
 
     private fun createNote(path: String, title: String, template: Template? = defaultNoteTemplate()) {
-        val body = if (template != null) FoamVariables.resolve(template.body, title)
-        else "# $title\n\n"
+        // Without a template (turned off, or none) the note starts empty: the heading is the
+        // template's to add.
+        val body = template?.let { FoamVariables.resolve(it.body, title) } ?: ""
         write(path, body)
         if (settings.linkFromIndex) addToIndex(path)
     }
@@ -297,8 +298,8 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
                 joinPath(dir, name)
             }
         if (!exists(path)) {
-            val body = if (template != null) FoamVariables.resolve(template.body, title, now)
-            else "# $title\n\n"
+            // Without a template (turned off, or none) the note starts empty, as new notes do.
+            val body = template?.let { FoamVariables.resolve(it.body, title, now) } ?: ""
             write(path, body)
             if (settings.linkFromIndex && settings.indexDailyNotes) addToIndex(path)
         }
@@ -347,7 +348,8 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
     fun addToIndex(path: String) {
         if (isIndex(path) || !path.endsWith(".md")) return
         val id = linkId(path)
-        val text = if (exists(indexPath)) read(indexPath) else "# Index\n\n"
+        // A missing index starts with just the link: headings are for templates to add.
+        val text = if (exists(indexPath)) read(indexPath) else ""
         if (linkPattern(id).containsMatchIn(text)) return
         val rel = RepoPaths.relative(RepoPaths.dir(indexPath), path)
         val def = IndexEditor.definition(id, rel, titleOf(path, file(path)))
