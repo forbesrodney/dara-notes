@@ -40,8 +40,8 @@ class DesktopSettings : Settings {
     override var graphPlaceholders by BoolPref("graph_placeholders", true)
 
     override var newNoteDir by StringPref("new_note_dir", "")
-    override var useNewNoteTemplate by BoolPref("use_new_note_template", true)
-    override var useDailyNoteTemplate by BoolPref("use_daily_note_template", true)
+    override var useNewNoteTemplate by BoolPref("use_new_note_template", false)
+    override var useDailyNoteTemplate by BoolPref("use_daily_note_template", false)
 
     override var dailyDirOverride by StringPref("daily_dir", "")
 

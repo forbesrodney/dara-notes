@@ -50,8 +50,8 @@ class AndroidSettings(context: Context) : Settings {
     override var graphPlaceholders by BoolPref(prefs, "graph_placeholders", true)
 
     override var newNoteDir by StringPref(prefs, "new_note_dir", "")
-    override var useNewNoteTemplate by BoolPref(prefs, "use_new_note_template", true)
-    override var useDailyNoteTemplate by BoolPref(prefs, "use_daily_note_template", true)
+    override var useNewNoteTemplate by BoolPref(prefs, "use_new_note_template", false)
+    override var useDailyNoteTemplate by BoolPref(prefs, "use_daily_note_template", false)
 
     override var dailyDirOverride by StringPref(prefs, "daily_dir", "")
 
