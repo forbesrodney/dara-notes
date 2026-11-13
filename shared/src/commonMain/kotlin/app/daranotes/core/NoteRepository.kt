@@ -261,7 +261,7 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
 
     /**
      * Creates a note from a title: from the template at [templatePath] (relative to the
-     * templates folder) if given, otherwise from new-note.md if that's turned on. The file is
+     * templates folder) if given, otherwise from new-note.md if it exists, as in Foam. The file is
      * the template's `filepath`, or the slugified title. A picked template that names the file
      * without the title (a daily note, say) opens that note instead if it's already there.
      */
@@ -274,13 +274,12 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
         return path
     }
 
-    private fun defaultNoteTemplate(): Template? =
-        if (settings.useNewNoteTemplate) foam.template("new-note") else null
+    /** Foam's default template for new notes, `.foam/templates/new-note.md`, if it exists. */
+    private fun defaultNoteTemplate(): Template? = foam.template("new-note")
 
     private fun createNote(path: String, title: String, template: Template? = defaultNoteTemplate()) {
-        // Without a template (turned off, or none) the note starts empty: the heading is the
-        // template's to add.
-        val body = template?.let { FoamVariables.resolve(it.body, title) } ?: ""
+        // Without a template, Foam starts a note with its title as a heading.
+        val body = if (template != null) FoamVariables.resolve(template.body, title) else "# $title\n\n"
         write(path, body)
         if (settings.linkFromIndex) addToIndex(path)
     }
@@ -289,7 +288,7 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
     fun dailyNote(date: LocalDate = Dates.today()): String {
         val now = LocalDateTime(date, Dates.now().time)
         val cfg = foam
-        val template = if (settings.useDailyNoteTemplate) cfg.template("daily-note") else null
+        val template = cfg.template("daily-note") // Foam's daily note template, if it exists
         val title = date.toString() // yyyy-mm-dd, as Foam names daily notes
         val path = template?.filepath?.let { templatePath(FoamVariables.resolve(it, title, now)) }
             ?: run {
@@ -298,8 +297,8 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
                 joinPath(dir, name)
             }
         if (!exists(path)) {
-            // Without a template (turned off, or none) the note starts empty, as new notes do.
-            val body = template?.let { FoamVariables.resolve(it.body, title, now) } ?: ""
+            // Without a template, Foam heads a daily note with its date.
+            val body = if (template != null) FoamVariables.resolve(template.body, title, now) else "# $title\n"
             write(path, body)
             if (settings.linkFromIndex && settings.indexDailyNotes) addToIndex(path)
         }
@@ -341,14 +340,15 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
     private fun isIndex(path: String) = path.equals(indexPath, ignoreCase = true)
 
     /**
-     * What a missing index starts as, before its first link: new-note.md (titled after the
-     * index's file name, and ending in a blank line so the list starts apart from it) if new
-     * notes start from that, otherwise nothing. The template's `filepath` doesn't apply.
+     * What a missing index starts as, before its first link: what a new note titled after the
+     * index's file name starts as (new-note.md, or a heading without it), ending in a blank
+     * line so the list starts apart from it. The template's `filepath` doesn't apply.
      */
     private fun newIndexText(): String {
-        val template = defaultNoteTemplate() ?: return ""
         val title = indexPath.substringAfterLast('/').removeSuffix(".md")
-        val body = FoamVariables.resolve(template.body, title).trimEnd('\n', '\r', ' ', '\t')
+        val template = defaultNoteTemplate()
+        val body = (if (template != null) FoamVariables.resolve(template.body, title) else "# $title")
+            .trimEnd('\n', '\r', ' ', '\t')
         return if (body.isEmpty()) "" else "$body\n\n"
     }
 

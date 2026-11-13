@@ -46,8 +46,6 @@ class LibGit2EngineTest {
         override var graphTags = true
         override var graphPlaceholders = true
         override var newNoteDir = ""
-        override var useNewNoteTemplate = true
-        override var useDailyNoteTemplate = true
         override var dailyDirOverride = ""
         override var autoSyncMinutes = 0
         override var syncAfterEdit = false

@@ -75,12 +75,13 @@ interlacing is read as an oak's roots: notes tied together by links.
 - **Daily notes**: the *Today* button opens/creates today's note. Reads Foam's
   `.foam/templates/daily-note.md` (incl. `foam_template.filepath` and `$FOAM_DATE_*`
   variables). Default: `journal/yyyy-mm-dd.md`.
-- **Templates**: *Create note from template*, in the note list's menu, lists the templates
-  in `.foam/templates` (by their `foam_template` `name` and `description`, as Foam does)
-  and makes a note from the one you pick. New notes and daily notes also start from
-  `new-note.md` and `daily-note.md` when they exist; Settings > Notes turns either off.
-  Without a template, a new note starts empty. An index note the app creates (to link a
-  new note from) starts from `new-note.md` too, when new notes do.
+- **Templates**: as in Foam, new notes and daily notes start from `new-note.md` and
+  `daily-note.md` in `.foam/templates` when they exist; without one, a new note starts
+  with its title as a heading and a daily note with its date. An index note the app
+  creates (to link a new note from) starts the way a new note does.
+  *Create note from template*, in the note list's menu, lists the other templates (by
+  their `foam_template` `name` and `description`, as Foam does) and makes a note from the
+  one you pick; it's disabled when there are none.
 - **Preview** (markdown-it, bundled offline):
   - Wikilinks `[[note]]`, `[[note|alias]]`, `[[note#heading]]`, `[[folder/note]]`;
     unresolved links are highlighted and tapping one creates the note, like Foam.
@@ -164,8 +165,8 @@ example links never show up in any view.
 
 ### Other files
 
-- `.foam/templates/*.md`: templates for *Create note from template*, in subfolders too.
-  Foam's JavaScript templates aren't supported.
+- `.foam/templates/*.md`: templates for *Create note from template*, in subfolders too
+  (all but `new-note.md` and `daily-note.md`). Foam's JavaScript templates aren't supported.
 - `.foam/templates/new-note.md`: template for new notes.
 - `.foam/templates/daily-note.md`: template for daily notes. Set its `filepath` to choose
   where daily notes go (for example `journal/$FOAM_DATE_YEAR-$FOAM_DATE_MONTH-$FOAM_DATE_DATE.md`);

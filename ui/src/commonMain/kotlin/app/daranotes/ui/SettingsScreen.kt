@@ -79,8 +79,6 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     var dateSep by remember { mutableStateOf(s.dateSeparator) }
     var newNoteDir by remember { mutableStateOf(s.newNoteDir) }
     var dailyDir by remember { mutableStateOf(s.dailyDirOverride) }
-    var useNewTemplate by remember { mutableStateOf(s.useNewNoteTemplate) }
-    var useDailyTemplate by remember { mutableStateOf(s.useDailyNoteTemplate) }
     var autoSync by remember { mutableStateOf(s.autoSyncMinutes.toString()) }
     var syncAfterEdit by remember { mutableStateOf(s.syncAfterEdit) }
     var confirmReclone by remember { mutableStateOf(false) }
@@ -100,7 +98,6 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
         bullet != s.bullet || strike != s.strikeCompleted || lintEnabled != s.lintEnabled ||
         addDate != s.dateOnComplete || dateOrder != s.dateOrder || dateSep != s.dateSeparator ||
         newNoteDir.trim().trim('/') != s.newNoteDir || dailyDir.trim().trim('/') != s.dailyDirOverride ||
-        useNewTemplate != s.useNewNoteTemplate || useDailyTemplate != s.useDailyNoteTemplate ||
         autoSyncValue != s.autoSyncMinutes || syncAfterEdit != s.syncAfterEdit
 
     fun persist() {
@@ -121,8 +118,6 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
         s.dateSeparator = dateSep
         s.newNoteDir = newNoteDir.trim().trim('/')
         s.dailyDirOverride = dailyDir.trim().trim('/')
-        s.useNewNoteTemplate = useNewTemplate
-        s.useDailyNoteTemplate = useDailyTemplate
         s.autoSyncMinutes = autoSyncValue
         s.syncAfterEdit = syncAfterEdit
         vm.applySyncSchedule()
@@ -260,17 +255,7 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                         }
                     }
                     Field("Folder for new notes", newNoteDir, { newNoteDir = it }, hint = "Blank = repository root")
-                    Field("Daily notes folder", dailyDir, { dailyDir = it }, hint = "Used unless the daily-note template sets a filepath. Blank = journal")
-                    Section("Templates")
-                    Toggle("Start new notes from new-note.md", useNewTemplate) { useNewTemplate = it }
-                    Toggle("Start daily notes from daily-note.md", useDailyTemplate) { useDailyTemplate = it }
-                    Text(
-                        "When they exist in .foam/templates. Otherwise notes start empty. Foam uses a " +
-                            "template only when you pick one, which you can do here with Create note from " +
-                            "template, in the note list's menu.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    )
+                    Field("Daily notes folder", dailyDir, { dailyDir = it }, hint = "Used when the daily-note template has no filepath. Blank = journal")
                     if (s.isConfigured && linkIndex) {
                         Spacer(Modifier.height(8.dp))
                         OutlinedButton(onClick = { persist(); vm.rebuildIndex() }, modifier = Modifier.fillMaxWidth()) {

@@ -64,6 +64,8 @@ class FoamConfig(private val fs: FileSystem, private val root: Path) {
     /**
      * The Markdown templates in `.foam/templates` and its subfolders, by name, as Foam's
      * "Create New Note From Template" lists them. (Foam's JavaScript templates aren't supported.)
+     * Leaves out new-note.md and daily-note.md: Foam uses those on its own, for every new note
+     * and daily note.
      */
     fun templates(): List<TemplateFile> {
         val out = mutableListOf<TemplateFile>()
@@ -72,6 +74,7 @@ class FoamConfig(private val fs: FileSystem, private val root: Path) {
                 val meta = fs.metadataOrNull(child) ?: continue
                 val rel = prefix + child.name
                 if (meta.isDirectory) walk(child, "$rel/")
+                else if (rel in DEFAULT_TEMPLATES) continue
                 else if (meta.isRegularFile && child.name.endsWith(".md", ignoreCase = true)) {
                     val t = runCatching { Template.parse(fs.read(child) { readUtf8() }) }.getOrNull() ?: continue
                     out += TemplateFile(rel, t.name ?: rel.removeSuffix(".md"), t.description, t.needsTitle)
@@ -84,6 +87,9 @@ class FoamConfig(private val fs: FileSystem, private val root: Path) {
 
     companion object {
         const val TEMPLATES_DIR = ".foam/templates"
+
+        /** The templates Foam applies by itself, which aren't offered for picking. */
+        private val DEFAULT_TEMPLATES = setOf("new-note.md", "daily-note.md")
 
         /** Removes // and /* */ comments and trailing commas from VS Code's JSONC. */
         fun stripJsonc(src: String): String {

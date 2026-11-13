@@ -59,7 +59,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -76,14 +75,12 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import app.daranotes.MainViewModel
 import app.daranotes.Screen
-import app.daranotes.core.FoamConfig
 import app.daranotes.core.FolderNode
 import app.daranotes.core.TemplateFile
 import app.daranotes.core.Note
 import app.daranotes.core.NoteTree
 import app.daranotes.core.SyncState
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -106,7 +103,6 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
         picked = null
         fromTemplate = t
     }
-    val scope = rememberCoroutineScope()
     var toDelete by remember { mutableStateOf<Note?>(null) }
     var menuFor by remember { mutableStateOf<Note?>(null) }
     var toRename by remember { mutableStateOf<Note?>(null) }
@@ -193,6 +189,12 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                     }
                     Box {
                         var more by remember { mutableStateOf(false) }
+                        // The templates to offer, looked up again each time the menu opens, so
+                        // Create note from template is disabled when there are none.
+                        var available by remember { mutableStateOf<List<TemplateFile>>(emptyList()) }
+                        LaunchedEffect(more) {
+                            available = withContext(ioDispatcher) { vm.repo.foam.templates() }
+                        }
                         Tip("More options") {
                             IconButton(onClick = { more = true }) {
                                 Icon(Icons.Default.MoreVert, contentDescription = "More options")
@@ -211,14 +213,8 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                             DropdownMenuItem(
                                 text = { Text("Create note from template") },
                                 leadingIcon = { Icon(NoteFromTemplateIcon, null) },
-                                onClick = {
-                                    more = false
-                                    scope.launch {
-                                        val found = withContext(ioDispatcher) { vm.repo.foam.templates() }
-                                        if (found.isEmpty()) snackbar.showSnackbar("No templates in ${FoamConfig.TEMPLATES_DIR}")
-                                        else templates = found
-                                    }
-                                },
+                                enabled = available.isNotEmpty(),
+                                onClick = { more = false; templates = available },
                             )
                             HorizontalDivider()
                             DropdownMenuItem(

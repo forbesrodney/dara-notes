@@ -27,8 +27,6 @@ private class TestSettings : Settings {
     override var graphTags = true
     override var graphPlaceholders = true
     override var newNoteDir = ""
-    override var useNewNoteTemplate = true
-    override var useDailyNoteTemplate = true
     override var dailyDirOverride = ""
     override var autoSyncMinutes = 0
     override var syncAfterEdit = false
@@ -43,9 +41,9 @@ class NoteRepositoryTest {
     @Test fun createsNotesAndLinksThemFromTheIndex() {
         val path = repo.createNoteFromTitle("Shopping List")
         assertEquals("shopping-list.md", path)
-        assertEquals("", repo.read(path)) // no template, so no heading
-        assertEquals("- [[shopping-list]]\n", repo.read("Index.md")) // a new index has no heading either
-        assertEquals(listOf("shopping-list", "Index"), repo.listNotes().map { it.title }.sortedDescending())
+        assertEquals("# Shopping List\n\n", repo.read(path)) // no template: Foam's heading
+        assertEquals("# Index\n\n- [[shopping-list]]\n", repo.read("Index.md"))
+        assertEquals(listOf("Shopping List", "Index"), repo.listNotes().map { it.title }.sortedDescending())
     }
 
     @Test fun leavesTheIndexAloneWhenLinkingIsOff() {
@@ -81,7 +79,7 @@ class NoteRepositoryTest {
         assertEquals(listOf("journal/**"), repo.foam.orphansExclude)
     }
 
-    @Test fun startsNewAndDailyNotesFromTheirTemplatesUnlessTurnedOff() {
+    @Test fun startsNewAndDailyNotesFromTheirTemplatesWhenTheyExist() {
         val settings = TestSettings().apply { linkFromIndex = false }
         val repo = NoteRepository(fs, root, settings)
         repo.write(".foam/templates/new-note.md", "# \$FOAM_TITLE\n\nFrom the template\n")
@@ -90,17 +88,22 @@ class NoteRepositoryTest {
         assertEquals("# A\n\nFrom the template\n", repo.read(repo.createNoteFromTitle("A")))
         assertEquals("# Day 2026-11-12\n", repo.read(repo.dailyNote(date)))
 
-        settings.useNewNoteTemplate = false
-        settings.useDailyNoteTemplate = false
-        // Turned off, notes start empty: the heading comes from the template.
-        assertEquals("", repo.read(repo.createNoteFromTitle("B")))
-        assertEquals("", repo.read(repo.createFromWikilink("C")))
-        assertEquals("", repo.read(repo.dailyNote(kotlinx.datetime.LocalDate(2026, 11, 13))))
+        repo.delete(".foam/templates/new-note.md")
+        repo.delete(".foam/templates/daily-note.md")
+        // Without them, Foam heads a note with its title, and a daily note with its date.
+        assertEquals("# B\n\n", repo.read(repo.createNoteFromTitle("B")))
+        assertEquals("# C\n\n", repo.read(repo.createFromWikilink("C")))
+        assertEquals("# 2026-11-13\n", repo.read(repo.dailyNote(kotlinx.datetime.LocalDate(2026, 11, 13))))
     }
 
     @Test fun createsNotesFromAPickedTemplate() {
-        val settings = TestSettings().apply { linkFromIndex = false; useNewNoteTemplate = false }
+        val settings = TestSettings().apply { linkFromIndex = false }
         val repo = NoteRepository(fs, root, settings)
+        // Foam's own new-note and daily-note templates aren't offered for picking; one of the
+        // same name in a subfolder is.
+        repo.write(".foam/templates/new-note.md", "# \$FOAM_TITLE\n")
+        repo.write(".foam/templates/daily-note.md", "# \$FOAM_TITLE\n")
+        repo.write(".foam/templates/work/new-note.md", "# Work: \$FOAM_TITLE\n")
         repo.write(
             ".foam/templates/work/meeting.md",
             "---\nfoam_template:\n  name: Meeting notes\n  description: Agenda and actions\n" +
@@ -113,6 +116,7 @@ class NoteRepositoryTest {
             listOf(
                 TemplateFile("idea.md", "idea", null, needsTitle = true),
                 TemplateFile("work/meeting.md", "Meeting notes", "Agenda and actions", needsTitle = true),
+                TemplateFile("work/new-note.md", "work/new-note", null, needsTitle = true),
             ),
             repo.foam.templates(),
         )
@@ -127,7 +131,7 @@ class NoteRepositoryTest {
     @Test fun aTemplateThatNamesTheFileItselfNeedsNoTitleAndReopensItsNote() {
         val repo = NoteRepository(fs, root, TestSettings().apply { linkFromIndex = false })
         repo.write(
-            ".foam/templates/daily-note.md",
+            ".foam/templates/journal.md",
             "---\nfoam_template:\n  filepath: journal/\$FOAM_DATE_YEAR-\$FOAM_DATE_MONTH-\$FOAM_DATE_DATE.md\n---\n\n" +
                 "# \$FOAM_DATE_YEAR-\$FOAM_DATE_MONTH-\$FOAM_DATE_DATE\n",
         )
@@ -144,17 +148,16 @@ class NoteRepositoryTest {
         assertFalse(Template.parse("---\nfoam_template:\n  filepath: inbox.md\n---\nBody\n").needsTitle)
     }
 
-    @Test fun aNewIndexStartsFromTheNewNoteTemplateWhenNewNotesDo() {
-        val settings = TestSettings().apply { useNewNoteTemplate = true }
-        val repo = NoteRepository(fs, root, settings)
+    @Test fun aNewIndexStartsAsANewNoteWould() {
+        val repo = NoteRepository(fs, root, TestSettings())
         repo.write(".foam/templates/new-note.md", "---\nfoam_template:\n  filepath: notes/\$FOAM_SLUG.md\n---\n\n# \$FOAM_TITLE\n")
         repo.createNoteFromTitle("Shopping List")
         // The index stays where it belongs (not the template's filepath), titled after its name.
         assertEquals("# Index\n\n- [[shopping-list]]\n", repo.read("Index.md"))
 
-        settings.useNewNoteTemplate = false
+        repo.delete(".foam/templates/new-note.md")
         repo.delete("Index.md")
         repo.createNoteFromTitle("Groceries")
-        assertEquals("- [[groceries]]\n", repo.read("Index.md"))
+        assertEquals("# Index\n\n- [[groceries]]\n", repo.read("Index.md"))
     }
 }
