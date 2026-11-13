@@ -75,7 +75,10 @@ interlacing is read as an oak's roots: notes tied together by links.
 - **Daily notes**: the *Today* button opens/creates today's note. Reads Foam's
   `.foam/templates/daily-note.md` (incl. `foam_template.filepath` and `$FOAM_DATE_*`
   variables). Default: `journal/yyyy-mm-dd.md`.
-  `.foam/templates/new-note.md` is used for new notes too.
+- **Templates**: *Create note from template*, in the note list's menu, lists the templates
+  in `.foam/templates` (by their `foam_template` `name` and `description`, as Foam does)
+  and makes a note from the one you pick. New notes and daily notes also start from
+  `new-note.md` and `daily-note.md` when they exist; Settings > Notes turns either off.
 - **Preview** (markdown-it, bundled offline):
   - Wikilinks `[[note]]`, `[[note|alias]]`, `[[note#heading]]`, `[[folder/note]]`;
     unresolved links are highlighted and tapping one creates the note, like Foam.
@@ -159,12 +162,14 @@ example links never show up in any view.
 
 ### Other files
 
+- `.foam/templates/*.md`: templates for *Create note from template*, in subfolders too.
+  Foam's JavaScript templates aren't supported.
 - `.foam/templates/new-note.md`: template for new notes.
 - `.foam/templates/daily-note.md`: template for daily notes. Set its `filepath` to choose
   where daily notes go (for example `journal/$FOAM_DATE_YEAR-$FOAM_DATE_MONTH-$FOAM_DATE_DATE.md`);
   without one they go in `journal`, or Settings > Notes > *Daily notes folder*.
-  Both templates support `foam_template` front matter (including `filepath`) and the `$FOAM_*`
-  variables.
+  All templates support `foam_template` front matter (`filepath`, `name`, `description`)
+  and the `$FOAM_*` variables.
 - markdownlint configuration, first one found: `.markdownlint-cli2.jsonc`,
   `.markdownlint-cli2.yaml`, `.markdownlint.jsonc`, `.markdownlint.json`, `.markdownlint.yaml`,
   `.markdownlint.yml`, then `markdownlint.config` in `.vscode/settings.json`.

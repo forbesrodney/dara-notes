@@ -162,9 +162,10 @@ class MainViewModel(val platform: AppPlatform) : ViewModel() {
 
     // ---- notes ---------------------------------------------------------------------------
 
-    fun createNote(title: String) {
+    /** Creates and opens a note; from the template at [template] (in .foam/templates) if given. */
+    fun createNote(title: String, template: String? = null) {
         viewModelScope.launch {
-            val path = withContext(ioDispatcher) { repo.createNoteFromTitle(title) }
+            val path = withContext(ioDispatcher) { repo.createNoteFromTitle(title, template) }
             afterEdit()
             openPath(path, startEditing = true)
         }

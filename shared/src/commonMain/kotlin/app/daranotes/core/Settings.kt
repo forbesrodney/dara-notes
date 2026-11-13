@@ -48,6 +48,13 @@ interface Settings {
     /** Folder (relative to repo root) for new notes. Blank = root. */
     var newNoteDir: String
 
+    /**
+     * Whether new notes (from New note or an unfinished wikilink) start from
+     * `.foam/templates/new-note.md`, when it exists, and daily notes from `daily-note.md`.
+     */
+    var useNewNoteTemplate: Boolean
+    var useDailyNoteTemplate: Boolean
+
     /** Daily note folder when there is no daily-note template `filepath`. Blank = "journal". */
     var dailyDirOverride: String
 

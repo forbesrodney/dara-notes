@@ -27,6 +27,8 @@ private class TestSettings : Settings {
     override var graphTags = true
     override var graphPlaceholders = true
     override var newNoteDir = ""
+    override var useNewNoteTemplate = true
+    override var useDailyNoteTemplate = true
     override var dailyDirOverride = ""
     override var autoSyncMinutes = 0
     override var syncAfterEdit = false
@@ -77,5 +79,67 @@ class NoteRepositoryTest {
     @Test fun readsFoamSettingsWithComments() {
         repo.write(".vscode/settings.json", "{\n  // daily notes\n  \"foam.orphans.exclude\": [\"journal/**\",],\n}")
         assertEquals(listOf("journal/**"), repo.foam.orphansExclude)
+    }
+
+    @Test fun startsNewAndDailyNotesFromTheirTemplatesUnlessTurnedOff() {
+        val settings = TestSettings().apply { linkFromIndex = false }
+        val repo = NoteRepository(fs, root, settings)
+        repo.write(".foam/templates/new-note.md", "# \$FOAM_TITLE\n\nFrom the template\n")
+        repo.write(".foam/templates/daily-note.md", "# Day \$FOAM_TITLE\n")
+        val date = kotlinx.datetime.LocalDate(2026, 11, 12)
+        assertEquals("# A\n\nFrom the template\n", repo.read(repo.createNoteFromTitle("A")))
+        assertEquals("# Day 2026-11-12\n", repo.read(repo.dailyNote(date)))
+
+        settings.useNewNoteTemplate = false
+        settings.useDailyNoteTemplate = false
+        assertEquals("# B\n\n", repo.read(repo.createNoteFromTitle("B")))
+        assertEquals("# C\n\n", repo.read(repo.createFromWikilink("C")))
+        assertEquals("# 2026-11-13\n\n", repo.read(repo.dailyNote(kotlinx.datetime.LocalDate(2026, 11, 13))))
+    }
+
+    @Test fun createsNotesFromAPickedTemplate() {
+        val settings = TestSettings().apply { linkFromIndex = false; useNewNoteTemplate = false }
+        val repo = NoteRepository(fs, root, settings)
+        repo.write(
+            ".foam/templates/work/meeting.md",
+            "---\nfoam_template:\n  name: Meeting notes\n  description: Agenda and actions\n" +
+                "  filepath: meetings/\$FOAM_SLUG.md\n---\n\n# \$FOAM_TITLE\n\n## Agenda\n",
+        )
+        repo.write(".foam/templates/idea.md", "# Idea: \$FOAM_TITLE\n")
+        repo.write(".foam/templates/script.js", "// not a Markdown template")
+
+        assertEquals(
+            listOf(
+                TemplateFile("idea.md", "idea", null, needsTitle = true),
+                TemplateFile("work/meeting.md", "Meeting notes", "Agenda and actions", needsTitle = true),
+            ),
+            repo.foam.templates(),
+        )
+        val path = repo.createNoteFromTitle("Team Sync", "work/meeting.md")
+        assertEquals("meetings/team-sync.md", path)
+        assertEquals("# Team Sync\n\n## Agenda\n", repo.read(path))
+        assertEquals("# Idea: Wings\n", repo.read(repo.createNoteFromTitle("Wings", "idea.md")))
+        // A template path can't reach outside the templates folder.
+        assertEquals(null, repo.foam.templateAt("../notes.md"))
+    }
+
+    @Test fun aTemplateThatNamesTheFileItselfNeedsNoTitleAndReopensItsNote() {
+        val repo = NoteRepository(fs, root, TestSettings().apply { linkFromIndex = false })
+        repo.write(
+            ".foam/templates/daily-note.md",
+            "---\nfoam_template:\n  filepath: journal/\$FOAM_DATE_YEAR-\$FOAM_DATE_MONTH-\$FOAM_DATE_DATE.md\n---\n\n" +
+                "# \$FOAM_DATE_YEAR-\$FOAM_DATE_MONTH-\$FOAM_DATE_DATE\n",
+        )
+        val daily = repo.foam.templates().single()
+        assertFalse(daily.needsTitle)
+        val path = repo.createNoteFromTitle("", daily.path)
+        assertTrue(path.startsWith("journal/") && !path.contains("-2."))
+        repo.write(path, "# Edited\n")
+        assertEquals(path, repo.createNoteFromTitle("", daily.path))
+        assertEquals("# Edited\n", repo.read(path))
+
+        assertTrue(Template.parse("# \${FOAM_TITLE}\n").needsTitle)
+        assertTrue(Template.parse("---\nfoam_template:\n  filepath: x/\$FOAM_SLUG.md\n---\nBody\n").needsTitle)
+        assertFalse(Template.parse("---\nfoam_template:\n  filepath: inbox.md\n---\nBody\n").needsTitle)
     }
 }

@@ -59,6 +59,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -75,10 +76,14 @@ import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import app.daranotes.MainViewModel
 import app.daranotes.Screen
+import app.daranotes.core.FoamConfig
 import app.daranotes.core.FolderNode
+import app.daranotes.core.TemplateFile
 import app.daranotes.core.Note
 import app.daranotes.core.NoteTree
 import app.daranotes.core.SyncState
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
@@ -88,6 +93,20 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     val sync by vm.syncState.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
     var showNew by remember { mutableStateOf(false) }
+    // Create note from template: the templates to pick from, then the one picked, which asks
+    // for a title in a dialog of its own. That opens a moment after the list closes: opened at
+    // once, the click that picked the template dismissed it on the desktop, and in the list's
+    // own dialog its text field drew no cursor.
+    var templates by remember { mutableStateOf<List<TemplateFile>?>(null) }
+    var picked by remember { mutableStateOf<TemplateFile?>(null) }
+    var fromTemplate by remember { mutableStateOf<TemplateFile?>(null) }
+    LaunchedEffect(picked) {
+        val t = picked ?: return@LaunchedEffect
+        delay(250)
+        picked = null
+        fromTemplate = t
+    }
+    val scope = rememberCoroutineScope()
     var toDelete by remember { mutableStateOf<Note?>(null) }
     var menuFor by remember { mutableStateOf<Note?>(null) }
     var toRename by remember { mutableStateOf<Note?>(null) }
@@ -189,6 +208,19 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                                 )
                                 HorizontalDivider()
                             }
+                            DropdownMenuItem(
+                                text = { Text("Create note from template") },
+                                leadingIcon = { Icon(NoteFromTemplateIcon, null) },
+                                onClick = {
+                                    more = false
+                                    scope.launch {
+                                        val found = withContext(ioDispatcher) { vm.repo.foam.templates() }
+                                        if (found.isEmpty()) snackbar.showSnackbar("No templates in ${FoamConfig.TEMPLATES_DIR}")
+                                        else templates = found
+                                    }
+                                },
+                            )
+                            HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Tags") },
                                 leadingIcon = { Icon(TagIcon, null) },
@@ -344,6 +376,24 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
             vm.createNote(title)
         })
     }
+    templates?.let { list ->
+        TemplatePickerDialog(list, onDismiss = { templates = null }) { t ->
+            templates = null
+            // A template that names the note itself (by the date, say) needs no title.
+            if (t.needsTitle) picked = t else vm.createNote("", t.path)
+        }
+    }
+    fromTemplate?.let { template ->
+        NewNoteDialog(
+            linked = vm.settings.linkFromIndex,
+            heading = "New note from ${template.name}",
+            onDismiss = { fromTemplate = null },
+            onCreate = { title ->
+                fromTemplate = null
+                vm.createNote(title, template.path)
+            },
+        )
+    }
     toRename?.let { note ->
         RenameNoteDialog(vm, note.path, onDismiss = { toRename = null }) { newPath ->
             toRename = null
@@ -407,12 +457,17 @@ fun SyncStatusLine(sync: SyncState) {
 }
 
 @Composable
-private fun NewNoteDialog(linked: Boolean, onDismiss: () -> Unit, onCreate: (String) -> Unit) {
+private fun NewNoteDialog(
+    linked: Boolean,
+    onDismiss: () -> Unit,
+    heading: String = "New note",
+    onCreate: (String) -> Unit,
+) {
     var title by remember { mutableStateOf("") }
     val focus = remember { FocusRequester() }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("New note") },
+        title = { Text(heading) },
         text = {
             Column {
                 OutlinedTextField(
@@ -437,6 +492,28 @@ private fun NewNoteDialog(linked: Boolean, onDismiss: () -> Unit, onCreate: (Str
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
     LaunchedEffect(Unit) { focus.requestFocus() }
+}
+
+/** The templates in .foam/templates, by name with their descriptions; tap one to use it. */
+@Composable
+private fun TemplatePickerDialog(templates: List<TemplateFile>, onDismiss: () -> Unit, onPick: (TemplateFile) -> Unit) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Create note from template") },
+        text = {
+            LazyColumn {
+                items(templates, key = { it.path }) { t ->
+                    ListItem(
+                        headlineContent = { Text(t.name) },
+                        supportingContent = t.description?.let { d -> { Text(d) } },
+                        modifier = Modifier.clickable { onPick(t) },
+                    )
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
+    )
 }
 
 private val TREE_INDENT = 20.dp
@@ -513,6 +590,16 @@ private fun menuIcon(name: String, path: String): ImageVector =
         .build()
 
 /** Material "label" icon, for Tags (not in material-icons-core). */
+/** Material "file_copy" icon (a page in front of another), for Create note from template. */
+val NoteFromTemplateIcon: ImageVector by lazy {
+    menuIcon(
+        "Note from template",
+        "M16,1H4c-1.1,0 -2,0.9 -2,2v14h2V3h12V1z" +
+            "M15,5l6,6v10c0,1.1 -0.9,2 -2,2H7.99C6.89,23 6,22.1 6,21l0.01,-14c0,-1.1 0.89,-2 1.99,-2h7z" +
+            "M14,12h5.5L14,6.5V12z",
+    )
+}
+
 val TagIcon: ImageVector by lazy {
     menuIcon(
         "Tag",

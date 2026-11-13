@@ -259,17 +259,25 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
 
     // ---- creation ------------------------------------------------------------------------
 
-    /** Creates a note from a title (file name is the slugified title). */
-    fun createNoteFromTitle(title: String): String {
-        val template = foam.template("new-note")
+    /**
+     * Creates a note from a title: from the template at [templatePath] (relative to the
+     * templates folder) if given, otherwise from new-note.md if that's turned on. The file is
+     * the template's `filepath`, or the slugified title. A picked template that names the file
+     * without the title (a daily note, say) opens that note instead if it's already there.
+     */
+    fun createNoteFromTitle(title: String, templatePath: String? = null): String {
+        val template = if (templatePath != null) foam.templateAt(templatePath) else defaultNoteTemplate()
         val fromTemplate = template?.filepath?.let { templatePath(FoamVariables.resolve(it, title)) }
+        if (templatePath != null && fromTemplate != null && template?.needsTitle == false && exists(fromTemplate)) return fromTemplate
         val path = uniquePath(fromTemplate ?: joinPath(settings.newNoteDir, FoamVariables.slugify(title) + ".md"))
-        createNote(path, title)
+        createNote(path, title, template)
         return path
     }
 
-    private fun createNote(path: String, title: String) {
-        val template = foam.template("new-note")
+    private fun defaultNoteTemplate(): Template? =
+        if (settings.useNewNoteTemplate) foam.template("new-note") else null
+
+    private fun createNote(path: String, title: String, template: Template? = defaultNoteTemplate()) {
         val body = if (template != null) FoamVariables.resolve(template.body, title)
         else "# $title\n\n"
         write(path, body)
@@ -280,7 +288,7 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
     fun dailyNote(date: LocalDate = Dates.today()): String {
         val now = LocalDateTime(date, Dates.now().time)
         val cfg = foam
-        val template = cfg.template("daily-note")
+        val template = if (settings.useDailyNoteTemplate) cfg.template("daily-note") else null
         val title = date.toString() // yyyy-mm-dd, as Foam names daily notes
         val path = template?.filepath?.let { templatePath(FoamVariables.resolve(it, title, now)) }
             ?: run {

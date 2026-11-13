@@ -44,14 +44,47 @@ class FoamConfig(private val fs: FileSystem, private val root: Path) {
             else -> LinkReferences.Mode.WITH_EXTENSIONS
         }
 
+    private val templatesDir get() = root / TEMPLATES_DIR
+
+    /** The template `.foam/templates/<name>.md` (or `<name>`), if it exists. */
     fun template(name: String): Template? {
-        val dir = root / ".foam/templates"
-        val f = listOf("$name.md", name).map { dir / it }
+        val f = listOf("$name.md", name).map { templatesDir / it }
             .firstOrNull { fs.metadataOrNull(it)?.isRegularFile == true } ?: return null
         return Template.parse(fs.read(f) { readUtf8() })
     }
 
+    /** The template at [path], relative to the templates folder (as [templates] lists them). */
+    fun templateAt(path: String): Template? {
+        if (path.split('/').any { it == ".." || it.isEmpty() }) return null
+        val f = templatesDir / path
+        if (fs.metadataOrNull(f)?.isRegularFile != true) return null
+        return runCatching { Template.parse(fs.read(f) { readUtf8() }) }.getOrNull()
+    }
+
+    /**
+     * The Markdown templates in `.foam/templates` and its subfolders, by name, as Foam's
+     * "Create New Note From Template" lists them. (Foam's JavaScript templates aren't supported.)
+     */
+    fun templates(): List<TemplateFile> {
+        val out = mutableListOf<TemplateFile>()
+        fun walk(dir: Path, prefix: String) {
+            for (child in runCatching { fs.list(dir) }.getOrDefault(emptyList())) {
+                val meta = fs.metadataOrNull(child) ?: continue
+                val rel = prefix + child.name
+                if (meta.isDirectory) walk(child, "$rel/")
+                else if (meta.isRegularFile && child.name.endsWith(".md", ignoreCase = true)) {
+                    val t = runCatching { Template.parse(fs.read(child) { readUtf8() }) }.getOrNull() ?: continue
+                    out += TemplateFile(rel, t.name ?: rel.removeSuffix(".md"), t.description, t.needsTitle)
+                }
+            }
+        }
+        walk(templatesDir, "")
+        return out.sortedWith(compareBy(String.CASE_INSENSITIVE_ORDER) { it.name })
+    }
+
     companion object {
+        const val TEMPLATES_DIR = ".foam/templates"
+
         /** Removes // and /* */ comments and trailing commas from VS Code's JSONC. */
         fun stripJsonc(src: String): String {
             val out = StringBuilder()
@@ -80,9 +113,28 @@ class FoamConfig(private val fs: FileSystem, private val root: Path) {
     }
 }
 
-/** A Foam template: optional `foam_template` front matter (filepath) plus a body. */
-class Template(val filepath: String?, val body: String) {
+/**
+ * A template in the templates folder: [path] relative to it, the name to show, and whether
+ * making a note from it needs a title (see [Template.needsTitle]).
+ */
+data class TemplateFile(val path: String, val name: String, val description: String?, val needsTitle: Boolean = true)
+
+/**
+ * A Foam template: optional `foam_template` front matter (filepath, and the name and
+ * description Foam shows when picking one) plus a body.
+ */
+class Template(val filepath: String?, val body: String, val name: String? = null, val description: String? = null) {
+    /**
+     * Whether a note made from this needs a title: when it has no `filepath` (the file is
+     * named after the title) or uses the title (`$FOAM_TITLE`, `$FOAM_TITLE_SAFE`, `$FOAM_SLUG`).
+     * A daily-note template, named by the date, doesn't.
+     */
+    val needsTitle: Boolean
+        get() = filepath == null || TITLE_VARIABLE.containsMatchIn(filepath) || TITLE_VARIABLE.containsMatchIn(body)
+
     companion object {
+        private val TITLE_VARIABLE = Regex("""\$\{?FOAM_(?:TITLE|TITLE_SAFE|SLUG)\b""")
+
         fun parse(text: String): Template {
             val src = text.replace("\r\n", "\n")
             if (!src.startsWith("---\n")) return Template(null, src)
@@ -90,15 +142,16 @@ class Template(val filepath: String?, val body: String) {
             if (end < 0) return Template(null, src)
             val fmLines = src.substring(4, end).split("\n")
             val rest = src.substring(end + 4).removePrefix("\n")
-            var filepath: String? = null
+            val fields = HashMap<String, String>()
             val kept = mutableListOf<String>()
             var inFoamBlock = false
             for (line in fmLines) {
                 if (line.startsWith("foam_template:")) { inFoamBlock = true; continue }
                 if (inFoamBlock && (line.startsWith(" ") || line.startsWith("\t") || line.isBlank())) {
                     val t = line.trim()
-                    if (t.startsWith("filepath:")) {
-                        filepath = t.removePrefix("filepath:").trim().trim('"', '\'')
+                    val key = t.substringBefore(':', "")
+                    if (key in setOf("filepath", "name", "description")) {
+                        fields[key] = t.substringAfter(':').trim().trim('"', '\'')
                     }
                     continue
                 }
@@ -108,7 +161,10 @@ class Template(val filepath: String?, val body: String) {
             // With the front matter gone, drop the blank lines that separated it from the body.
             val body = if (kept.all { it.isBlank() }) rest.replace(Regex("^(?:[ \t]*\n)+"), "")
             else "---\n" + kept.joinToString("\n") + "\n---\n" + rest
-            return Template(filepath, body)
+            return Template(
+                fields["filepath"]?.ifBlank { null }, body,
+                fields["name"]?.ifBlank { null }, fields["description"]?.ifBlank { null },
+            )
         }
     }
 }
