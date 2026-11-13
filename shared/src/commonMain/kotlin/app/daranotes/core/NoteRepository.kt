@@ -341,6 +341,18 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
     private fun isIndex(path: String) = path.equals(indexPath, ignoreCase = true)
 
     /**
+     * What a missing index starts as, before its first link: new-note.md (titled after the
+     * index's file name, and ending in a blank line so the list starts apart from it) if new
+     * notes start from that, otherwise nothing. The template's `filepath` doesn't apply.
+     */
+    private fun newIndexText(): String {
+        val template = defaultNoteTemplate() ?: return ""
+        val title = indexPath.substringAfterLast('/').removeSuffix(".md")
+        val body = FoamVariables.resolve(template.body, title).trimEnd('\n', '\r', ' ', '\t')
+        return if (body.isEmpty()) "" else "$body\n\n"
+    }
+
+    /**
      * Links a new note from the index (`- [[id]]`), unless it is already linked. The entry goes
      * at the end of the index's list of links, above Foam's link definitions; if the index has
      * those definitions, a matching one is added too.
@@ -348,8 +360,7 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
     fun addToIndex(path: String) {
         if (isIndex(path) || !path.endsWith(".md")) return
         val id = linkId(path)
-        // A missing index starts with just the link: headings are for templates to add.
-        val text = if (exists(indexPath)) read(indexPath) else ""
+        val text = if (exists(indexPath)) read(indexPath) else newIndexText()
         if (linkPattern(id).containsMatchIn(text)) return
         val rel = RepoPaths.relative(RepoPaths.dir(indexPath), path)
         val def = IndexEditor.definition(id, rel, titleOf(path, file(path)))

@@ -143,4 +143,18 @@ class NoteRepositoryTest {
         assertTrue(Template.parse("---\nfoam_template:\n  filepath: x/\$FOAM_SLUG.md\n---\nBody\n").needsTitle)
         assertFalse(Template.parse("---\nfoam_template:\n  filepath: inbox.md\n---\nBody\n").needsTitle)
     }
+
+    @Test fun aNewIndexStartsFromTheNewNoteTemplateWhenNewNotesDo() {
+        val settings = TestSettings().apply { useNewNoteTemplate = true }
+        val repo = NoteRepository(fs, root, settings)
+        repo.write(".foam/templates/new-note.md", "---\nfoam_template:\n  filepath: notes/\$FOAM_SLUG.md\n---\n\n# \$FOAM_TITLE\n")
+        repo.createNoteFromTitle("Shopping List")
+        // The index stays where it belongs (not the template's filepath), titled after its name.
+        assertEquals("# Index\n\n- [[shopping-list]]\n", repo.read("Index.md"))
+
+        settings.useNewNoteTemplate = false
+        repo.delete("Index.md")
+        repo.createNoteFromTitle("Groceries")
+        assertEquals("- [[groceries]]\n", repo.read("Index.md"))
+    }
 }
