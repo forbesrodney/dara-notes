@@ -97,6 +97,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.daranotes.MainViewModel
 import app.daranotes.Screen
+import app.daranotes.core.FoamConfig
+import app.daranotes.core.FoamVariables
 import app.daranotes.core.LintResult
 import app.daranotes.core.TaskStyle
 import app.daranotes.core.Tasks
@@ -113,6 +115,9 @@ import kotlinx.coroutines.withContext
 @Composable
 fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHostState) {
     val path = screen.path
+    // A template in .foam/templates: edited like a note, but none of the note-only actions
+    // apply, and the preview shows an example note made from it.
+    val isTemplate = FoamConfig.isTemplate(path)
     var value by remember(path) { mutableStateOf(TextFieldValue(vm.repo.read(path))) }
     var saved by remember(path) { mutableStateOf(value.text) }
     // The note as loaded (or reloaded after a sync): edited if the text differs.
@@ -133,7 +138,9 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     var lint by remember(path) { mutableStateOf<LintResult?>(null) }
     var showIssues by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
-    val lintOn = vm.settings.lintEnabled
+    // Templates aren't checked: their variables and front matter would only raise noise.
+    val lintOn = vm.settings.lintEnabled && !isTemplate
+    var pickingVariable by remember { mutableStateOf(false) }
     var moving by remember { mutableStateOf(false) }
     val notes by vm.notes.collectAsState()
     val sync by vm.syncState.collectAsState()
@@ -154,13 +161,14 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     val bullet = vm.settings.bullet
     // The table of contents and Foam's link reference definitions, brought up to date.
     fun tidied(text: String): String {
+        if (isTemplate) return text
         val t = Toc.update(text, bullet)?.text ?: text
         return vm.repo.withLinkReferences(path, t)
     }
     // Tidies an edited note when it goes to Preview or is left, so the table of contents and
     // link definitions never change under the cursor while typing.
     fun refreshToc() {
-        if (value.text == baseline) return
+        if (isTemplate || value.text == baseline) return
         Toc.update(value.text, bullet)?.let { value = value.applying(it) }
         val text = vm.repo.withLinkReferences(path, value.text)
         if (text != value.text) value = TextFieldValue(text, TextRange(value.selection.start.coerceAtMost(text.length), value.selection.end.coerceAtMost(text.length)))
@@ -237,6 +245,15 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
             saved = text
         }
     }
+    if (isTemplate) {
+        // The preview is an example note: following its links would create real notes, and
+        // its lines aren't the template's, so checkboxes can't be toggled.
+        val notHere: (String) -> Unit = { scope.launch { snackbar.showSnackbar("Links don't open from a template's example") } }
+        callbacks.openWikilink = notHere
+        callbacks.openPath = notHere
+        callbacks.toggleTask = {}
+    }
+    val sample = if (isTemplate && !editing) remember(value.text) { vm.repo.templateSample(path, value.text) } else null
 
     Scaffold(
         topBar = {
@@ -296,6 +313,24 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                                 vm.syncNow()
                             },
                         )
+                        if (isTemplate) {
+                            DropdownMenuItem(
+                                text = { Text("Insert variable") },
+                                leadingIcon = { Icon(VariableIcon, null) },
+                                onClick = { menu = false; editing = true; pickingVariable = true },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Help with templates") },
+                                leadingIcon = { Icon(HelpIcon, null) },
+                                onClick = { menu = false; vm.navigate(Screen.Help("templates")) },
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete template") },
+                                leadingIcon = { Icon(Icons.Default.Delete, null) },
+                                onClick = { menu = false; confirmDelete = true },
+                            )
+                            return@DropdownMenu
+                        }
                         DropdownMenuItem(
                             text = { Text("Connections") },
                             leadingIcon = { Icon(LinkIcon, null) },
@@ -359,7 +394,12 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     ) { padding ->
         Column(Modifier.padding(padding).fillMaxSize().imePadding()) {
             if (editing) {
-                FormatToolbar(bullet = vm.settings.bullet, taskStyle = { TaskStyle.from(vm.settings) }, onAction = { value = it(value) })
+                FormatToolbar(
+                    bullet = vm.settings.bullet,
+                    taskStyle = { TaskStyle.from(vm.settings) },
+                    onAction = { value = it(value) },
+                    onInsertVariable = if (isTemplate) ({ pickingVariable = true }) else null,
+                )
                 HorizontalDivider()
                 lint?.let { result ->
                     if (result.issues.isNotEmpty() || result.configError != null) {
@@ -452,6 +492,17 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                     }
                   }
                 }
+            } else if (sample != null) {
+                TemplateSampleBar(sample)
+                HorizontalDivider()
+                MarkdownPreview(
+                    markdown = sample.markdown,
+                    // Relative links and images resolve as they would in the note.
+                    notePath = sample.notePath,
+                    repoRoot = vm.repo.root,
+                    callbacks = callbacks,
+                    modifier = Modifier.fillMaxSize(),
+                )
             } else {
                 MarkdownPreview(
                     markdown = value.text,
@@ -496,7 +547,33 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     if (renaming) RenameNoteDialog(vm, path, onDismiss = { renaming = false }, onConfirm = relocate)
     if (moving) MoveNoteDialog(vm, path, onDismiss = { moving = false }, onConfirm = relocate)
 
-    if (confirmDelete) {
+    if (pickingVariable) {
+        VariablePickerDialog(
+            onDismiss = { pickingVariable = false },
+            onHelp = { pickingVariable = false; vm.navigate(Screen.Help("templates")) },
+        ) { name ->
+            pickingVariable = false
+            val (text, cursor) = FoamVariables.insert(value.text, value.selection.start, value.selection.end, name)
+            value = TextFieldValue(text, TextRange(cursor))
+            runCatching { focus.requestFocus() }
+        }
+    }
+    if (confirmDelete && isTemplate) {
+        AlertDialog(
+            onDismissRequest = { confirmDelete = false },
+            title = { Text("Delete template?") },
+            text = { Text("${path.substringAfterLast('/')} will be deleted. Notes made from it stay as they are.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    confirmDelete = false
+                    saved = value.text // nothing to flush
+                    flushOnLeave = false
+                    vm.deleteTemplate(path)
+                }) { Text("Delete") }
+            },
+            dismissButton = { TextButton(onClick = { confirmDelete = false }) { Text("Cancel") } },
+        )
+    } else if (confirmDelete) {
         AlertDialog(
             onDismissRequest = { confirmDelete = false },
             title = { Text("Delete note?") },
@@ -521,7 +598,12 @@ private data class ToolAction(val label: String, val tip: String, val edit: (Tex
 private val RETURN get() = if (shortcutModifier == "⌘") "Return" else "Enter"
 
 @Composable
-private fun FormatToolbar(bullet: String, taskStyle: () -> TaskStyle, onAction: ((TextFieldValue) -> TextFieldValue) -> Unit) {
+private fun FormatToolbar(
+    bullet: String,
+    taskStyle: () -> TaskStyle,
+    onAction: ((TextFieldValue) -> TextFieldValue) -> Unit,
+    onInsertVariable: (() -> Unit)? = null,
+) {
     val clipboard = LocalClipboardManager.current
     val editActions: List<ToolAction> = listOf(
         ToolAction("All", "Select all") { v: TextFieldValue -> v.copy(selection = TextRange(0, v.text.length)) },
@@ -570,6 +652,15 @@ private fun FormatToolbar(bullet: String, taskStyle: () -> TaskStyle, onAction: 
             }
         }
         VerticalDivider(Modifier.height(24.dp).align(Alignment.CenterVertically).padding(horizontal = 4.dp))
+        if (onInsertVariable != null) {
+            // Templates: their variables, first, since they're what a template is for.
+            Tip("Insert a variable, such as the title or today's date") {
+                TextButton(onClick = onInsertVariable, Modifier.keepEditorFocus(), contentPadding = PaddingValues(horizontal = 10.dp)) {
+                    Text("\$ Variable", fontFamily = FontFamily.Monospace)
+                }
+            }
+            VerticalDivider(Modifier.height(24.dp).align(Alignment.CenterVertically).padding(horizontal = 4.dp))
+        }
         actions.forEach { (label, tip, transform) ->
             Tip(tip) {
                 TextButton(onClick = { onAction(transform) }, Modifier.keepEditorFocus(), contentPadding = PaddingValues(horizontal = 10.dp)) {

@@ -44,6 +44,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
+import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -216,6 +217,11 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                                 enabled = available.isNotEmpty(),
                                 onClick = { more = false; templates = available },
                             )
+                            DropdownMenuItem(
+                                text = { Text("Templates") },
+                                leadingIcon = { Icon(VariableIcon, null) },
+                                onClick = { more = false; vm.navigate(Screen.Templates) },
+                            )
                             HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Tags") },
@@ -378,7 +384,11 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
         })
     }
     templates?.let { list ->
-        TemplatePickerDialog(list, onDismiss = { templates = null }) { t ->
+        TemplatePickerDialog(
+            list,
+            onDismiss = { templates = null },
+            onEdit = { templates = null; vm.navigate(Screen.Templates) },
+        ) { t ->
             templates = null
             // A template that names the note itself (by the date, say) needs no title.
             if (t.needsTitle) picked = t else vm.createNote("", t.path)
@@ -497,7 +507,7 @@ private fun NewNoteDialog(
 
 /** The templates in .foam/templates, by name with their descriptions; tap one to use it. */
 @Composable
-private fun TemplatePickerDialog(templates: List<TemplateFile>, onDismiss: () -> Unit, onPick: (TemplateFile) -> Unit) {
+private fun TemplatePickerDialog(templates: List<TemplateFile>, onDismiss: () -> Unit, onEdit: () -> Unit, onPick: (TemplateFile) -> Unit) {
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Create note from template") },
@@ -507,12 +517,14 @@ private fun TemplatePickerDialog(templates: List<TemplateFile>, onDismiss: () ->
                     ListItem(
                         headlineContent = { Text(t.name) },
                         supportingContent = t.description?.let { d -> { Text(d) } },
+                        // The dialog's own color, not a lighter band per row.
+                        colors = ListItemDefaults.colors(containerColor = Color.Transparent),
                         modifier = Modifier.clickable { onPick(t) },
                     )
                 }
             }
         },
-        confirmButton = {},
+        confirmButton = { TextButton(onClick = onEdit) { Text("Edit templates") } },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
 }

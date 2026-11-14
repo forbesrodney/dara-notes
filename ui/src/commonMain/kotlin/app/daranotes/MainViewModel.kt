@@ -37,6 +37,8 @@ sealed interface Screen {
     data object Tags : Screen
     /** Links in the note at [path] and what they point to, plus notes linking to it. */
     data class Connections(val path: String) : Screen
+    /** The templates in .foam/templates, to create, open, rename or delete. */
+    data object Templates : Screen
     /** A help page, by name (see Help). */
     data class Help(val page: String = app.daranotes.ui.Help.INDEX) : Screen
 }
@@ -246,6 +248,52 @@ class MainViewModel(val platform: AppPlatform) : ViewModel() {
                     else "Now ${r.path} · updated ${r.links} link(s) in ${r.notes} note(s)"
                 )
             }.onFailure { messages.emit(it.message ?: "Couldn't move $oldPath") }
+        }
+    }
+
+    // ---- templates -----------------------------------------------------------------------
+
+    /** Creates Foam's default template [file] (new-note.md or daily-note.md) and opens it. */
+    fun createDefaultTemplate(file: String) {
+        viewModelScope.launch {
+            val path = withContext(ioDispatcher) { repo.createDefaultTemplate(file) }
+            afterEdit()
+            openPath(path, startEditing = true)
+        }
+    }
+
+    /** Creates a template named [name] for Create note from template, and opens it. */
+    fun createTemplate(name: String) {
+        viewModelScope.launch {
+            val path = withContext(ioDispatcher) { repo.createTemplate(name) }
+            afterEdit()
+            openPath(path, startEditing = true)
+        }
+    }
+
+    /** Renames the template at [path] to the file name [newName]; [onDone] gets whether it worked. */
+    fun renameTemplate(path: String, newName: String, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            val result = withContext(ioDispatcher) { runCatching { GitSync.exclusive { repo.renameTemplate(path, newName) } } }
+            val target = result.getOrNull()
+            if (target == null) {
+                messages.emit(result.exceptionOrNull()?.message ?: "Can't rename it to that: the name is taken, or belongs to Foam's new-note or daily-note template")
+            } else {
+                afterEdit()
+                if (target != path) messages.emit("Now ${target.substringAfterLast('/')}")
+            }
+            onDone()
+        }
+    }
+
+    /** Deletes the template at [path], leaving its editor if it's open. */
+    fun deleteTemplate(path: String, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            withContext(ioDispatcher) { repo.deleteTemplate(path) }
+            if ((current as? Screen.Editor)?.path == path) back()
+            afterEdit()
+            messages.emit("Deleted ${path.substringAfterLast('/')}")
+            onDone()
         }
     }
 

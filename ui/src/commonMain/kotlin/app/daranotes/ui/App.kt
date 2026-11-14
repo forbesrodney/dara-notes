@@ -50,6 +50,7 @@ fun App(vm: MainViewModel) {
                 Screen.Tags -> TagsScreen(vm, snackbar)
                 is Screen.Connections -> ConnectionsScreen(vm, screen, snackbar)
                 is Screen.Help -> key(screen.page) { HelpScreen(vm, screen, snackbar) }
+                Screen.Templates -> TemplatesScreen(vm, snackbar)
                 // key(): each note gets its own editor state, so leaving note A for note B can
                 // never flush B's text into A.
                 is Screen.Editor -> key(screen.path) { EditorScreen(vm, screen, snackbar) }

@@ -160,4 +160,104 @@ class NoteRepositoryTest {
         repo.createNoteFromTitle("Groceries")
         assertEquals("# Index\n\n- [[groceries]]\n", repo.read("Index.md"))
     }
+
+    // ---- editing templates ----------------------------------------------------------------
+
+    @Test fun listsTheDefaultTemplatesFirstEvenBeforeTheyExist() {
+        repo.write(".foam/templates/idea.md", "---\nfoam_template:\n  name: Idea\n  description: A quick idea\n---\n# \$FOAM_TITLE\n")
+        repo.write(".foam/templates/daily-note.md", "# \$FOAM_DATE_YEAR\n")
+        assertEquals(
+            listOf(
+                TemplateListing(".foam/templates/new-note.md", "new-note.md", null, "new-note.md", exists = false),
+                TemplateListing(".foam/templates/daily-note.md", "daily-note.md", null, "daily-note.md", exists = true),
+                TemplateListing(".foam/templates/idea.md", "Idea", "A quick idea", null, exists = true),
+            ),
+            repo.templateList(),
+        )
+    }
+
+    @Test fun aCreatedDefaultTemplateChangesNothingUntilItsEdited() {
+        val settings = TestSettings().apply { linkFromIndex = false }
+        val repo = NoteRepository(fs, root, settings)
+        val date = kotlinx.datetime.LocalDate(2026, 11, 13)
+        val withoutNote = repo.read(repo.createNoteFromTitle("Before"))
+        val withoutDaily = repo.read(repo.dailyNote(date))
+        repo.delete(repo.dailyNote(date))
+
+        assertEquals(".foam/templates/new-note.md", repo.createDefaultTemplate("new-note.md"))
+        assertEquals(".foam/templates/daily-note.md", repo.createDefaultTemplate("daily-note.md"))
+        assertEquals(withoutNote.replace("Before", "After"), repo.read(repo.createNoteFromTitle("After")))
+        assertEquals(withoutDaily, repo.read(repo.dailyNote(date)))
+        // An existing one is left as it is.
+        repo.write(".foam/templates/new-note.md", "# Mine\n")
+        repo.createDefaultTemplate("new-note.md")
+        assertEquals("# Mine\n", repo.read(".foam/templates/new-note.md"))
+    }
+
+    @Test fun createsANamedTemplateForThePicker() {
+        val path = repo.createTemplate("Meeting Notes")
+        assertEquals(".foam/templates/meeting-notes.md", path)
+        val listed = repo.foam.templates().single()
+        assertEquals("Meeting Notes", listed.name)
+        assertTrue(listed.needsTitle)
+        // Made from it: the title as a heading, and the starter's commented-out filepath unused.
+        val note = repo.createNoteFromTitle("Standup", "meeting-notes.md")
+        assertEquals("standup.md", note)
+        assertEquals("# Standup\n\n", repo.read(note))
+        // A name that would make one of Foam's default templates doesn't.
+        assertEquals(".foam/templates/new-note-2.md", repo.createTemplate("New Note"))
+        // Quoted when YAML needs it, and still read back.
+        repo.createTemplate("Plan: weekly")
+        assertTrue(repo.foam.templates().any { it.name == "Plan: weekly" })
+    }
+
+    @Test fun renamesAndDeletesTemplatesWithoutTouchingNotes() {
+        repo.write(".foam/templates/a.md", "# A \$FOAM_TITLE\n")
+        repo.write(".foam/templates/b.md", "# B\n")
+        repo.write("Index.md", "- [[a]]\n")
+        assertEquals(".foam/templates/c.md", repo.renameTemplate(".foam/templates/a.md", "c"))
+        assertEquals("# A \$FOAM_TITLE\n", repo.read(".foam/templates/c.md"))
+        // Taken, or one of Foam's default templates: refused.
+        assertEquals(null, repo.renameTemplate(".foam/templates/c.md", "b.md"))
+        assertEquals(null, repo.renameTemplate(".foam/templates/c.md", "daily-note"))
+        repo.deleteTemplate(".foam/templates/c.md")
+        assertFalse(fs.exists(root / ".foam/templates/c.md"))
+        assertEquals("- [[a]]\n", repo.read("Index.md"))
+    }
+
+    @Test fun fillsInATemplateAsAnExampleNote() {
+        val settings = TestSettings().apply { newNoteDir = "inbox"; dailyDirOverride = "days" }
+        val repo = NoteRepository(fs, root, settings)
+        val now = kotlinx.datetime.LocalDateTime(2026, 11, 13, 9, 30)
+        val plain = repo.templateSample(".foam/templates/idea.md", "# \$FOAM_TITLE\n\nFile: \$TM_FILENAME_BASE\n", now)
+        assertEquals("inbox/example-note.md", plain.notePath)
+        assertEquals("# Example Note\n\nFile: example-note\n", plain.markdown)
+        val placed = repo.templateSample(
+            ".foam/templates/meeting.md",
+            "---\nfoam_template:\n  filepath: meetings/\$FOAM_DATE_YEAR/\$FOAM_SLUG.md\ntags: meeting\n---\n# \$FOAM_TITLE\n",
+            now,
+        )
+        assertEquals("meetings/2026/example-note.md", placed.notePath)
+        assertEquals("---\ntags: meeting\n---\n# Example Note\n", placed.markdown)
+        val daily = repo.templateSample(".foam/templates/daily-note.md", "# \$FOAM_TITLE \$FOAM_DATE_DAY_NAME_SHORT\n", now)
+        assertTrue(daily.daily)
+        assertEquals("days/2026-11-13.md", daily.notePath)
+        assertEquals("# 2026-11-13 ${PlatformDates.dayName(5, short = true)}\n", daily.markdown)
+    }
+
+    @Test fun everyVariableInTheInsertListIsFilledIn() {
+        for (v in FoamVariables.catalog) {
+            val out = FoamVariables.resolve("\$" + v.name, "T", path = "a/t.md")
+            assertTrue(out.isNotEmpty() && !out.startsWith("\$"), "${v.name} isn't filled in: $out")
+        }
+    }
+
+    @Test fun insertsAVariableWithBracesOnlyWhenNeeded() {
+        assertEquals("# \$FOAM_TITLE" to 13, FoamVariables.insert("# ", 2, 2, "FOAM_TITLE"))
+        // Followed by a capital or _, it would run into the name.
+        assertEquals("\${FOAM_DATE_YEAR}_X" to 17, FoamVariables.insert("_X", 0, 0, "FOAM_DATE_YEAR"))
+        assertEquals("\$FOAM_DATE_YEAR-01" to 15, FoamVariables.insert("-01", 0, 0, "FOAM_DATE_YEAR"))
+        // Replaces a selection.
+        assertEquals("a \$UUID c" to 7, FoamVariables.insert("a b c", 2, 3, "UUID"))
+    }
 }

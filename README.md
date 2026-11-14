@@ -241,6 +241,7 @@ folder), run the script, test, and commit the result.
 | `ui/.../ui/*Screen.kt` | the screens |
 | `ui/.../ui/PlatformViews.kt` | the preview and graph web views each platform provides |
 | `ui/.../ui/HelpScreen.kt` | the help pages, their links and tables of contents |
+| `ui/.../ui/TemplatesScreen.kt`, `TemplateEditing.kt` | the Templates screen; the editor's variable list and example preview |
 | `androidApp/.../AndroidPlatform.kt` | the Android `AppPlatform`: storage, WorkManager sync, markdownlint |
 | `androidApp/.../AndroidSettings.kt` | settings in SharedPreferences; the token in encrypted preferences |
 | `androidApp/.../SyncWorker.kt` | periodic and after-edit background sync |

@@ -10,8 +10,8 @@ so you can switch between the app and VS Code freely.
   renaming and exporting.
 - [Finding and organizing notes](organizing.md): the note list, the index note, the graph,
   connections, tags, orphans and placeholders.
-- [Templates](templates.md): new-note and daily-note templates, picking a template, and
-  every template variable.
+- [Templates](templates.md): new-note and daily-note templates, writing templates in the
+  app, picking one, and every template variable.
 - [Foam and repository settings](foam-settings.md): the files in your repository that the
   app reads, such as `.vscode/settings.json`.
 - [Troubleshooting](troubleshooting.md): sync problems, merge conflicts and settings that

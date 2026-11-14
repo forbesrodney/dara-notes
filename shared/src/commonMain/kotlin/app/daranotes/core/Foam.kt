@@ -94,8 +94,17 @@ class FoamConfig(private val fs: FileSystem, private val root: Path) {
     companion object {
         const val TEMPLATES_DIR = ".foam/templates"
 
+        /** Foam's template for every new note, in [TEMPLATES_DIR]. */
+        const val NEW_NOTE_TEMPLATE = "new-note.md"
+
+        /** Foam's template for daily notes, in [TEMPLATES_DIR]. */
+        const val DAILY_NOTE_TEMPLATE = "daily-note.md"
+
         /** The templates Foam applies by itself, which aren't offered for picking. */
-        private val DEFAULT_TEMPLATES = setOf("new-note.md", "daily-note.md")
+        val DEFAULT_TEMPLATES = setOf(NEW_NOTE_TEMPLATE, DAILY_NOTE_TEMPLATE)
+
+        /** Whether [path] (repository-relative) is in the templates folder. */
+        fun isTemplate(path: String): Boolean = path.startsWith("$TEMPLATES_DIR/")
 
         /** Removes // and /* */ comments and trailing commas from VS Code's JSONC. */
         fun stripJsonc(src: String): String {
@@ -267,6 +276,74 @@ object FoamVariables {
             "CURRENT_SECONDS_UNIX" to at.toInstant(zone).epochSeconds.toString(),
             "CURRENT_TIMEZONE_OFFSET" to Dates.offset(at, zone),
         )
+    }
+
+    /** A variable for the editor's Insert variable list: its group and what it becomes. */
+    data class Info(val group: String, val name: String, val description: String)
+
+    /** The variables worth inserting by hand, grouped as the help's Templates page has them. */
+    val catalog: List<Info> = buildList {
+        fun group(name: String, vararg vars: Pair<String, String>) = vars.forEach { (v, d) -> add(Info(name, v, d)) }
+        group(
+            "Title and file",
+            "FOAM_TITLE" to "The title you enter",
+            "FOAM_TITLE_SAFE" to "The title, safe as a file name",
+            "FOAM_SLUG" to "The title for a file name or link: shopping-list",
+            "TM_FILENAME_BASE" to "The note's file name without .md",
+        )
+        group(
+            "The note's date",
+            "FOAM_DATE_YEAR" to "Year: 2026",
+            "FOAM_DATE_YEAR_SHORT" to "Year, two digits: 26",
+            "FOAM_DATE_MONTH" to "Month: 11",
+            "FOAM_DATE_MONTH_NAME" to "Month name: November",
+            "FOAM_DATE_MONTH_NAME_SHORT" to "Short month name: Nov",
+            "FOAM_DATE_DATE" to "Day of the month: 13",
+            "FOAM_DATE_DAY_NAME" to "Day name: Friday",
+            "FOAM_DATE_DAY_NAME_SHORT" to "Short day name: Fri",
+            "FOAM_DATE_DAY_ISO" to "Day of the week, Monday = 1: 5",
+            "FOAM_DATE_WEEK" to "ISO week number: 46",
+            "FOAM_DATE_WEEK_YEAR" to "Year of the ISO week: 2026",
+            "FOAM_DATE_HOUR" to "Hour, 24-hour clock: 14",
+            "FOAM_DATE_MINUTE" to "Minute: 05",
+            "FOAM_DATE_SECOND" to "Second: 09",
+            "FOAM_DATE_SECONDS_UNIX" to "Seconds since 1970",
+        )
+        group(
+            "The current time",
+            "CURRENT_YEAR" to "Year: 2026",
+            "CURRENT_YEAR_SHORT" to "Year, two digits: 26",
+            "CURRENT_MONTH" to "Month: 11",
+            "CURRENT_MONTH_NAME" to "Month name: November",
+            "CURRENT_MONTH_NAME_SHORT" to "Short month name: Nov",
+            "CURRENT_DATE" to "Day of the month: 13",
+            "CURRENT_DAY_NAME" to "Day name: Friday",
+            "CURRENT_DAY_NAME_SHORT" to "Short day name: Fri",
+            "CURRENT_HOUR" to "Hour, 24-hour clock: 14",
+            "CURRENT_MINUTE" to "Minute: 05",
+            "CURRENT_SECOND" to "Second: 09",
+            "CURRENT_SECONDS_UNIX" to "Seconds since 1970",
+            "CURRENT_TIMEZONE_OFFSET" to "Time zone: -05:00",
+        )
+        group(
+            "Random values",
+            "UUID" to "A random UUID",
+            "RANDOM" to "Six random digits",
+            "RANDOM_HEX" to "Six random hexadecimal digits",
+        )
+    }
+
+    /**
+     * [v] with variable [name] inserted at the cursor (replacing any selection) as `$NAME`,
+     * or as `${NAME}` when the text right after it would otherwise run into the name.
+     * Returns the new text and the cursor position after it.
+     */
+    fun insert(text: String, selStart: Int, selEnd: Int, name: String): Pair<String, Int> {
+        val start = minOf(selStart, selEnd).coerceIn(0, text.length)
+        val end = maxOf(selStart, selEnd).coerceIn(0, text.length)
+        val next = text.getOrNull(end)
+        val token = if (next != null && (next in 'A'..'Z' || next == '_')) "\${$name}" else "\$$name"
+        return text.substring(0, start) + token + text.substring(end) to start + token.length
     }
 
     fun slugify(title: String): String =

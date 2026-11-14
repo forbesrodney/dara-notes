@@ -2,7 +2,7 @@
 
 Templates are Markdown files in your repository's `.foam/templates` folder, the same ones
 Foam uses. The app fills in their variables (such as `$FOAM_TITLE` or `$FOAM_DATE_YEAR`)
-when it makes a note from one.
+when it makes a note from one. You can write and edit them in the app or in VS Code.
 
 ## The two default templates
 
@@ -15,12 +15,33 @@ As in Foam, two templates are used automatically when they exist:
 Without them, a new note starts with its title as a heading (`# Shopping List`), and a
 daily note with its date (`# 2026-11-13`).
 
+## Editing templates in the app
+
+*Templates*, in the note list's menu, lists your templates:
+
+- **Used automatically:** `new-note.md` and `daily-note.md`. If one doesn't exist yet,
+  *Create* makes it, starting out the same as a note without it, so nothing changes until
+  you edit it.
+- **For Create note from template:** the others. *New template* asks for a name and starts
+  one for you. The menu button beside a template renames its file or deletes it.
+
+Tap a template to open it. While editing, the *$ Variable* button in the toolbar lists every
+variable with what it becomes, and inserts the one you tap at the cursor.
+
+The preview shows an example: a note made from the template right now, titled "Example
+Note" (a daily note is today's), with every variable filled in. The bar above it shows where
+that note would be saved, so you can check a `filepath` too. Links in the example don't
+open, and its checkboxes can't be checked.
+
+Templates sync like notes. They never show up in the note list, the graph or search.
+
 ## Creating a note from another template
 
 *Create note from template*, in the note list's menu, lists the other templates in
 `.foam/templates` and its subfolders, by their name and description, and makes a note from
 the one you pick. It's grayed out when there are no other templates. The two default
-templates aren't listed, because Foam already uses them by itself.
+templates aren't listed, because Foam already uses them by itself. *Edit templates*, at the
+bottom of the list, opens the Templates screen.
 
 If the template uses the title (or doesn't set a file name), the app asks for one. A
 template whose `filepath` doesn't involve the title, such as one named by the date, needs

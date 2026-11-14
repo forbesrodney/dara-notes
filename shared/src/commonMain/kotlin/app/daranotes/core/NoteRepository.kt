@@ -284,6 +284,10 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
         if (settings.linkFromIndex) addToIndex(path)
     }
 
+    /** Where a daily note titled [title] goes when the daily-note template sets no `filepath`. */
+    private fun defaultDailyPath(title: String): String =
+        joinPath(settings.dailyDirOverride.ifBlank { "journal" }, "$title.md")
+
     /** Opens (creating if needed) the daily note for [date]. Returns its path. */
     fun dailyNote(date: LocalDate = Dates.today()): String {
         val now = LocalDateTime(date, Dates.now().time)
@@ -291,11 +295,7 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
         val template = cfg.template("daily-note") // Foam's daily note template, if it exists
         val title = date.toString() // yyyy-mm-dd, as Foam names daily notes
         val path = template?.filepath?.let { templatePath(FoamVariables.resolve(it, title, now)) }
-            ?: run {
-                val dir = settings.dailyDirOverride.ifBlank { "journal" }
-                val name = "$title.md"
-                joinPath(dir, name)
-            }
+            ?: defaultDailyPath(title)
         if (!exists(path)) {
             // Without a template, Foam heads a daily note with its date.
             val body = if (template != null) FoamVariables.resolve(template.body, title, now, path) else "# $title\n"
@@ -303,6 +303,85 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
             if (settings.linkFromIndex && settings.indexDailyNotes) addToIndex(path)
         }
         return path
+    }
+
+    // ---- editing templates ------------------------------------------------------------------
+
+    /**
+     * The templates as the Templates screen lists them: Foam's two default templates first
+     * (whether or not they exist yet), then the others by name.
+     */
+    fun templateList(): List<TemplateListing> {
+        val cfg = foam
+        val defaults = listOf(FoamConfig.NEW_NOTE_TEMPLATE, FoamConfig.DAILY_NOTE_TEMPLATE).map { file ->
+            val path = "${FoamConfig.TEMPLATES_DIR}/$file"
+            TemplateListing(path, file, null, defaultFor = file, exists = exists(path))
+        }
+        val others = cfg.templates().map { t ->
+            TemplateListing("${FoamConfig.TEMPLATES_DIR}/${t.path}", t.name, t.description, defaultFor = null, exists = true)
+        }
+        return defaults + others
+    }
+
+    /**
+     * Creates Foam's default template [file] (new-note.md or daily-note.md), starting from
+     * what the app does without it, so nothing changes until it's edited. Returns its path.
+     */
+    fun createDefaultTemplate(file: String): String {
+        require(file in FoamConfig.DEFAULT_TEMPLATES) { "Not a default template: $file" }
+        val path = "${FoamConfig.TEMPLATES_DIR}/$file"
+        if (!exists(path)) write(path, TemplateStarters.default(file))
+        return path
+    }
+
+    /**
+     * Creates a template named [name] for *Create note from template*: a file named after it,
+     * with a `foam_template` block giving the name. Returns its path. A name that would make
+     * one of Foam's default templates gets a number instead.
+     */
+    fun createTemplate(name: String): String {
+        val base = FoamVariables.slugify(name)
+        val file = if ("$base.md" in FoamConfig.DEFAULT_TEMPLATES) "$base-2.md" else "$base.md"
+        val path = uniquePath("${FoamConfig.TEMPLATES_DIR}/$file")
+        write(path, TemplateStarters.named(name.trim()))
+        return path
+    }
+
+    /**
+     * Renames the template at [path] to the file name [newName] (`.md` added if missing),
+     * in the same folder. Returns the new path, or null if the name is taken or would make it
+     * one of Foam's default templates (which do something else).
+     */
+    fun renameTemplate(path: String, newName: String): String? {
+        val clean = newName.trim().trim('/').removeSuffix(".md").replace('/', '-')
+        if (clean.isEmpty()) return null
+        val dir = path.substringBeforeLast('/')
+        val target = "$dir/$clean.md"
+        if (target == path) return path
+        if (dir == FoamConfig.TEMPLATES_DIR && "$clean.md" in FoamConfig.DEFAULT_TEMPLATES) return null
+        if (exists(target)) return null
+        fs.atomicMove(file(path), file(target))
+        return target
+    }
+
+    /** Deletes the template at [path]; unlike a note, nothing else changes. */
+    fun deleteTemplate(path: String) {
+        require(FoamConfig.isTemplate(path)) { "Not a template: $path" }
+        fs.delete(file(path), mustExist = false)
+    }
+
+    /**
+     * What a note made now from the template at [path], whose text is [text], would look
+     * like, for the editor's preview: the title is [SAMPLE_TITLE] (a daily note's is today's
+     * date), and the note goes where the template's `filepath` (or the settings) would put it.
+     */
+    fun templateSample(path: String, text: String, now: LocalDateTime = Dates.now()): TemplateSample {
+        val template = Template.parse(text)
+        val daily = path == "${FoamConfig.TEMPLATES_DIR}/${FoamConfig.DAILY_NOTE_TEMPLATE}"
+        val title = if (daily) now.date.toString() else SAMPLE_TITLE
+        val notePath = template.filepath?.let { templatePath(FoamVariables.resolve(it, title, now)) }
+            ?: if (daily) defaultDailyPath(title) else joinPath(settings.newNoteDir, FoamVariables.slugify(title) + ".md")
+        return TemplateSample(FoamVariables.resolve(template.body, title, now, notePath), notePath, title, daily)
     }
 
     /**
@@ -401,5 +480,46 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
         if (line !in lines.indices) return text
         lines[line] = Tasks.toggle(lines[line], TaskStyle.from(settings)) ?: return text
         return lines.joinToString("\n")
+    }
+}
+
+/** The title the editor's template preview fills in. */
+const val SAMPLE_TITLE = "Example Note"
+
+/**
+ * A template on the Templates screen. [defaultFor] is the file name when it's one of Foam's
+ * default templates (which is listed even when it doesn't [exist] yet).
+ */
+data class TemplateListing(
+    val path: String,
+    val name: String,
+    val description: String?,
+    val defaultFor: String?,
+    val exists: Boolean,
+)
+
+/** A template filled in as an example note: its text, where it would go, and its title. */
+data class TemplateSample(val markdown: String, val notePath: String, val title: String, val daily: Boolean)
+
+/** What new templates start as. */
+object TemplateStarters {
+    /** Foam's default template [file], doing what the app does without it. */
+    fun default(file: String): String = when (file) {
+        FoamConfig.DAILY_NOTE_TEMPLATE -> "# \$FOAM_DATE_YEAR-\$FOAM_DATE_MONTH-\$FOAM_DATE_DATE\n"
+        else -> "# \$FOAM_TITLE\n\n"
+    }
+
+    /** A template for *Create note from template*, named [name]. */
+    fun named(name: String): String {
+        val yamlName = if (name.any { it in ":#'\"" } || name.startsWith(' ')) "\"" + name.replace("\"", "\\\"") + "\"" else name
+        return "---\n" +
+            "foam_template:\n" +
+            "  name: $yamlName\n" +
+            "  description: \n" +
+            "  # filepath: notes/\$FOAM_SLUG.md\n" +
+            "---\n" +
+            "\n" +
+            "# \$FOAM_TITLE\n" +
+            "\n"
     }
 }
