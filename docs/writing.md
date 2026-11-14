@@ -90,8 +90,8 @@ a new daily note starts with.
 
 ## Table of contents
 
-*Add table of contents*, in a note's menu, puts a list of links to the note's sections
-(`##` to `######` headings, nested by level) under its title:
+*Add table of contents*, in a note's menu while you're editing it, puts a list of links
+to the note's sections (`##` to `######` headings, nested by level) under its title:
 
 ```markdown
 - [Snippet Syntax](#snippet-syntax)

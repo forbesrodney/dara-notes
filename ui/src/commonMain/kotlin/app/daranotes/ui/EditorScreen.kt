@@ -376,7 +376,8 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                             onClick = { menu = false; editingTags = true },
                         )
                         val hasToc = Toc.has(value.text)
-                        DropdownMenuItem(
+                        // An edit to the text, so only offered while editing it.
+                        if (editing) DropdownMenuItem(
                             text = { Text(if (hasToc) "Update table of contents" else "Add table of contents") },
                             leadingIcon = { Icon(TocIcon, null) },
                             onClick = {
