@@ -1,5 +1,11 @@
 package app.daranotes
 
+import app.daranotes.core.DictionaryManifest
+import app.daranotes.core.DictionaryInfo
+import app.daranotes.core.InstalledDictionary
+import app.daranotes.core.SpellChecker
+import app.daranotes.core.Dictionaries
+import app.daranotes.core.CSpellConfig
 import app.daranotes.core.ioDispatcher
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.mutableStateListOf
@@ -293,6 +299,74 @@ class MainViewModel(val platform: AppPlatform) : ViewModel() {
             if ((current as? Screen.Editor)?.path == path) back()
             afterEdit()
             messages.emit("Deleted ${path.substringAfterLast('/')}")
+            onDone()
+        }
+    }
+
+    // ---- spelling --------------------------------------------------------------------------
+
+    /** The downloaded spelling dictionaries, kept beside the repository in the app's storage. */
+    val dictionaries = Dictionaries(platform.fs, (platform.repoDir.parent ?: platform.repoDir) / "dictionaries")
+
+    private val _speller = MutableStateFlow<SpellChecker?>(null)
+
+    /** A spell checker with the downloaded dictionaries; null until loaded, or with none. */
+    val speller: StateFlow<SpellChecker?> = _speller
+    private var spellerLoaded = false
+
+    /** Loads the dictionaries for [speller], once; again with [reload] (after a download). */
+    fun loadSpeller(reload: Boolean = false) {
+        if (spellerLoaded && !reload) return
+        spellerLoaded = true
+        viewModelScope.launch {
+            _speller.value = withContext(ioDispatcher) { SpellChecker(dictionaries.load()).takeIf { !it.isEmpty } }
+        }
+    }
+
+    private val _languages = MutableStateFlow<List<InstalledDictionary>>(emptyList())
+
+    /** The downloaded languages. */
+    val languages: StateFlow<List<InstalledDictionary>> = _languages
+
+    fun refreshLanguages() {
+        viewModelScope.launch { _languages.value = withContext(ioDispatcher) { dictionaries.languages() } }
+    }
+
+    /** Downloads [info] (and the extras if needed); [onDone] runs when it's finished or failed. */
+    fun installLanguage(info: DictionaryInfo, manifest: DictionaryManifest, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            withContext(ioDispatcher) { runCatching { dictionaries.install(info, manifest) } }
+                .onFailure { messages.emit("Couldn't download ${info.name}: ${it.message ?: it::class.simpleName}") }
+            afterDictionaryChange()
+            onDone()
+        }
+    }
+
+    fun removeLanguage(code: String) {
+        viewModelScope.launch {
+            withContext(ioDispatcher) { runCatching { dictionaries.remove(code) } }
+            afterDictionaryChange()
+        }
+    }
+
+    private suspend fun afterDictionaryChange() {
+        _languages.value = withContext(ioDispatcher) { dictionaries.languages() }
+        if (spellerLoaded) loadSpeller(reload = true)
+    }
+
+    /**
+     * Adds [word] to the repository's dictionary (cspell.json, or .vscode/settings.json), so
+     * VS Code accepts it too; [onDone] runs once it's written.
+     */
+    fun addToDictionary(word: String, onDone: () -> Unit = {}) {
+        viewModelScope.launch {
+            val result = withContext(ioDispatcher) {
+                runCatching { GitSync.exclusive { CSpellConfig.addWord(platform.fs, repo.root, word) } }
+            }
+            result.onSuccess { file ->
+                afterEdit()
+                messages.emit("Added \u201c$word\u201d to $file")
+            }.onFailure { messages.emit("Couldn't add \u201c$word\u201d: ${it.message ?: it::class.simpleName}") }
             onDone()
         }
     }

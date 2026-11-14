@@ -1,0 +1,28 @@
+name: Spelling dictionaries
+# Builds the spelling dictionaries from dictionaries/languages.json and publishes them to the
+# `dictionaries` release, where the app downloads them. Run it from the Actions tab after
+# changing languages.json; nothing else starts it.
+on:
+  workflow_dispatch:
+permissions:
+  # To create or update the release.
+  contents: write
+jobs:
+  publish:
+    # Pinned: ubuntu-latest moves to Ubuntu 26 from 2026-10-19. Bump deliberately.
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build
+        run: python3 dictionaries/build.py out
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          # A fixed tag, updated in place, so the app's download addresses never change. Not
+          # marked latest, so it never stands in for an app release.
+          if ! gh release view dictionaries >/dev/null 2>&1; then
+            gh release create dictionaries --title "Spelling dictionaries" --latest=false \
+              --notes "Spelling dictionaries for Dara Notes, built by the Spelling dictionaries workflow from dictionaries/languages.json. The app downloads these; see dictionaries/README.md."
+          fi
+          gh release upload dictionaries out/* --clobber

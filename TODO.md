@@ -8,9 +8,15 @@
   - Foam is often used for notes within a project repo, it would be nice to have access to these notes to, but I don't want to clone the whole repo
 - [ ] enhance template support
   - support missing variables - $FOAM_DATE_FORMAT, $FOAM_CURRENT_DIR (not sure why), $FOAM_PREVIOUS_DAILY_NOTE (not sure how)
-  - support missing vscode style variables - ${1:placeholder} tab stops, maybe ${VAR:default} (not sure how)
-
+  - support missing VSCode style variables - ${1:placeholder} tab stops, maybe ${VAR:default} (not sure how)
+- [ ] Windows desktop app
+- [ ] Linux desktop app
+ 
 # Planned Tasks (v1.0)
+
+- Nothing further
+
+# Testing (v1.0)
 
 - [x] enhance template concept
   - make sure that all variables that Foam understands are supported here
@@ -22,6 +28,7 @@
   - provide a means to edit templates in doc (can likely piggyback off existing functionality)
 - [x] Add a help menu item, that shows a stripped down version of the README.md
 - [x] method to add/remove front matter tags, add/remove front matter block if needed
+- [x] add a CSpell like feature supporting cspell in-doc comments and many of the actual cspell settings
 
 # Current Issues (v1.0)
 
@@ -39,3 +46,4 @@ Mac Desktop App
   - maybe hide until it settles
 - [ ] missing cursor when naming note
 - [ ] double keychain access prompt with debug build of the desktop app
+  - does not seem to affect the release build

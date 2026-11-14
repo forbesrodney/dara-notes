@@ -8,6 +8,12 @@ internal expect fun <T> locked(lock: Any, block: () -> T): T
 /** The dispatcher for blocking file and network work (Dispatchers.IO). */
 expect val ioDispatcher: CoroutineDispatcher
 
+/**
+ * Downloads [url] (following redirects), blocking: call it on [ioDispatcher]. Throws an
+ * IOException for a network error or an HTTP status other than 2xx.
+ */
+expect fun httpGet(url: String): ByteArray
+
 /** The platform's Git implementation. */
 internal expect fun platformGitEngine(): GitEngine
 

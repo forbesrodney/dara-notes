@@ -81,6 +81,8 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState, active: Boole
     var bullet by remember { mutableStateOf(s.bullet) }
     var strike by remember { mutableStateOf(s.strikeCompleted) }
     var lintEnabled by remember { mutableStateOf(s.lintEnabled) }
+    var spellEnabled by remember { mutableStateOf(s.spellEnabled) }
+    var choosingLanguages by remember { mutableStateOf(false) }
     var addDate by remember { mutableStateOf(s.dateOnComplete) }
     var dateOrder by remember { mutableStateOf(s.dateOrder) }
     var dateSep by remember { mutableStateOf(s.dateSeparator) }
@@ -102,7 +104,7 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState, active: Boole
         username.trim() != s.username || token.trim() != s.token ||
         authorName.trim() != s.authorName || authorEmail.trim() != s.authorEmail ||
         linkIndex != s.linkFromIndex || indexFile.trim().ifBlank { "Index.md" } != s.indexFile || indexDaily != s.indexDailyNotes ||
-        bullet != s.bullet || strike != s.strikeCompleted || lintEnabled != s.lintEnabled ||
+        bullet != s.bullet || strike != s.strikeCompleted || lintEnabled != s.lintEnabled || spellEnabled != s.spellEnabled ||
         addDate != s.dateOnComplete || dateOrder != s.dateOrder || dateSep != s.dateSeparator ||
         newNoteDir.trim().trim('/') != s.newNoteDir || dailyDir.trim().trim('/') != s.dailyDirOverride ||
         autoSyncValue != s.autoSyncMinutes || syncAfterEdit != s.syncAfterEdit
@@ -120,6 +122,7 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState, active: Boole
         s.bullet = bullet
         s.strikeCompleted = strike
         s.lintEnabled = lintEnabled
+        s.spellEnabled = spellEnabled
         s.dateOnComplete = addDate
         s.dateOrder = dateOrder
         s.dateSeparator = dateSep
@@ -287,6 +290,16 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState, active: Boole
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
 
+                    Section("Spelling")
+                    Toggle("Check spelling", spellEnabled) { spellEnabled = it }
+                    Text(
+                        "Like the Code Spell Checker extension in VS Code: uses the repository's cspell.json and " +
+                            "cSpell settings, and the cspell: comments in notes. Misspelled words are underlined while editing.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                    SpellingLanguagesRow(vm) { choosingLanguages = true }
+
                     Section("Checklists")
                     Toggle("Strike through checked items", strike) { strike = it }
                     Toggle("Add completion date to checked items", addDate) { addDate = it }
@@ -322,6 +335,8 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState, active: Boole
         }
         }
     }
+
+    if (choosingLanguages) SpellingLanguagesDialog(vm) { choosingLanguages = false }
 
     if (confirmDiscard) {
         AlertDialog(

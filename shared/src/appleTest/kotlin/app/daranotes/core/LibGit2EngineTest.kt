@@ -42,6 +42,7 @@ class LibGit2EngineTest {
         override var dateOrder = "ymd"
         override var dateSeparator = "-"
         override var lintEnabled = false
+        override var spellEnabled = false
         override var notesView = "flat"
         override var graphTags = true
         override var graphPlaceholders = true

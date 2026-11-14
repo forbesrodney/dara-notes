@@ -30,10 +30,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.input.OffsetMapping
 import androidx.compose.ui.text.input.TransformedText
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import app.daranotes.core.LintIssue
 import app.daranotes.core.LintResult
+import app.daranotes.core.SpellIssue
 
 private fun lineStart(text: String, line: Int): Int? {
     var start = 0
@@ -56,12 +58,25 @@ fun issueRange(text: String, issue: LintIssue): TextRange {
     return TextRange(start, end)
 }
 
-/** Highlights the text markdownlint complained about. */
-data class LintHighlight(val issues: List<LintIssue>, val color: Color) : VisualTransformation {
+/**
+ * Marks the text markdownlint complained about with a background, and misspelled words with
+ * an underline (a different shape, not just a different color).
+ */
+data class LintHighlight(
+    val issues: List<LintIssue>,
+    val color: Color,
+    val spelling: List<SpellIssue> = emptyList(),
+) : VisualTransformation {
     override fun filter(text: AnnotatedString): TransformedText {
-        if (issues.isEmpty()) return TransformedText(text, OffsetMapping.Identity)
+        if (issues.isEmpty() && spelling.isEmpty()) return TransformedText(text, OffsetMapping.Identity)
         val s = text.text
         val b = AnnotatedString.Builder(text)
+        for (w in spelling) {
+            // Checked a moment ago: skip any the latest typing has moved.
+            if (w.end <= s.length && s.regionMatches(w.start, w.word, 0, w.word.length)) {
+                b.addStyle(SpanStyle(textDecoration = TextDecoration.Underline), w.start, w.end)
+            }
+        }
         for (issue in issues) {
             val r = issueRange(s, issue)
             // Empty lines have nothing to color; mark their line break instead.
@@ -72,31 +87,26 @@ data class LintHighlight(val issues: List<LintIssue>, val color: Color) : Visual
     }
 }
 
+/** The chip under the toolbar with the note's markdownlint issues; tap for the list. */
 @Composable
-fun LintBar(result: LintResult, onClick: () -> Unit) {
+fun LintChip(result: LintResult, onClick: () -> Unit) {
     val n = result.issues.size
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        AssistChip(
-            onClick = onClick,
-            label = {
-                Text(
-                    when {
-                        result.configError != null && n == 0 -> "markdownlint config error"
-                        n == 1 -> "1 markdownlint issue"
-                        else -> "$n markdownlint issues"
-                    },
-                )
-            },
-            leadingIcon = {
-                Icon(Icons.Default.Warning, null, Modifier.padding(0.dp), tint = MaterialTheme.colorScheme.error)
-            },
-            colors = AssistChipDefaults.assistChipColors(),
-        )
-    }
+    AssistChip(
+        onClick = onClick,
+        label = {
+            Text(
+                when {
+                    result.configError != null && n == 0 -> "markdownlint config error"
+                    n == 1 -> "1 markdownlint issue"
+                    else -> "$n markdownlint issues"
+                },
+            )
+        },
+        leadingIcon = {
+            Icon(Icons.Default.Warning, null, Modifier.padding(0.dp), tint = MaterialTheme.colorScheme.error)
+        },
+        colors = AssistChipDefaults.assistChipColors(),
+    )
 }
 
 @Composable

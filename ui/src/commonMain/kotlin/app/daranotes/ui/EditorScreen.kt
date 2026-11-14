@@ -1,5 +1,8 @@
 package app.daranotes.ui
 
+import app.daranotes.core.CSpellConfig
+import app.daranotes.core.SpellComments
+import app.daranotes.core.SpellIssue
 import app.daranotes.core.ioDispatcher
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
@@ -111,6 +114,7 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class, FlowPreview::class)
@@ -142,6 +146,14 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     val scope = rememberCoroutineScope()
     // Templates aren't checked: their variables and front matter would only raise noise.
     val lintOn = vm.settings.lintEnabled && !isTemplate
+    // Spelling, like cSpell in VS Code: the note's misspelled words, while editing.
+    val spellOn = vm.settings.spellEnabled && !isTemplate
+    val speller by vm.speller.collectAsState()
+    var spelling by remember(path) { mutableStateOf<List<SpellIssue>>(emptyList()) }
+    var spellConfig by remember { mutableStateOf(CSpellConfig()) }
+    var spellConfigVersion by remember { mutableStateOf(0) }
+    var showSpelling by remember { mutableStateOf(false) }
+    var suggestions by remember { mutableStateOf<List<String>?>(null) }
     var pickingVariable by remember { mutableStateOf(false) }
     var editingTags by remember { mutableStateOf(false) }
     var knownTags by remember { mutableStateOf(emptyList<String>()) }
@@ -231,6 +243,31 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
             val config = withContext(ioDispatcher) { vm.repo.lintConfig() }
             lint = runCatching { vm.platform.lint(text, config) }.getOrNull()
         }
+    }
+    LaunchedEffect(spellOn) { if (spellOn) vm.loadSpeller() }
+    // Spelling, shortly after typing stops (only while editing, when switched on).
+    LaunchedEffect(path, editing, spellOn, speller, spellConfigVersion) {
+        val checker = speller
+        if (!spellOn || !editing || checker == null) { spelling = emptyList(); return@LaunchedEffect }
+        val config = withContext(ioDispatcher) { CSpellConfig.load(vm.platform.fs, vm.repo.root) }
+        spellConfig = config
+        snapshotFlow { value.text }.debounce(400).collectLatest { text ->
+            spelling = withContext(Dispatchers.Default) { checker.check(text, config, path) }
+        }
+    }
+    // The misspelled word the cursor is in, for the spelling bar.
+    val spellAtCursor = remember(value.selection, value.text, spelling) {
+        val sel = value.selection
+        spelling.firstOrNull {
+            sel.min >= it.start && sel.max <= it.end && it.end <= value.text.length &&
+                value.text.regionMatches(it.start, it.word, 0, it.word.length)
+        }
+    }
+    LaunchedEffect(spellAtCursor?.word, speller, spellConfig) {
+        suggestions = null
+        val word = spellAtCursor?.word ?: return@LaunchedEffect
+        val checker = speller ?: return@LaunchedEffect
+        suggestions = withContext(Dispatchers.Default) { checker.suggestions(word, spellConfig) }
     }
     // After a sync, reload the note if it changed on disk and there are no unsaved edits.
     LaunchedEffect(path) {
@@ -438,10 +475,40 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                     onInsertVariable = if (isTemplate) ({ pickingVariable = true }) else null,
                 )
                 HorizontalDivider()
-                lint?.let { result ->
-                    if (result.issues.isNotEmpty() || result.configError != null) {
-                        LintBar(result) { showIssues = true }
+                val lintShown = lint?.takeIf { it.issues.isNotEmpty() || it.configError != null }
+                if (lintShown != null || spelling.isNotEmpty()) {
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        if (lintShown != null) LintChip(lintShown) { showIssues = true }
+                        if (spelling.isNotEmpty()) SpellingChip(spelling.size) { showSpelling = true }
                     }
+                }
+                spellAtCursor?.let { issue ->
+                    SpellingBar(
+                        word = issue.word,
+                        suggestions = suggestions,
+                        onReplace = { fix ->
+                            val t = value.text
+                            if (issue.end <= t.length && t.regionMatches(issue.start, issue.word, 0, issue.word.length)) {
+                                value = TextFieldValue(
+                                    t.substring(0, issue.start) + fix + t.substring(issue.end),
+                                    TextRange(issue.start + fix.length),
+                                )
+                                spelling = spelling - issue
+                            }
+                        },
+                        onIgnore = {
+                            spelling = spelling.filterNot { it.word.equals(issue.word, ignoreCase = true) }
+                            replaceText(SpellComments.ignoreInNote(value.text, issue.word))
+                        },
+                        onAdd = {
+                            spelling = spelling.filterNot { it.word.equals(issue.word, ignoreCase = true) }
+                            vm.addToDictionary(issue.word) { spellConfigVersion++ }
+                        },
+                    )
                 }
                 // The editor scrolls in its own container rather than inside the text field: the
                 // field's built-in scrolling resets to the top when the keyboard shrinks it,
@@ -472,6 +539,7 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                         visualTransformation = LintHighlight(
                             lint?.issues.orEmpty(),
                             MaterialTheme.colorScheme.error.copy(alpha = 0.18f),
+                            spelling,
                         ),
                         modifier = Modifier
                             .fillMaxWidth()
@@ -578,6 +646,17 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                         value = TextFieldValue(fixed, TextRange(value.selection.start.coerceAtMost(fixed.length)))
                     }
                 }
+            },
+        )
+    }
+    if (showSpelling) {
+        SpellingIssuesDialog(
+            spelling,
+            onDismiss = { showSpelling = false },
+            onJump = { issue ->
+                showSpelling = false
+                value = value.copy(selection = TextRange(issue.start, issue.end))
+                runCatching { focus.requestFocus() }
             },
         )
     }

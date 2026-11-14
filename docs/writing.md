@@ -67,6 +67,51 @@ so `dev/git` sits under `dev`. If a note already lists its tags another way (`ta
 one per line under `tags:`), new tags are written the same way. `#tags` in the text are shown
 in the dialog too, but you edit those in the note itself.
 
+## Spelling
+
+Settings > *Editing* > *Check spelling* (off by default) checks spelling as you edit, like
+the Code Spell Checker extension (cSpell) in VS Code, and follows the same settings and
+comments, so a word VS Code accepts passes here too.
+
+### Languages
+
+Spelling needs a dictionary: under *Check spelling*, tap *Download a language...* (later
+*Languages...*) and pick one or more. Each is downloaded once (English is about 0.3 MB; Spanish
+and French about 2 MB) and kept in the app, not in your notes, so each device needs its own.
+Software terms and company names, from cSpell, come with the first language, so words such
+as GitHub pass. When a dictionary is updated, *Update* appears beside it.
+
+### Fixing a word
+
+Misspelled words are underlined, and the *spelling issues* chip counts them (tap it for the
+list, and tap a word to go to it). With the cursor in an underlined word, a bar above the
+note offers corrections; tap one to use it. Its menu (the three dots at its end) offers:
+
+- *Ignore in this note*, which adds the word to a comment at the top of the note, as
+  `<!-- cspell:ignore word -->`, for VS Code to read too.
+- *Add to the repository's dictionary*, which adds it to `cspell.json` or, without one, to
+  `cSpell.words` in `.vscode/settings.json`. It syncs with the rest of the repository.
+
+### What's checked
+
+As in cSpell: letter case and accents don't matter, words shorter than four letters aren't
+checked, words with digits or underscores aren't either, and `camelCase` is checked part by
+part. Code, URLs, e-mail addresses, link and wikilink targets, front matter, HTML tags,
+math, `#tags` and template variables are skipped. So are notes matched by `ignorePaths`.
+
+These comments, anywhere in a note, work as in VS Code:
+
+| Comment | Does |
+| --- | --- |
+| `<!-- cspell:disable -->` | Stop checking, to the end or a `cspell:enable` |
+| `<!-- cspell:enable -->` | Start checking again |
+| `<!-- cspell:disable-next-line -->` | Skip the next line |
+| `<!-- cspell:disable-line -->` | Skip this line |
+| `<!-- cspell:ignore word other -->` | Accept these words in this note (`cspell:words` too) |
+| `<!-- cspell:flagWords word -->` | Always flag these in this note |
+
+For the repository-wide settings, see [Foam and repository settings](foam-settings.md#cspell-settings).
+
 ## Checklists
 
 Tap a checkbox in the preview, or use the checkbox button in the editor, which cycles a

@@ -16,6 +16,21 @@ internal actual fun <T> locked(lock: Any, block: () -> T): T = synchronized(lock
 
 actual val ioDispatcher: CoroutineDispatcher get() = Dispatchers.IO
 
+actual fun httpGet(url: String): ByteArray {
+    val c = java.net.URI(url).toURL().openConnection() as java.net.HttpURLConnection
+    c.connectTimeout = 30_000
+    c.readTimeout = 60_000
+    c.instanceFollowRedirects = true
+    c.setRequestProperty("User-Agent", "DaraNotes")
+    try {
+        val code = c.responseCode
+        if (code !in 200..299) throw okio.IOException("HTTP $code from $url")
+        return c.inputStream.use { it.readBytes() }
+    } finally {
+        c.disconnect()
+    }
+}
+
 internal actual fun platformGitEngine(): GitEngine = JGitEngine
 
 internal actual fun networkErrorHint(t: Throwable): String? = when (t) {

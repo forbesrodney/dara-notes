@@ -23,6 +23,7 @@ private class TestSettings : Settings {
     override var dateOrder = "ymd"
     override var dateSeparator = "-"
     override var lintEnabled = true
+    override var spellEnabled = false
     override var notesView = "flat"
     override var graphTags = true
     override var graphPlaceholders = true

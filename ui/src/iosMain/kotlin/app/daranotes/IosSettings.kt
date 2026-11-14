@@ -35,6 +35,7 @@ class IosSettings : Settings {
     override var dateSeparator by StringPref("date_separator", "locale")
 
     override var lintEnabled by BoolPref("lint_enabled", false)
+    override var spellEnabled by BoolPref("spell_enabled", false)
 
     override var notesView by StringPref("notes_view", "flat")
 

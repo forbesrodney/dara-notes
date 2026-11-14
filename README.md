@@ -193,6 +193,7 @@ folder), run the script, test, and commit the result.
 | `ui/` | Every screen and the view model, used by every app |
 | `web/` | The preview, graph and markdownlint pages and their JavaScript libraries, used by every app |
 | `docs/` | The help pages, shown on GitHub and built into every app |
+| `dictionaries/` | Builds the spelling dictionaries the apps download |
 | `androidApp/` | The Android app |
 | `desktopApp/` | The desktop app |
 | `iosApp/` | The iOS app: the Xcode project around `ui` |
@@ -214,6 +215,10 @@ folder), run the script, test, and commit the result.
   work on GitHub. The `:ui:generateHelpPages` Gradle task compiles these files and
   `PRIVACY.md` into `HelpPages.kt`, so each app shows the help for its own version, offline.
   A link to another page opens it in the app's help; a new page needs no other changes.
+- **`dictionaries/`** turns Hunspell dictionaries into the word lists the apps download for
+  spell checking (`python3 dictionaries/build.py`; see its README). The *Spelling
+  dictionaries* workflow (`.github/workflows/dictionaries.yml`, run by hand) builds and
+  publishes them to the `dictionaries` release; they're never committed.
 - **`androidApp/`**, **`desktopApp/`** and **`iosApp/`** are thin: each starts the shared UI and
   supplies its platform's settings storage, background sync and markdownlint.
 
@@ -234,15 +239,18 @@ folder), run the script, test, and commit the result.
 | `shared/.../FrontMatterTags.kt` | adding and removing front matter tags in a note's own style; `ui/.../ui/TagEditing.kt` is the dialog |
 | `shared/.../Globs.kt` | VS Code-style glob matching for Foam settings |
 | `shared/.../LintModel.kt` | markdownlint results and config lookup |
+| `shared/.../Spelling.kt` | the spell checker and `cspell:` comments; `CSpell.kt` reads and writes cSpell settings |
+| `shared/.../WordList.kt`, `Dictionaries.kt` | a dictionary in memory; downloading and keeping dictionaries |
 | `shared/.../Foam.kt` | Foam settings, templates, `$FOAM_*` variables |
 | `shared/.../Settings.kt` | the settings each platform must store |
-| `shared/.../Platform.kt` | what each platform supplies: Git, locks, month names, date formats |
+| `shared/.../Platform.kt` | what each platform supplies: Git, downloads, locks, month names, date formats |
 | `ui/.../MainViewModel.kt` | navigation, note actions, sync; `AppPlatform.kt`, what each app supplies |
 | `ui/.../ui/App.kt` | theme, back navigation and the current screen |
 | `ui/.../ui/*Screen.kt` | the screens |
 | `ui/.../ui/PlatformViews.kt` | the preview and graph web views each platform provides |
 | `ui/.../ui/HelpScreen.kt` | the help pages, their links and tables of contents |
 | `ui/.../ui/TemplatesScreen.kt`, `TemplateEditing.kt` | the Templates screen; the editor's variable list and example preview |
+| `ui/.../ui/SpellingUi.kt` | the spelling languages dialog, suggestion bar and issues list |
 | `androidApp/.../AndroidPlatform.kt` | the Android `AppPlatform`: storage, WorkManager sync, markdownlint |
 | `androidApp/.../AndroidSettings.kt` | settings in SharedPreferences; the token in encrypted preferences |
 | `androidApp/.../SyncWorker.kt` | periodic and after-edit background sync |

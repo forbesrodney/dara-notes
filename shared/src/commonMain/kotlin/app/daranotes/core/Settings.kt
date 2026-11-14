@@ -38,6 +38,9 @@ interface Settings {
     /** Check notes with markdownlint while editing. */
     var lintEnabled: Boolean
 
+    /** Check spelling while editing, with the downloaded dictionaries (like cSpell in VS Code). */
+    var spellEnabled: Boolean
+
     /** Note list layout: "flat" (every note, newest first) or "tree" (by folder). */
     var notesView: String
 

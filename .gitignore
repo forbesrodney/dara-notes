@@ -15,3 +15,6 @@ CHANGELOG.md
 # Xcode: per-user state, and the local team ID (iosApp/Configuration/Config.xcconfig)
 xcuserdata/
 iosApp/Configuration/Local.xcconfig
+
+# Built spelling dictionaries (dictionaries/build.py); published to a release, not committed
+dictionaries/out/

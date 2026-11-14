@@ -1,6 +1,6 @@
 # Privacy Policy
 
-Effective November 10, 2026
+Effective November 14, 2026
 
 This policy covers Dara Notes for Android, iOS and macOS (together, "the app"), made
 by Snakepit Software. In short: your notes stay on your device and in the Git repository you
@@ -15,6 +15,7 @@ Everything the app stores is kept on your device, in the app's own private stora
   if you don't connect one.
 - **Your settings:** the repository URL, branch, username, commit author name and email, and
   your preferences in the app.
+- **Spelling dictionaries** you download, if you switch on spell checking.
 - **Your access token**, if you enter one: kept in your system's secure storage (Android's
   encrypted preferences, the iOS Keychain or the macOS Keychain), and used only to sign in to
   your Git host.
@@ -34,6 +35,11 @@ it from the device.
   would. That site can see the request, like any other visit, including your IP address.
 - **Links you open.** Web links in your notes open in your browser, and only when you tap
   them.
+- **Spelling dictionaries.** If you switch on spell checking, the list of languages and the
+  dictionaries you choose are downloaded from the app's GitHub repository
+  (github.com/forbesrodney/dara-notes). These are plain file downloads: nothing about you or
+  your notes is sent, though GitHub can see the request, like any other visit, including your
+  IP address. Spell checking itself happens on your device.
 
 The app sends nothing else. It contains no analytics, advertising, crash reporting or other
 third-party services, and the developer receives no data from it.

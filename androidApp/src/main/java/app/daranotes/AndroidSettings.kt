@@ -43,6 +43,7 @@ class AndroidSettings(context: Context) : Settings {
     override var dateSeparator by StringPref(prefs, "date_separator", "locale")
 
     override var lintEnabled by BoolPref(prefs, "lint_enabled", false)
+    override var spellEnabled by BoolPref(prefs, "spell_enabled", false)
 
     override var notesView by StringPref(prefs, "notes_view", "flat")
 
