@@ -146,6 +146,10 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     var editingTags by remember { mutableStateOf(false) }
     var knownTags by remember { mutableStateOf(emptyList<String>()) }
     var moving by remember { mutableStateOf(false) }
+    // Links out and in, for the counts beside Connections in the menu: worked out when the
+    // note opens (so they're ready the first time) and again each time the menu opens, from
+    // the text as edited.
+    var connectionCounts by remember(path) { mutableStateOf<Pair<Int, Int>?>(null) }
     val notes by vm.notes.collectAsState()
     val sync by vm.syncState.collectAsState()
     val focus = remember { FocusRequester() }
@@ -183,6 +187,11 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
         snapshotFlow { value.text }.debounce(800).collect { text ->
             if (text != saved) { vm.save(path, text); saved = text }
         }
+    }
+    LaunchedEffect(menu, path) {
+        if (isTemplate || (!menu && connectionCounts != null)) return@LaunchedEffect
+        val text = value.text
+        connectionCounts = withContext(ioDispatcher) { runCatching { vm.repo.connectionCounts(path, text) }.getOrNull() }
     }
     // Save anything pending when leaving the note.
     val latest by rememberUpdatedState(value.text)
@@ -354,6 +363,7 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                         }
                         DropdownMenuItem(
                             text = { Text("Connections") },
+                            trailingIcon = { connectionCounts?.let { (out, into) -> MenuCount(out, into) } },
                             leadingIcon = { Icon(LinkIcon, null) },
                             onClick = {
                                 menu = false

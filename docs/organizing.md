@@ -49,25 +49,29 @@ A note's menu > *Connections* works like Foam's Connections panel:
   address, a heading in the same note, or nothing. A missing note has a *Create* button.
 - **Links in:** the notes that link here, with the line.
 
-Tap an entry to open it. Links in code and link reference definitions are skipped.
+Tap an entry to open it. Links in code and link reference definitions are skipped. The
+menu item shows how many links go out and come in.
 
 ## Tags
 
 The note list's menu > *Tags* works like Foam's Tag Explorer: every tag, from front matter
 and inline `#tags`, as a tree, so `dev/git` sits under `dev`, with a count of notes for
-each. Tap a tag to see its notes, and tap a note to open it. The filter box narrows the
-list. In the graph, selecting a tag offers *Notes* to jump here. To tag a note, use *Tags*
-in its menu (see [Writing notes](writing.md)).
+each. The menu item shows how many tags there are. Tap a tag to see its notes, and tap a
+note to open it. The filter box narrows the list. In the graph, selecting a tag offers
+*Notes* to jump here. To tag a note, use *Tags* in its menu (see [Writing
+notes](writing.md)).
 
 ## Orphaned notes
 
 The note list's menu > *Orphaned notes* works like Foam's Orphans panel: the notes with no
-links to or from another note (tags don't count). Tap one to open it, or *Add to index*
-(when index linking is on) to link it from the index note. Foam's `foam.orphans.exclude`
-setting is respected; see [Foam and repository settings](foam-settings.md).
+links to or from another note (tags don't count). The menu item shows how many. Tap one to
+open it, or *Add to index* (when index linking is on) to link it from the index note.
+Foam's `foam.orphans.exclude` setting is respected; see [Foam and repository
+settings](foam-settings.md).
 
 ## Placeholders
 
 The note list's menu > *Placeholders* works like Foam's Placeholders panel: the links to
-notes that don't exist yet, each with the notes that link to it. *Create* makes the note;
-tap a linking note to open it. Foam's `foam.placeholders.exclude` setting is respected.
+notes that don't exist yet, each with the notes that link to it. The menu item shows how
+many. *Create* makes the note; tap a linking note to open it. Foam's
+`foam.placeholders.exclude` setting is respected.

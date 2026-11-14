@@ -147,7 +147,11 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
      */
     fun orphans(): List<Note> {
         val notes = listNotes()
-        val ids = graph(notes).orphans().toSet()
+        return orphans(notes, graph(notes))
+    }
+
+    private fun orphans(notes: List<Note>, graph: Graph): List<Note> {
+        val ids = graph.orphans().toSet()
         val exclude = foam.orphansExclude
         return notes
             .filter { it.path in ids && exclude.none { g -> Globs.matches(g, it.path) } }
@@ -160,6 +164,28 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
         val notes = listNotes().associate { it.path to read(it.path) }
         return Connections.links(notes[path] ?: read(path), path, files) to
             Connections.backlinks(path, notes, files)
+    }
+
+    /**
+     * How many links the note at [path] has, out (in [text], its text as edited) and in (from
+     * other notes), as the Connections screen lists them.
+     */
+    fun connectionCounts(path: String, text: String): Pair<Int, Int> {
+        val files = allFiles()
+        val notes = listNotes().associate { it.path to read(it.path) }
+        return Connections.links(text, path, files).size to Connections.backlinks(path, notes, files).size
+    }
+
+    /** The counts shown beside Tags, Orphaned notes and Placeholders in the note list's menu. */
+    data class Overview(val tags: Int, val orphans: Int, val placeholders: Int)
+
+    /** [Overview], reading every note once. */
+    fun overview(): Overview {
+        val notes = listNotes()
+        val texts = notes.associate { it.path to read(it.path) }
+        val graph = Graph.build(texts, notes.associate { it.path to it.title }, allFiles())
+        val tags = texts.values.flatMap { NoteParser.parse(it).tags }.map { it.trim('/').lowercase() }.filter { it.isNotEmpty() }.toSet().size
+        return Overview(tags, orphans(notes, graph).size, placeholders(notes, graph).size)
     }
 
     /** Tags as a tree, like Foam's Tag Explorer: front matter tags and inline #tags. */
@@ -182,9 +208,13 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
      */
     fun placeholders(): List<MissingNote> {
         val notes = listNotes()
+        return placeholders(notes, graph(notes))
+    }
+
+    private fun placeholders(notes: List<Note>, graph: Graph): List<MissingNote> {
         val byPath = notes.associateBy { it.path }
         val exclude = foam.placeholdersExclude
-        return graph(notes).placeholders().mapNotNull { p ->
+        return graph.placeholders().mapNotNull { p ->
             val from = p.sources
                 .filter { src -> exclude.none { g -> Globs.matches(g, src) } }
                 .mapNotNull { byPath[it] }

@@ -1,5 +1,6 @@
 package app.daranotes.ui
 
+import app.daranotes.core.NoteRepository
 import app.daranotes.core.ioDispatcher
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.clickable
@@ -113,6 +114,10 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     var expanded by vm.notesExpanded
 
     LaunchedEffect(Unit) { vm.refresh() }
+    // The counts beside Tags, Orphaned notes and Placeholders in the menu, as Foam shows them
+    // on its panels: worked out in the background whenever the notes change.
+    var overview by remember { mutableStateOf<NoteRepository.Overview?>(null) }
+    LaunchedEffect(notes) { overview = withContext(ioDispatcher) { runCatching { vm.repo.overview() }.getOrNull() } }
     val listState = vm.notesListState
     LaunchedEffect(notes, query) {
         val updated = withContext(ioDispatcher) { vm.repo.search(query, notes) }
@@ -225,16 +230,19 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                             HorizontalDivider()
                             DropdownMenuItem(
                                 text = { Text("Tags") },
+                                trailingIcon = { MenuCount(overview?.tags) },
                                 leadingIcon = { Icon(TagIcon, null) },
                                 onClick = { more = false; vm.navigate(Screen.Tags) },
                             )
                             DropdownMenuItem(
                                 text = { Text("Orphaned notes") },
+                                trailingIcon = { MenuCount(overview?.orphans) },
                                 leadingIcon = { Icon(OrphanIcon, null) },
                                 onClick = { more = false; vm.navigate(Screen.Orphans) },
                             )
                             DropdownMenuItem(
                                 text = { Text("Placeholders") },
+                                trailingIcon = { MenuCount(overview?.placeholders) },
                                 leadingIcon = { Icon(PlaceholderIcon, null) },
                                 onClick = { more = false; vm.navigate(Screen.Placeholders) },
                             )
@@ -639,4 +647,16 @@ val PlaceholderIcon: ImageVector by lazy {
         "M14,2L6,2c-1.1,0 -1.99,0.9 -1.99,2L4,20c0,1.1 0.89,2 1.99,2L18,22c1.1,0 2,-0.9 2,-2L20,8l-6,-6z" +
             "M16,16h-3v3h-2v-3L8,16v-2h3v-3h2v3h3v2zM13,9L13,3.5L18.5,9L13,9z",
     )
+}
+
+/** A count at the end of a menu item, like the badges on Foam's panels; nothing until it's known. */
+@Composable
+internal fun MenuCount(count: Int?) {
+    if (count != null) Text(count.toString(), style = MaterialTheme.typography.labelLarge)
+}
+
+/** Links out and in, at the end of the Connections menu item. */
+@Composable
+internal fun MenuCount(out: Int, into: Int) {
+    Text("$out out \u00b7 $into in", style = MaterialTheme.typography.labelLarge)
 }

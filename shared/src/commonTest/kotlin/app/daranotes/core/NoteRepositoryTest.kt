@@ -260,4 +260,20 @@ class NoteRepositoryTest {
         // Replaces a selection.
         assertEquals("a \$UUID c" to 7, FoamVariables.insert("a b c", 2, 3, "UUID"))
     }
+
+    @Test fun countsWhatTheMenuShows() {
+        repo.write("a.md", "# A\n\n[[b]] [[Missing]] #idea\n")
+        repo.write("b.md", "---\ntags: [Idea, dev/git]\n---\n# B\n")
+        repo.write("c.md", "# C\n\nalone\n")
+        val o = repo.overview()
+        assertEquals(repo.tagNames().size, o.tags)
+        assertEquals(2, o.tags)
+        assertEquals(repo.orphans().size, o.orphans)
+        assertEquals(repo.placeholders().size, o.placeholders)
+        assertEquals(1, o.placeholders)
+        // Links out come from the text as edited; links in from the other notes.
+        assertEquals(2 to 0, repo.connectionCounts("a.md", repo.read("a.md")))
+        assertEquals(3 to 0, repo.connectionCounts("a.md", repo.read("a.md") + "[[c]]\n"))
+        assertEquals(0 to 1, repo.connectionCounts("b.md", repo.read("b.md")))
+    }
 }
