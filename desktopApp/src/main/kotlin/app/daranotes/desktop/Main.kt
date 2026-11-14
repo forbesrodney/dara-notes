@@ -15,10 +15,13 @@ import androidx.compose.ui.input.key.isShiftPressed
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.type
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.input.key.KeyShortcut
+import androidx.compose.ui.window.MenuBar
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import app.daranotes.MainViewModel
+import app.daranotes.Screen
 import app.daranotes.core.GitSync
 import app.daranotes.ui.App
 import app.daranotes.ui.Fx
@@ -34,6 +37,8 @@ fun main() {
     System.setProperty("compose.layers.type", "WINDOW")
     showLayerWindowsOnOpen()
     System.setProperty("compose.interop.blending", "true")
+    // On a Mac, the menu bar goes at the top of the screen, where Help is expected.
+    if (isMac) System.setProperty("apple.laf.useScreenMenuBar", "true")
     GitSync.clientName = clientName()
     Fx.start()
 
@@ -83,6 +88,19 @@ fun main() {
                 }
                 window.addWindowFocusListener(listener)
                 onDispose { window.removeWindowFocusListener(listener) }
+            }
+            // Only on a Mac: elsewhere a menu bar would sit inside the window, holding just
+            // Help, which the note list's menu already has.
+            if (isMac) {
+                MenuBar {
+                    Menu("Help") {
+                        Item(
+                            "Dara Notes Help",
+                            shortcut = KeyShortcut(Key.Slash, meta = true, shift = true),
+                            onClick = { if (vm.current !is Screen.Help) vm.navigate(Screen.Help()) },
+                        )
+                    }
+                }
             }
             App(vm)
         }

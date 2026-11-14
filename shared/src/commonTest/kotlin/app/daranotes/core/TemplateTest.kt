@@ -91,4 +91,12 @@ class TemplateTest {
         assertEquals("# \$FOAM_SLUG costs \$1\n", FoamVariables.resolve("# \$FOAM_TITLE\n", "\$FOAM_SLUG costs \$1"))
         assertEquals("Hello  world", FoamVariables.resolve("\${1:Hello} \$0 \${2}world", "T"))
     }
+
+    @Test fun matchesTheTitleExamplesInTheHelp() {
+        // docs/templates.md shows these; keep them in step.
+        val title = "Shopping List: Week 2"
+        assertEquals("Shopping List: Week 2", FoamVariables.resolve("\$FOAM_TITLE", title))
+        assertEquals("Shopping List- Week 2", FoamVariables.resolve("\$FOAM_TITLE_SAFE", title))
+        assertEquals("shopping-list-week-2", FoamVariables.resolve("\$FOAM_SLUG", title))
+    }
 }

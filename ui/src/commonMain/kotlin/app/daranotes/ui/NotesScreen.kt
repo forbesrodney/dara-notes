@@ -238,6 +238,11 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                                 leadingIcon = { Icon(Icons.Default.Settings, null) },
                                 onClick = { more = false; vm.navigate(Screen.Settings) },
                             )
+                            DropdownMenuItem(
+                                text = { Text("Help") },
+                                leadingIcon = { Icon(HelpIcon, null) },
+                                onClick = { more = false; vm.navigate(Screen.Help()) },
+                            )
                         }
                     }
                 },
@@ -580,7 +585,7 @@ private fun ListActionButton(icon: ImageVector, label: String, onClick: () -> Un
     }
 }
 
-private fun menuIcon(name: String, path: String): ImageVector =
+internal fun menuIcon(name: String, path: String): ImageVector =
     ImageVector.Builder(name, 24.dp, 24.dp, 24f, 24f)
         .addPath(pathData = addPathNodes(path), fill = SolidColor(Color.Black))
         .build()

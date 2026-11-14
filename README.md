@@ -9,202 +9,22 @@ independent project, not made by or affiliated with the Foam developers.
 The name and icon come from the Dara knot (Irish *doire*, oak), a Celtic knot whose
 interlacing is read as an oak's roots: notes tied together by links.
 
-## Features
+## Using the app
 
-- **Git auto-sync** (JGit, HTTPS + personal access token): commit, fetch, merge, push.
-  - on app open, ~30 s after you stop editing, on pull-to-refresh (or *Sync now* in the
-    note list's menu), and in the background every N minutes (WorkManager, 15 min minimum).
-  - Merge conflicts never lose data: conflicting files are committed with conflict
-    markers and shown in the note list so you can tidy them up.
-- **Index note (optional, off by default)**: Foam gives no file a special role; notes are
-  tied together by the links you write. Settings > Notes > *Index note* (`Index.md` by
-  default) names the note the Home button opens. To have the app maintain it, switch on
-  *Link new notes from the index note*. Then every new note (from the *New note*
-  button or by following a dangling wikilink) gets `- [[note]]` added at the end of the
-  index's list of links, using that list's bullet. If the index has Foam's link reference
-  definitions at the bottom, the entry goes above them and a matching definition is added.
-  Deleting a note removes both. Settings also has *Add missing notes to Index.md* for
-  existing repos. Daily notes are left out unless you switch them on. With linking off,
-  the app never edits the index.
-- **List bullet setting**: choose `-` (default) or `*` for the bullets the app writes in
-  Index.md and with the editor's list and checkbox buttons. The buttons remove existing
-  items written with either character.
-- **Checklists**: tap a checkbox in the preview, or use the checkbox button in the editor
-  (plain line, then `- [ ]`, then `- [x]`, then back to `- [ ]`). Optional settings, off by default: strike
-  through checked items (`~~text~~`) and append the completion date in brackets, e.g.
-  `- [x] ~~Buy milk~~ [2026-11-08]`. Date formats: yyyy-mm-dd, mm-dd-yyyy, dd-mm-yyyy,
-  d mmm yyyy, mmm d, yyyy, yyyy-mmm-dd; separator `-`, `/` or `.` (not used by the two
-  formats with spaces). Both default to the phone's locale. Unchecking removes the
-  strike-through and the bracketed date again.
-- **markdownlint** (Settings > Editing, off by default): checks the note while you edit,
-  using the repository's `.markdownlint.json` / `.jsonc` / `.yaml` or `.markdownlint-cli2.*`
-  (or `markdownlint.config` in `.vscode/settings.json`), like the VS Code extension. Problems
-  are highlighted; the *issues* chip lists them (tap one to jump to it) and offers *Fix all*
-  for the rules markdownlint can fix.
-- **Note list, flat or by folder**: the button beside the search box switches between
-  every note newest first (like Foam's flat view) and a folder tree (like Foam's
-  hierarchical view) with a note count per folder. Tap a folder to open or close it; while
-  searching, folders with matches open automatically. The choice is remembered.
-- **Graph** (graph button on the note list, or *Show in graph* in a note's menu): Foam's
-  springy graph of notes, tags (front matter and inline `#tags`) and missing notes, linked
-  by wikilinks, embeds and relative Markdown links. Drag nodes (they spring back), pinch to
-  zoom, tap a node to highlight its neighbors and open it (or create a missing note).
-  Filters for tags and missing notes; the layout is kept while the app runs.
-- **Connections** (a note's menu > *Connections*): like Foam's Connections panel. *Links
-  out* lists every link in the note (wikilinks, embeds, Markdown links and images, URLs)
-  with its line and what it points to: a note (and heading), a file, a web address, a
-  heading in the same note, or nothing (missing notes get a *Create* button). *Links in*
-  lists the notes that link here, with the line. Tap an entry to open it. Links in code
-  and link reference definitions are skipped.
-- **Tags** (note list menu > *Tags*): like Foam's Tag Explorer, every tag (front matter and
-  inline `#tags`) as a tree, so `dev/git` sits under `dev`, with a note count for each. Tap
-  a tag to expand it and see its notes; tap a note to open it. A filter box narrows the
-  list. In the graph, selecting a tag offers *Notes* to jump here.
-- **Orphaned notes** (note list menu > *Orphaned notes*): like Foam's Orphans panel, the
-  notes with no links to or from another note (tags don't count). Tap one to open it, or
-  *Add to index* (when index linking is on) to link it from Index.md. Respects Foam's `foam.orphans.exclude` setting.
-- **Placeholders** (note list menu > *Placeholders*): like Foam's Placeholders panel, the
-  wikilinks that point to notes that don't exist yet, each with the notes that link to it.
-  *Create* makes the note; tap a linking note to open it. Respects Foam's
-  `foam.placeholders.exclude` setting.
-- **Rename and move notes** (long-press a note, or the editor's menu): every link is
-  fixed: wikilinks (`[[note]]`, aliases, headings, embeds), relative Markdown links and
-  Foam's link reference definitions, as are the moved note's own relative links. If a
-  new name clashes with another note, links are path-qualified so each still points at
-  the right note. Links inside code are left alone.
-- **Daily notes**: the *Today* button opens/creates today's note. Reads Foam's
-  `.foam/templates/daily-note.md` (incl. `foam_template.filepath` and `$FOAM_DATE_*`
-  variables). Default: `journal/yyyy-mm-dd.md`.
-- **Templates**: as in Foam, new notes and daily notes start from `new-note.md` and
-  `daily-note.md` in `.foam/templates` when they exist; without one, a new note starts
-  with its title as a heading and a daily note with its date. An index note the app
-  creates (to link a new note from) starts the way a new note does.
-  *Create note from template*, in the note list's menu, lists the other templates (by
-  their `foam_template` `name` and `description`, as Foam does) and makes a note from the
-  one you pick; it's disabled when there are none.
-- **Preview** (markdown-it, bundled offline):
-  - Wikilinks `[[note]]`, `[[note|alias]]`, `[[note#heading]]`, `[[folder/note]]`;
-    unresolved links are highlighted and tapping one creates the note, like Foam.
-  - Embeds `![[note]]` and `![[image.png]]`
-  - Mermaid ` ```mermaid ` blocks (light/dark theme)
-  - Footnotes `[^1]` and inline footnotes `^[text]`
-  - Math via KaTeX: `$inline$`, `$$display$$`, `\( \)`, `\[ \]`
-  - Superscript `x^2^` and subscript `H~2~O`
-  - Checkboxes `- [ ]` / `- [x]`: tap in the preview to toggle and save
-  - Relative links `[x](other.md)` and relative images
-- **Editor**: monospace editor with autosave, *All / Cut / Copy / Paste* buttons (with nothing
-  selected, Cut and Copy take the current line), a formatting toolbar (heading, bold,
-  italic, checkbox, list, wikilink, sup, sub, math, footnote, mermaid, code, link) and
-  wikilink autocomplete as soon as you type `[[`. Enter in a list starts the next item of
-  the same kind (bullet, numbered with the same number, or unchecked checkbox); Enter on an
-  empty item ends the list.
-- **Table of contents**: *Add table of contents* in a note's menu puts a list of links to its
-  sections (`##` to `######` headings, nested by level) under the note's title, like
-  `- [Snippet Syntax](#snippet-syntax)`; the same item then reads *Update table of
-  contents*. Once a note has one, editing the note updates it when you switch to Preview or
-  leave the note (never while you type). A heading with `<!-- omit from toc -->` at its end,
-  or on the line above, is left out. In the preview, every heading can be linked to with
-  `#id` (GitHub-style: lowercase, punctuation removed, spaces as hyphens), so tables of
-  contents made elsewhere, such as in VS Code, work too.
-- **Export or share** (a note's menu): on a phone, *Share Markdown file*, *Share as PDF*
-  and *Share as text* open the share sheet (Mail, Gmail, Drive, Files, Messages...). On the
-  desktop, *Save Markdown file...*, *Print or save as PDF...* (on a Mac, the Print dialog's
-  PDF menu saves the PDF or sends it in Mail; printing needs a printer set up), *Email as
-  text* and *Copy as text*. PDFs are laid out for paper (Letter in the US and nearby, A4
-  elsewhere) with math, diagrams and images; links that can't work outside the app
-  (wikilinks, a table of contents) become plain text, while web links stay. Text drops the
-  front matter and Foam's link definitions, with wikilinks and table-of-contents links as
-  plain text.
-- **Keyboard shortcuts** in the editor, with a hardware keyboard: Ctrl+B or Cmd+B for bold,
-  Ctrl+I or Cmd+I for italic, Ctrl+Shift+X or Cmd+Shift+X for strike-through, and Ctrl+Enter
-  or Cmd+Enter to check or uncheck the task on the current line. Bold, italic and
-  strike-through toggle, and with nothing selected apply to the word at the cursor. On
-  Android, use Ctrl: the system may claim some Cmd (Meta) shortcuts. In the desktop app,
-  Cmd+N (Ctrl+N on Windows and Linux) starts a new note and Cmd+D (Ctrl+D) opens today's
-  note, from anywhere; its *Today* and *New note* buttons are in the toolbar rather than
-  floating at the bottom.
+The help is in [docs/](docs/index.md), and the same pages are built into the app (*Help*
+in the note list's menu, or on the Settings screen; on a Mac, also the Help menu):
+
+- [Getting started](docs/getting-started.md): connecting a repository, and syncing
+- [Writing notes](docs/writing.md)
+- [Finding and organizing notes](docs/organizing.md)
+- [Templates](docs/templates.md), with every template variable
+- [Foam and repository settings](docs/foam-settings.md)
+- [Troubleshooting](docs/troubleshooting.md)
 
 ## Privacy
 
 The app keeps your notes and settings on your device and sends them only to the Git host you
 set up; it has no analytics, ads or tracking. See [PRIVACY.md](PRIVACY.md).
-
-## Repository settings
-
-Some behavior is configured in the notes repository itself, in the same files Foam and the
-VS Code markdownlint extension use, so the app and VS Code follow the same rules.
-
-### `.vscode/settings.json`
-
-The app reads these keys from `.vscode/settings.json` at the root of the notes repository.
-Any other keys are ignored.
-
-| Setting | Used for | Default |
-| --- | --- | --- |
-| `foam.orphans.exclude` | Glob patterns for notes left out of *Orphaned notes* | none |
-| `foam.placeholders.exclude` | Glob patterns for notes whose links are left out of *Placeholders* | none |
-| `markdownlint.config` | markdownlint rules, used when the repository has no markdownlint config file | none |
-
-Glob patterns are relative to the repository root: `*` matches within one folder, `**`
-across folders, `?` one character and `{a,b}` either name. A plain folder name such as
-`journal` also covers everything inside it. Comments and trailing commas are allowed, as in
-VS Code.
-
-Templates never need excluding: `.foam` (and `.git`, `.vscode`, `.github`,
-`node_modules`, `_site`, `_layouts`) is never scanned for notes, so templates and their
-example links never show up in any view.
-
-```jsonc
-{
-  // Daily notes aren't expected to be linked
-  "foam.orphans.exclude": ["journal/**"],
-  // Drafts link to notes that haven't been written yet
-  "foam.placeholders.exclude": ["drafts/**"]
-}
-```
-
-### Other files
-
-- `.foam/templates/*.md`: templates for *Create note from template*, in subfolders too
-  (all but `new-note.md` and `daily-note.md`). Foam's JavaScript templates aren't supported.
-- `.foam/templates/new-note.md`: template for new notes.
-- `.foam/templates/daily-note.md`: template for daily notes. Set its `filepath` to choose
-  where daily notes go (for example `journal/$FOAM_DATE_YEAR-$FOAM_DATE_MONTH-$FOAM_DATE_DATE.md`);
-  without one they go in `journal`, or Settings > Notes > *Daily notes folder*.
-  All templates support `foam_template` front matter (`filepath`, `name`, `description`)
-  and the `$FOAM_*` variables, except `$FOAM_DATE_FORMAT`, `$FOAM_CURRENT_DIR` and
-  `$FOAM_PREVIOUS_DAILY_NOTE`. VS Code's date variables (`$CURRENT_YEAR`,
-  `$CURRENT_MONTH_NAME`, `$CURRENT_TIMEZONE_OFFSET` and the rest) work too, for the time the
-  note is made, as do `$TM_FILENAME_BASE` (the new note's file name without `.md`),
-  `$UUID`, `$RANDOM` and `$RANDOM_HEX`. Snippet tab stops (`${1:text}`) become their text.
-- markdownlint configuration, first one found: `.markdownlint-cli2.jsonc`,
-  `.markdownlint-cli2.yaml`, `.markdownlint.jsonc`, `.markdownlint.json`, `.markdownlint.yaml`,
-  `.markdownlint.yml`, then `markdownlint.config` in `.vscode/settings.json`.
-
-### Things to check
-
-- **Commit and push these files.** The app only sees what is in the repository. A global
-  gitignore that excludes `.vscode/` hides `settings.json` from Git; to check, run
-  `git check-ignore -v .vscode/settings.json` in the notes repository (no output means it
-  isn't ignored). If it is, add these lines to the notes repository's `.gitignore`, then commit
-  and push the file and sync in the app. Git can't re-include a file inside an ignored folder,
-  so the folder is re-included first and its other files ignored again:
-
-  ```gitignore
-  !/.vscode/
-  /.vscode/*
-  !/.vscode/settings.json
-  ```
-- **`.code-workspace` settings aren't read.** If you open your notes through a
-  `.code-workspace` file, VS Code also uses the `"settings"` in it, but the app doesn't. Put
-  settings the app should follow in `.vscode/settings.json`.
-
-## Setup in the app
-
-1. Create a personal access token with read/write access to the repo
-   (GitHub: a fine-grained token with *Contents: Read and write*).
-2. Open the app, enter the HTTPS clone URL, branch, username and token, then tap *Clone repository*.
-   Leave the URL blank for a local-only repository.
 
 ## Building
 
@@ -372,6 +192,7 @@ folder), run the script, test, and commit the result.
 | `shared/` | The note logic, used by every app (package `app.daranotes.core`) |
 | `ui/` | Every screen and the view model, used by every app |
 | `web/` | The preview, graph and markdownlint pages and their JavaScript libraries, used by every app |
+| `docs/` | The help pages, shown on GitHub and built into every app |
 | `androidApp/` | The Android app |
 | `desktopApp/` | The desktop app |
 | `iosApp/` | The iOS app: the Xcode project around `ui` |
@@ -389,6 +210,10 @@ folder), run the script, test, and commit the result.
   come through the `AppPlatform` interface.
 - **`web/`** is served to each app's web views at `/assets/` (Android bundles it as its assets
   folder; the desktop app as resources; iOS will bundle it too).
+- **`docs/`** holds the help as plain Markdown, with relative links between pages so they
+  work on GitHub. The `:ui:generateHelpPages` Gradle task compiles these files and
+  `PRIVACY.md` into `HelpPages.kt`, so each app shows the help for its own version, offline.
+  A link to another page opens it in the app's help; a new page needs no other changes.
 - **`androidApp/`**, **`desktopApp/`** and **`iosApp/`** are thin: each starts the shared UI and
   supplies its platform's settings storage, background sync and markdownlint.
 
@@ -415,6 +240,7 @@ folder), run the script, test, and commit the result.
 | `ui/.../ui/App.kt` | theme, back navigation and the current screen |
 | `ui/.../ui/*Screen.kt` | the screens |
 | `ui/.../ui/PlatformViews.kt` | the preview and graph web views each platform provides |
+| `ui/.../ui/HelpScreen.kt` | the help pages, their links and tables of contents |
 | `androidApp/.../AndroidPlatform.kt` | the Android `AppPlatform`: storage, WorkManager sync, markdownlint |
 | `androidApp/.../AndroidSettings.kt` | settings in SharedPreferences; the token in encrypted preferences |
 | `androidApp/.../SyncWorker.kt` | periodic and after-edit background sync |

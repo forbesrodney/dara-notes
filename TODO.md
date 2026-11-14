@@ -12,18 +12,18 @@
   - support missing vscode style variables - ${1:placeholder} tab stops, maybe ${VAR:default} (not sure how)
 - [ ] method to add/remove front matter tags, add/remove front matter block if needed
 
-# Tasks (v1.0)
+# Planned Tasks (v1.0)
 
-- [ ] enhance template concept
+- [x] enhance template concept
   - make sure that all variables that Foam understands are supported here
     - Already supported - $FOAM_TITLE, $FOAM_TITLE_SAFE, $FOAM_SLUG, $FOAM_SELECTED_TEXT (always empty since notes aren't created from a selection),
       $FOAM_DATE_YEAR, $FOAM_DATE_YEAR_SHORT, $FOAM_DATE_MONTH, $FOAM_DATE_MONTH_NAME, $FOAM_DATE_MONTH_NAME_SHORT, $FOAM_DATE_DATE, $FOAM_DATA_DAY_NAME,
       $FOAM_DATE_WEEK, $FOAM_DATE_HOUR, $FOAM_DATE_MINUTE, $FOAM_DATE_SECOND, $FOAM_DATE_SECOND_UNIX
     - Not yet supported - $FOAM_DATE_DAY_ISO, $FOAM_DATE_WEEK_YEAR
   - VSCode Style Variables - CURRENT_ -style variables
-  - Add a help menu item, that shows a stripped down version of the README.md
+- [x] Add a help menu item, that shows a stripped down version of the README.md
 
-# Issues (v1.0)
+# Current Issues (v1.0)
 
 Mac Desktop App
 

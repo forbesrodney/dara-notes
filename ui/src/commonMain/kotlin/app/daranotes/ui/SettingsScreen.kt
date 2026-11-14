@@ -47,11 +47,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import app.daranotes.MainViewModel
+import app.daranotes.Screen
 import app.daranotes.core.CompletionDate
 import app.daranotes.core.DateOrder
 import app.daranotes.core.Dates
@@ -59,8 +61,13 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
+/**
+ * The settings. [active] is false while help opened from here is showing: the screen stays
+ * composed underneath (see App), so unsaved changes survive, but leaves Back to the help.
+ */
+fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState, active: Boolean = true) {
     val s = vm.settings
+    val focusManager = LocalFocusManager.current
     val sync by vm.syncState.collectAsState()
     var remoteUrl by remember { mutableStateOf(s.remoteUrl) }
     var branch by remember { mutableStateOf(s.branch) }
@@ -129,7 +136,7 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     }
 
     fun leave() { if (dirty && s.isConfigured) confirmDiscard = true else vm.back() }
-    BackHandler(enabled = dirty && s.isConfigured) { confirmDiscard = true }
+    BackHandler(enabled = active && dirty && s.isConfigured) { confirmDiscard = true }
 
     val tabs = listOf("Repo", "Notes", "Editing", "Sync")
 
@@ -148,6 +155,13 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                         }
                     },
                     actions = {
+                        // Help is here too, for setting up before there's a note list.
+                        Tip("Help") {
+                            // Unfocus first, so no hidden field keeps the keyboard up.
+                            IconButton(onClick = { focusManager.clearFocus(); vm.navigate(Screen.Help()) }) {
+                                Icon(HelpIcon, contentDescription = "Help")
+                            }
+                        }
                         if (s.isConfigured) {
                             TextButton(onClick = ::save, enabled = dirty && !sync.running) {
                                 Text(if (repoChanged) "Save & re-clone" else "Save")

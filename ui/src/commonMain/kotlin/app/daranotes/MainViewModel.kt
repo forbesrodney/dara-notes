@@ -37,6 +37,8 @@ sealed interface Screen {
     data object Tags : Screen
     /** Links in the note at [path] and what they point to, plus notes linking to it. */
     data class Connections(val path: String) : Screen
+    /** A help page, by name (see Help). */
+    data class Help(val page: String = app.daranotes.ui.Help.INDEX) : Screen
 }
 
 class MainViewModel(val platform: AppPlatform) : ViewModel() {

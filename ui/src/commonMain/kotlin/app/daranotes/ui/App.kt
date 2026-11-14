@@ -32,14 +32,24 @@ fun App(vm: MainViewModel) {
         // Material list rows throw if laid out narrower than their padding, so never lay the
         // app out below a usable size; the excess is just clipped.
         Box(Modifier.fillMaxSize().atLeastSize(MIN_LAYOUT, MIN_LAYOUT)) {
-            when (val screen = vm.current) {
+            val screen = vm.current
+            // Settings keeps unsaved changes only while it's composed, so while help opened
+            // from it is showing, it stays composed (at this same spot) but isn't placed.
+            val helpOverSettings = screen is Screen.Help && vm.backStack.lastOrNull { it !is Screen.Help } == Screen.Settings
+            if (screen == Screen.Settings || helpOverSettings) {
+                Box(if (helpOverSettings) Modifier.notPlaced() else Modifier) {
+                    SettingsScreen(vm, snackbar, active = !helpOverSettings)
+                }
+            }
+            when (screen) {
                 Screen.Notes -> NotesScreen(vm, snackbar)
-                Screen.Settings -> SettingsScreen(vm, snackbar)
+                Screen.Settings -> {}
                 is Screen.Graph -> GraphScreen(vm, screen, snackbar)
                 Screen.Orphans -> OrphansScreen(vm, snackbar)
                 Screen.Placeholders -> PlaceholdersScreen(vm, snackbar)
                 Screen.Tags -> TagsScreen(vm, snackbar)
                 is Screen.Connections -> ConnectionsScreen(vm, screen, snackbar)
+                is Screen.Help -> key(screen.page) { HelpScreen(vm, screen, snackbar) }
                 // key(): each note gets its own editor state, so leaving note A for note B can
                 // never flush B's text into A.
                 is Screen.Editor -> key(screen.path) { EditorScreen(vm, screen, snackbar) }
@@ -51,6 +61,12 @@ fun App(vm: MainViewModel) {
 @Composable
 fun AppTheme(content: @Composable () -> Unit) {
     MaterialTheme(colorScheme = platformColorScheme(isSystemInDarkTheme()), content = content)
+}
+
+/** Measures the content (so it stays composed, with its state) but neither places nor draws it. */
+private fun Modifier.notPlaced(): Modifier = layout { measurable, c ->
+    measurable.measure(c)
+    layout(0, 0) {}
 }
 
 /** Smaller than any real Android window (the system minimum is about 220dp). */

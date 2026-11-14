@@ -24,6 +24,45 @@ val javafxPlatform: String = run {
     }
 }
 
+/**
+ * The help pages, the Markdown files in docs/ and PRIVACY.md, compiled into the app as
+ * HelpPages.kt, so every platform shows the help that matches its version, offline, with no
+ * resource handling. Each page is keyed by its file name without .md, in lowercase (so
+ * PRIVACY.md is "privacy").
+ */
+val generateHelpPages by tasks.registering {
+    val docs = rootProject.layout.projectDirectory.dir("docs")
+    val privacy = rootProject.layout.projectDirectory.file("PRIVACY.md")
+    val out = layout.buildDirectory.dir("generated/help/kotlin")
+    inputs.dir(docs)
+    inputs.file(privacy)
+    outputs.dir(out)
+    doLast {
+        fun literal(text: String): String = text.replace("\r\n", "\n").chunked(8000).joinToString(", ") { chunk ->
+            "\"" + chunk.replace("\\", "\\\\").replace("\"", "\\\"").replace("$", "\\$")
+                .replace("\n", "\\n").replace("\t", "\\t") + "\""
+        }
+        val files = docs.asFile.listFiles { f -> f.isFile && f.name.endsWith(".md") }.orEmpty().sortedBy { it.name } +
+            privacy.asFile
+        val code = buildString {
+            appendLine("// Generated from docs/*.md and PRIVACY.md by :ui:generateHelpPages. Don't edit.")
+            appendLine("package app.daranotes.ui")
+            appendLine()
+            appendLine("internal object HelpPages {")
+            appendLine("    val pages: Map<String, String> = mapOf(")
+            for (f in files) {
+                val key = f.name.removeSuffix(".md").lowercase()
+                appendLine("        \"$key\" to listOf(${literal(f.readText())}).joinToString(\"\"),")
+            }
+            appendLine("    )")
+            appendLine("}")
+        }
+        val target = out.get().file("app/daranotes/ui/HelpPages.kt").asFile
+        target.parentFile.mkdirs()
+        target.writeText(code)
+    }
+}
+
 kotlin {
     android {
         namespace = "app.daranotes.ui"
@@ -54,6 +93,9 @@ kotlin {
     sourceSets {
         // Calling Apple's C and Objective-C APIs.
         matching { s -> listOf("apple", "ios", "macos", "native").any(s.name::startsWith) }.configureEach { languageSettings.optIn("kotlinx.cinterop.ExperimentalForeignApi") }
+        commonMain {
+            kotlin.srcDir(generateHelpPages)
+        }
         commonMain.dependencies {
             api(project(":shared"))
             api("org.jetbrains.compose.runtime:runtime:1.12.2")
