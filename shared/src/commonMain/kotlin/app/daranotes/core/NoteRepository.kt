@@ -279,7 +279,7 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
 
     private fun createNote(path: String, title: String, template: Template? = defaultNoteTemplate()) {
         // Without a template, Foam starts a note with its title as a heading.
-        val body = if (template != null) FoamVariables.resolve(template.body, title) else "# $title\n\n"
+        val body = if (template != null) FoamVariables.resolve(template.body, title, path = path) else "# $title\n\n"
         write(path, body)
         if (settings.linkFromIndex) addToIndex(path)
     }
@@ -298,7 +298,7 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
             }
         if (!exists(path)) {
             // Without a template, Foam heads a daily note with its date.
-            val body = if (template != null) FoamVariables.resolve(template.body, title, now) else "# $title\n"
+            val body = if (template != null) FoamVariables.resolve(template.body, title, now, path) else "# $title\n"
             write(path, body)
             if (settings.linkFromIndex && settings.indexDailyNotes) addToIndex(path)
         }
@@ -347,7 +347,7 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
     private fun newIndexText(): String {
         val title = indexPath.substringAfterLast('/').removeSuffix(".md")
         val template = defaultNoteTemplate()
-        val body = (if (template != null) FoamVariables.resolve(template.body, title) else "# $title")
+        val body = (if (template != null) FoamVariables.resolve(template.body, title, path = indexPath) else "# $title")
             .trimEnd('\n', '\r', ' ', '\t')
         return if (body.isEmpty()) "" else "$body\n\n"
     }

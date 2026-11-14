@@ -1,8 +1,14 @@
+@file:OptIn(kotlin.uuid.ExperimentalUuidApi::class)
+
 package app.daranotes.core
 
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.isoDayNumber
 import kotlinx.datetime.number
+import kotlinx.datetime.toInstant
+import kotlin.random.Random
+import kotlin.uuid.Uuid
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
@@ -176,7 +182,23 @@ class Template(val filepath: String?, val body: String, val name: String? = null
 }
 
 object FoamVariables {
-    fun resolve(text: String, title: String, now: LocalDateTime = Dates.now()): String {
+    /**
+     * Fills in Foam's template variables. The `FOAM_DATE_*` ones are for [now], the note's
+     * date (a daily note's day). VS Code's snippet date variables (`CURRENT_*`), which Foam
+     * templates may use too, are for [current], the time the note is made, as in VS Code.
+     * `TM_FILENAME_BASE` is the name of the note's file, [path], without `.md`; it stays as
+     * it is without one (in a template's `filepath`, which names that file). `UUID`, `RANDOM`
+     * and `RANDOM_HEX` are new each time they appear. Each variable is filled in once: a
+     * value with a `$` in it (a title, say) is left as it is.
+     */
+    fun resolve(
+        text: String,
+        title: String,
+        now: LocalDateTime = Dates.now(),
+        path: String? = null,
+        current: LocalDateTime = Dates.now(),
+        zone: TimeZone = TimeZone.currentSystemDefault(),
+    ): String {
         val pad = Dates::pad
         val month = now.month.number
         val day = now.dayOfWeek.isoDayNumber
@@ -191,25 +213,60 @@ object FoamVariables {
             "FOAM_DATE_MONTH_NAME" to PlatformDates.monthName(month, short = false),
             "FOAM_DATE_MONTH_NAME_SHORT" to PlatformDates.monthName(month, short = true),
             "FOAM_DATE_DATE" to pad(now.day, 2),
+            "FOAM_DATE_DAY_ISO" to day.toString(), // 1 = Monday ... 7 = Sunday
             "FOAM_DATE_DAY_NAME" to PlatformDates.dayName(day, short = false),
             "FOAM_DATE_DAY_NAME_SHORT" to PlatformDates.dayName(day, short = true),
             "FOAM_DATE_HOUR" to pad(now.hour, 2),
             "FOAM_DATE_MINUTE" to pad(now.minute, 2),
             "FOAM_DATE_SECOND" to pad(now.second, 2),
             "FOAM_DATE_WEEK" to pad(Dates.isoWeek(now.date), 2),
-            "FOAM_DATE_SECONDS_UNIX" to Dates.nowSeconds().toString(),
-            "CURRENT_YEAR" to pad(now.year, 4),
-            "CURRENT_MONTH" to pad(month, 2),
-            "CURRENT_DATE" to pad(now.day, 2),
-        )
-        var out = Regex("\\$\\{([A-Z_]+)(?::([^}]*))?\\}").replace(text) { m ->
-            vars[m.groupValues[1]] ?: m.groupValues[2]
+            "FOAM_DATE_WEEK_YEAR" to Dates.isoWeekYear(now.date).toString(),
+            "FOAM_DATE_SECONDS_UNIX" to now.toInstant(zone).epochSeconds.toString(),
+        ) + currentVariables(current, zone) +
+            listOfNotNull(path?.let { "TM_FILENAME_BASE" to it.substringAfterLast('/').substringBeforeLast('.') })
+
+        fun value(name: String): String? = vars[name] ?: when (name) {
+            "UUID" -> Uuid.random().toString()
+            "RANDOM" -> (0 until 6).joinToString("") { Random.nextInt(10).toString() }
+            "RANDOM_HEX" -> (0 until 6).joinToString("") { Random.nextInt(16).toString(16) }
+            else -> null
         }
-        out = Regex("\\$([A-Z_]+)").replace(out) { m -> vars[m.groupValues[1]] ?: m.value }
-        // VS Code snippet tab stops: ${1:default} -> default, $1 / $0 -> ""
-        out = Regex("\\$\\{\\d+:([^}]*)\\}").replace(out) { it.groupValues[1] }
-        out = Regex("\\$\\{\\d+\\}|\\$\\d+").replace(out, "")
-        return out
+        // One pass, so nothing filled in is read again. ${NAME:default} falls back to default;
+        // VS Code's tab stops ${1:text} become their text, and $1 or ${1} go.
+        return SNIPPET.replace(text) { m ->
+            val g = m.groupValues
+            when {
+                g[1].isNotEmpty() -> value(g[1]) ?: g[2]
+                g[3].isNotEmpty() -> value(g[3]) ?: m.value
+                else -> g[4]
+            }
+        }
+    }
+
+    private val SNIPPET = Regex(
+        """\$\{([A-Z_]+)(?::([^}]*))?\}|\$([A-Z_]+)|\$\{\d+:([^}]*)\}|\$\{\d+\}|\$\d+"""
+    )
+
+    /** VS Code's snippet date variables, for [at]. */
+    private fun currentVariables(at: LocalDateTime, zone: TimeZone): Map<String, String> {
+        val pad = Dates::pad
+        val month = at.month.number
+        val day = at.dayOfWeek.isoDayNumber
+        return mapOf(
+            "CURRENT_YEAR" to pad(at.year, 4),
+            "CURRENT_YEAR_SHORT" to pad(at.year % 100, 2),
+            "CURRENT_MONTH" to pad(month, 2),
+            "CURRENT_MONTH_NAME" to PlatformDates.monthName(month, short = false),
+            "CURRENT_MONTH_NAME_SHORT" to PlatformDates.monthName(month, short = true),
+            "CURRENT_DATE" to pad(at.day, 2),
+            "CURRENT_DAY_NAME" to PlatformDates.dayName(day, short = false),
+            "CURRENT_DAY_NAME_SHORT" to PlatformDates.dayName(day, short = true),
+            "CURRENT_HOUR" to pad(at.hour, 2),
+            "CURRENT_MINUTE" to pad(at.minute, 2),
+            "CURRENT_SECOND" to pad(at.second, 2),
+            "CURRENT_SECONDS_UNIX" to at.toInstant(zone).epochSeconds.toString(),
+            "CURRENT_TIMEZONE_OFFSET" to Dates.offset(at, zone),
+        )
     }
 
     fun slugify(title: String): String =

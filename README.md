@@ -172,7 +172,11 @@ example links never show up in any view.
   where daily notes go (for example `journal/$FOAM_DATE_YEAR-$FOAM_DATE_MONTH-$FOAM_DATE_DATE.md`);
   without one they go in `journal`, or Settings > Notes > *Daily notes folder*.
   All templates support `foam_template` front matter (`filepath`, `name`, `description`)
-  and the `$FOAM_*` variables.
+  and the `$FOAM_*` variables, except `$FOAM_DATE_FORMAT`, `$FOAM_CURRENT_DIR` and
+  `$FOAM_PREVIOUS_DAILY_NOTE`. VS Code's date variables (`$CURRENT_YEAR`,
+  `$CURRENT_MONTH_NAME`, `$CURRENT_TIMEZONE_OFFSET` and the rest) work too, for the time the
+  note is made, as do `$TM_FILENAME_BASE` (the new note's file name without `.md`),
+  `$UUID`, `$RANDOM` and `$RANDOM_HEX`. Snippet tab stops (`${1:text}`) become their text.
 - markdownlint configuration, first one found: `.markdownlint-cli2.jsonc`,
   `.markdownlint-cli2.yaml`, `.markdownlint.jsonc`, `.markdownlint.json`, `.markdownlint.yaml`,
   `.markdownlint.yml`, then `markdownlint.config` in `.vscode/settings.json`.
