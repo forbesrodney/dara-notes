@@ -6,7 +6,7 @@ Foam's settings and templates and follows its conventions for links, tags and da
 so you can switch between the app and VS Code freely.
 
 - [Getting started](getting-started.md): connecting a repository, and how syncing works.
-- [Writing notes](writing.md): the editor, the preview, checklists, daily notes,
+- [Writing notes](writing.md): the editor, the preview, tags, checklists, daily notes,
   renaming and exporting.
 - [Finding and organizing notes](organizing.md): the note list, the index note, the graph,
   connections, tags, orphans and placeholders.

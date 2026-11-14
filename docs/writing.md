@@ -47,6 +47,26 @@ The preview shows the note as Foam and VS Code would, and works offline:
 Every heading can be linked to with `#id`, GitHub-style: lowercase, punctuation removed,
 spaces as hyphens. So `## Snippet Syntax` is `#snippet-syntax`.
 
+## Tags
+
+A note can be tagged two ways, as in Foam: in its front matter, or with `#tags` in the text.
+
+*Tags*, in a note's menu, lists the note's front matter tags. Tap a tag to remove it, or type
+a new one (or tap one of the tags already in your notes) to add it. You don't need to know
+the front matter format: the app adds the front matter block at the top of the note when it
+needs one, and removes it again when the last tag goes and nothing else is in it.
+
+```markdown
+---
+tags: [idea, dev/git]
+---
+```
+
+Tags use letters, numbers, `-`, `_` and `/`, with no spaces; `/` nests one tag under another,
+so `dev/git` sits under `dev`. If a note already lists its tags another way (`tags: a, b`, or
+one per line under `tags:`), new tags are written the same way. `#tags` in the text are shown
+in the dialog too, but you edit those in the note itself.
+
 ## Checklists
 
 Tap a checkbox in the preview, or use the checkbox button in the editor, which cycles a

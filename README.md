@@ -231,6 +231,7 @@ folder), run the script, test, and commit the result.
 | `shared/.../Connections.kt` | every link in a note and what it points to; backlinks |
 | `shared/.../NoteTree.kt` | notes arranged by folder for the folder view |
 | `shared/.../Tags.kt` | the tag tree for the Tag Explorer |
+| `shared/.../FrontMatterTags.kt` | adding and removing front matter tags in a note's own style; `ui/.../ui/TagEditing.kt` is the dialog |
 | `shared/.../Globs.kt` | VS Code-style glob matching for Foam settings |
 | `shared/.../LintModel.kt` | markdownlint results and config lookup |
 | `shared/.../Foam.kt` | Foam settings, templates, `$FOAM_*` variables |

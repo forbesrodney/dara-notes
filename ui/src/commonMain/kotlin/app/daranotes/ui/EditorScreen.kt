@@ -99,6 +99,8 @@ import app.daranotes.MainViewModel
 import app.daranotes.Screen
 import app.daranotes.core.FoamConfig
 import app.daranotes.core.FoamVariables
+import app.daranotes.core.FrontMatterTags
+import app.daranotes.core.NoteParser
 import app.daranotes.core.LintResult
 import app.daranotes.core.TaskStyle
 import app.daranotes.core.Tasks
@@ -141,6 +143,8 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     // Templates aren't checked: their variables and front matter would only raise noise.
     val lintOn = vm.settings.lintEnabled && !isTemplate
     var pickingVariable by remember { mutableStateOf(false) }
+    var editingTags by remember { mutableStateOf(false) }
+    var knownTags by remember { mutableStateOf(emptyList<String>()) }
     var moving by remember { mutableStateOf(false) }
     val notes by vm.notes.collectAsState()
     val sync by vm.syncState.collectAsState()
@@ -245,6 +249,18 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
             saved = text
         }
     }
+    // A change to the note from outside the text field (its tags): saved at once, with the
+    // cursor kept on the same text.
+    fun replaceText(text: String) {
+        if (text == value.text) return
+        val old = value.text
+        val p = old.commonPrefixWith(text).length
+        val delta = text.length - old.length
+        fun shift(i: Int) = if (i >= p) (i + delta).coerceIn(p, text.length) else i
+        value = TextFieldValue(text, TextRange(shift(value.selection.start), shift(value.selection.end)))
+        vm.save(path, text)
+        saved = text
+    }
     if (isTemplate) {
         // The preview is an example note: following its links would create real notes, and
         // its lines aren't the template's, so checkboxes can't be toggled.
@@ -320,6 +336,11 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                                 onClick = { menu = false; editing = true; pickingVariable = true },
                             )
                             DropdownMenuItem(
+                                text = { Text("Tags") },
+                                leadingIcon = { Icon(TagIcon, null) },
+                                onClick = { menu = false; editingTags = true },
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Help with templates") },
                                 leadingIcon = { Icon(HelpIcon, null) },
                                 onClick = { menu = false; vm.navigate(Screen.Help("templates")) },
@@ -348,6 +369,11 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                                 if (value.text != saved) { vm.save(path, value.text); saved = value.text }
                                 vm.navigate(Screen.Graph(focus = path))
                             },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Tags") },
+                            leadingIcon = { Icon(TagIcon, null) },
+                            onClick = { menu = false; editingTags = true },
                         )
                         val hasToc = Toc.has(value.text)
                         DropdownMenuItem(
@@ -547,6 +573,21 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     if (renaming) RenameNoteDialog(vm, path, onDismiss = { renaming = false }, onConfirm = relocate)
     if (moving) MoveNoteDialog(vm, path, onDismiss = { moving = false }, onConfirm = relocate)
 
+    if (editingTags) {
+        LaunchedEffect(Unit) { knownTags = withContext(ioDispatcher) { vm.repo.tagNames() } }
+        val tags = FrontMatterTags.read(value.text)
+        val inline = remember(value.text) {
+            NoteParser.parse(value.text).tags.filter { t -> tags.none { it.equals(t, ignoreCase = true) } }
+        }
+        TagsDialog(
+            tags = tags,
+            inline = inline,
+            known = knownTags,
+            onAdd = { replaceText(FrontMatterTags.add(value.text, it)) },
+            onRemove = { replaceText(FrontMatterTags.remove(value.text, it)) },
+            onDismiss = { editingTags = false },
+        )
+    }
     if (pickingVariable) {
         VariablePickerDialog(
             onDismiss = { pickingVariable = false },

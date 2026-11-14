@@ -166,6 +166,12 @@ class NoteRepository(val fs: FileSystem, val root: Path, private val settings: S
     fun tags(): List<TagNode> =
         Tags.tree(listNotes().associate { it.path to NoteParser.parse(read(it.path)).tags })
 
+    /** Every tag in the notes (front matter and inline #tags), once each, sorted. */
+    fun tagNames(): List<String> =
+        listNotes().flatMap { NoteParser.parse(read(it.path)).tags }
+            .distinctBy { it.lowercase() }
+            .sortedWith(String.CASE_INSENSITIVE_ORDER)
+
     /** A missing note and the notes that link to it. */
     data class MissingNote(val target: String, val linkedFrom: List<Note>)
 

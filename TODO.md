@@ -7,10 +7,8 @@
 - [ ] ability to sync with multiple repos
   - Foam is often used for notes within a project repo, it would be nice to have access to these notes to, but I don't want to clone the whole repo
 - [ ] enhance template support
-  - provide a means to edit templates in doc (can likely piggyback off existing functionality)
   - support missing variables - $FOAM_DATE_FORMAT, $FOAM_CURRENT_DIR (not sure why), $FOAM_PREVIOUS_DAILY_NOTE (not sure how)
   - support missing vscode style variables - ${1:placeholder} tab stops, maybe ${VAR:default} (not sure how)
-- [ ] method to add/remove front matter tags, add/remove front matter block if needed
 
 # Planned Tasks (v1.0)
 
@@ -21,7 +19,9 @@
       $FOAM_DATE_WEEK, $FOAM_DATE_HOUR, $FOAM_DATE_MINUTE, $FOAM_DATE_SECOND, $FOAM_DATE_SECOND_UNIX
     - Not yet supported - $FOAM_DATE_DAY_ISO, $FOAM_DATE_WEEK_YEAR
   - VSCode Style Variables - CURRENT_ -style variables
+  - provide a means to edit templates in doc (can likely piggyback off existing functionality)
 - [x] Add a help menu item, that shows a stripped down version of the README.md
+- [x] method to add/remove front matter tags, add/remove front matter block if needed
 
 # Current Issues (v1.0)
 

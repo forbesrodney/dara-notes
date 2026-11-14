@@ -56,7 +56,8 @@ Tap an entry to open it. Links in code and link reference definitions are skippe
 The note list's menu > *Tags* works like Foam's Tag Explorer: every tag, from front matter
 and inline `#tags`, as a tree, so `dev/git` sits under `dev`, with a count of notes for
 each. Tap a tag to see its notes, and tap a note to open it. The filter box narrows the
-list. In the graph, selecting a tag offers *Notes* to jump here.
+list. In the graph, selecting a tag offers *Notes* to jump here. To tag a note, use *Tags*
+in its menu (see [Writing notes](writing.md)).
 
 ## Orphaned notes
 
