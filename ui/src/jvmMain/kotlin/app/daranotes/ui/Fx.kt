@@ -2,6 +2,8 @@ package app.daranotes.ui
 
 import javafx.application.Platform
 import kotlinx.coroutines.suspendCancellableCoroutine
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import javax.swing.SwingUtilities
 
 /** The JavaFX toolkit, which runs the desktop web views on its own thread. */
@@ -20,8 +22,33 @@ object Fx {
             }
             // Keep JavaFX alive when the last web view closes, so the next one can open.
             Platform.setImplicitExit(false)
+            initScenegraph()
             started = true
         }
+    }
+
+    /**
+     * Loads JavaFX's scene graph and web view classes on the JavaFX thread, and waits.
+     * Otherwise the first web view can deadlock the app: the JavaFX thread, building the
+     * WebView, starts initializing javafx.scene.Node while the Swing thread, adding the
+     * JFXPanel to the window, starts initializing NodeHelper, and each class's
+     * initialization waits for the other's.
+     */
+    private fun initScenegraph() {
+        if (Platform.isFxApplicationThread()) return
+        val done = CountDownLatch(1)
+        Platform.runLater {
+            try {
+                for (name in listOf("javafx.scene.Node", "javafx.scene.Scene", "javafx.scene.web.WebView")) {
+                    Class.forName(name, true, Fx::class.java.classLoader)
+                }
+            } catch (_: Throwable) {
+                // Not fatal here: the classes then load later, as before.
+            } finally {
+                done.countDown()
+            }
+        }
+        done.await(10, TimeUnit.SECONDS)
     }
 
     /** Runs [block] on the JavaFX thread. */
