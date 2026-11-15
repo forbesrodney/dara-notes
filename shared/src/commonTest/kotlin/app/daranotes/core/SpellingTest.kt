@@ -43,6 +43,16 @@ class SpellingTest {
         assertEquals(emptyList(), flagged("Foam's notes' house’s"))
     }
 
+    @Test fun acceptsContractionsOfKnownAndIgnoredWords() {
+        assertEquals(emptyList(), flagged("there'll here'd where've there're"))
+        assertEquals(listOf("wrogn'll"), flagged("wrogn'll"))
+        // Ignoring or adding a word covers its possessive, and a camelCase word whole.
+        assertEquals(emptyList(), flagged("<!-- cspell:ignore namecheap -->\nNamecheap's NameCheap's"))
+        assertEquals(emptyList(), flagged("Namecheap's", CSpellConfig(words = setOf("namecheap"))))
+        assertEquals(emptyList(), flagged("<!-- cspell:ignore MyWrognNote -->\nMyWrognNote's"))
+        assertEquals(listOf("Wrogn"), flagged("MyWrognNote"))
+    }
+
     @Test fun skipsMarkdownThatIsntProse() {
         val text = """
             |---

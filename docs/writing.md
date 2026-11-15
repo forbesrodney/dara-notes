@@ -96,7 +96,8 @@ note offers corrections; tap one to use it. Its menu (the three dots at its end)
 
 As in cSpell: letter case and accents don't matter, words shorter than four letters aren't
 checked, words with digits or underscores aren't either, and `camelCase` is checked part by
-part. Code, URLs, e-mail addresses, link and wikilink targets, front matter, HTML tags,
+part, unless the whole word is ignored or added. A word you ignore or add covers its
+possessive and contractions too (`NameCheap's`, `Dara'll`). Code, URLs, e-mail addresses, link and wikilink targets, front matter, HTML tags,
 math, `#tags` and template variables are skipped. So are notes matched by `ignorePaths`.
 
 These comments, anywhere in a note, work as in VS Code:

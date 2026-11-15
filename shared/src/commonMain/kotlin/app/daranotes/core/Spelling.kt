@@ -106,7 +106,9 @@ class SpellChecker(private val dictionaries: List<WordList>) {
         val skip = Spelling.skipped(text, comments)
         val issues = ArrayList<SpellIssue>()
         val known = HashMap<String, Boolean>()
-        Spelling.words(text, skip) { start, end ->
+        // A camelCase word ignored or added whole (NameCheap) isn't split into parts.
+        val whole = { start: Int, end: Int -> userWord(Spelling.fold(text.substring(start, end)), config, comments) }
+        Spelling.words(text, skip, whole) { start, end ->
             val word = text.substring(start, end)
             // Short words aren't checked, unless they're flagged (hte).
             if (word.count { it.isLetter() } < Spelling.MIN_WORD_LENGTH) {
@@ -123,15 +125,16 @@ class SpellChecker(private val dictionaries: List<WordList>) {
     fun accepts(word: String, config: CSpellConfig, comments: SpellComments? = null): Boolean {
         val w = Spelling.fold(word)
         if (w in config.flagWords || (comments != null && w in comments.flagWords)) return false
-        if (w in config.words || (comments != null && w in comments.words)) return true
+        if (userWord(w, config, comments)) return true
         return known(w)
     }
 
+    /** Whether [w] (folded) is ignored or added, by itself or with `'s`, `'ll` and the like. */
+    private fun userWord(w: String, config: CSpellConfig, comments: SpellComments?): Boolean =
+        Spelling.bases(w).any { it in config.words || (comments != null && it in comments.words) }
+
     private fun known(w: String): Boolean {
-        if (dictionaries.any { it.contains(w) }) return true
-        // Possessives: Foam's, and plurals' (cSpell accepts these when the word is known).
-        if (w.endsWith("'s") && w.length > 2 && dictionaries.any { it.contains(w.dropLast(2)) }) return true
-        if (w.endsWith("'") && w.length > 1 && dictionaries.any { it.contains(w.dropLast(1)) }) return true
+        if (Spelling.bases(w).any { b -> dictionaries.any { it.contains(b) } }) return true
         // Elisions: l'homme, qu'il.
         for (e in elisions) {
             if (w.length > e.length && w.startsWith(e) && known(w.substring(e.length))) return true
@@ -182,6 +185,20 @@ object Spelling {
     const val MIN_WORD_LENGTH = 4
 
     /** [word] as compared: lowercase, with typographic apostrophes as straight ones. */
+    /**
+     * [w] (folded) and the word it's built on: Foam's and notes' (possessives), and there'll,
+     * what'd, should've, they're (contractions the dictionaries don't all list).
+     */
+    fun bases(w: String): List<String> {
+        val out = arrayListOf(w)
+        for (suffix in CONTRACTIONS) {
+            if (w.length > suffix.length && w.endsWith(suffix)) out += w.dropLast(suffix.length)
+        }
+        return out
+    }
+
+    private val CONTRACTIONS = listOf("'s", "'", "'ll", "'d", "'ve", "'re")
+
     fun fold(word: String): String = word.replace('’', '\'').lowercase()
 
     /** [suggestion] (lowercase) written in [like]'s case: Word, WORD or word. */
@@ -285,9 +302,15 @@ object Spelling {
     /**
      * Calls [block] with the range of each word to check: runs of letters (with apostrophes
      * inside) outside [skip], split at camelCase humps. The caller skips the short ones.
-     * Runs with digits or underscores are skipped whole, as cSpell does.
+     * Runs with digits or underscores are skipped whole, as cSpell does, and so are runs
+     * [whole] accepts as they are.
      */
-    fun words(text: String, skip: BooleanArray, block: (start: Int, end: Int) -> Unit) {
+    fun words(
+        text: String,
+        skip: BooleanArray,
+        whole: (start: Int, end: Int) -> Boolean = { _, _ -> false },
+        block: (start: Int, end: Int) -> Unit,
+    ) {
         var i = 0
         while (i < text.length) {
             if (skip[i] || !isWordChar(text[i])) { i++; continue }
@@ -300,7 +323,7 @@ object Spelling {
             // A possessive plural (notes') keeps its apostrophe.
             if (b < j && b > a && text[b - 1] == 's' && b - a >= 2) b++
             val run = text.substring(a, b)
-            if (run.isNotEmpty() && run.none { it.isDigit() || it == '_' }) {
+            if (run.isNotEmpty() && run.none { it.isDigit() || it == '_' } && !whole(a, b)) {
                 var s = a
                 for (k in a + 1 until b) {
                     val prev = text[k - 1]
