@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
@@ -244,7 +245,12 @@ fun SpellingBar(
 
 /** The note's misspelled words, each once with how often it appears; tap one to go to it. */
 @Composable
-fun SpellingIssuesDialog(issues: List<SpellIssue>, onDismiss: () -> Unit, onJump: (SpellIssue) -> Unit) {
+fun SpellingIssuesDialog(
+    issues: List<SpellIssue>,
+    onDismiss: () -> Unit,
+    onJump: (SpellIssue) -> Unit,
+    onDisable: () -> Unit,
+) {
     val words = remember(issues) { issues.groupBy { it.word.lowercase() }.values.toList() }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -253,7 +259,8 @@ fun SpellingIssuesDialog(issues: List<SpellIssue>, onDismiss: () -> Unit, onJump
             Column {
                 Text(
                     "Tap a word to go to it, then pick a suggestion, ignore it in this note, or add it to the " +
-                        "repository's dictionary.",
+                        "repository's dictionary. Disabling spelling in the current note adds a cspell:disable " +
+                        "comment at the top, which VS Code follows too.",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -273,6 +280,13 @@ fun SpellingIssuesDialog(issues: List<SpellIssue>, onDismiss: () -> Unit, onJump
                 }
             }
         },
-        confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
+        // Disable sits at the left, apart from Close.
+        confirmButton = {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                TextButton(onClick = onDisable) { Text("Disable in current note") }
+                Spacer(Modifier.weight(1f))
+                TextButton(onClick = onDismiss) { Text("Close") }
+            }
+        },
     )
 }

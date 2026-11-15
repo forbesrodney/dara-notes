@@ -658,6 +658,11 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                 value = value.copy(selection = TextRange(issue.start, issue.end))
                 runCatching { focus.requestFocus() }
             },
+            onDisable = {
+                showSpelling = false
+                spelling = emptyList()
+                replaceText(SpellComments.disableInNote(value.text))
+            },
         )
     }
     if (renaming) RenameNoteDialog(vm, path, onDismiss = { renaming = false }, onConfirm = relocate)

@@ -72,14 +72,33 @@ class SpellComments(
                 val m = IGNORE_LINE.find(lines[i])!!
                 lines[i] = m.groupValues[1] + " " + word + m.groupValues[2]
             } else {
-                val at = if (lines.firstOrNull()?.trimEnd() == "---") {
-                    (1 until lines.size).firstOrNull { lines[it].trimEnd() == "---" || lines[it].trimEnd() == "..." }?.plus(1) ?: 0
-                } else 0
-                lines.add(at, "<!-- cspell:ignore $word -->")
+                lines.add(topLine(lines), "<!-- cspell:ignore $word -->")
             }
             val out = lines.joinToString("\n")
             return if (crlf) out.replace("\n", "\r\n") else out
         }
+
+        private val DISABLE_LINE = Regex("""(?i)^\s*<!--\s*(?:cspell|spell-?checker)\s*:\s*disable\s*-->\s*$""")
+
+        /**
+         * [text] with spelling turned off for the whole note: `<!-- cspell:disable -->` at the
+         * top (below any front matter), which VS Code reads too. Unchanged if it's already there.
+         */
+        fun disableInNote(text: String): String {
+            val crlf = "\r\n" in text
+            val lines = text.replace("\r\n", "\n").split("\n").toMutableList()
+            val at = topLine(lines)
+            if (lines.getOrNull(at)?.let { DISABLE_LINE.matches(it) } == true) return text
+            lines.add(at, "<!-- cspell:disable -->")
+            val out = lines.joinToString("\n")
+            return if (crlf) out.replace("\n", "\r\n") else out
+        }
+
+        /** The first line after any front matter. */
+        private fun topLine(lines: List<String>): Int =
+            if (lines.firstOrNull()?.trimEnd() == "---") {
+                (1 until lines.size).firstOrNull { lines[it].trimEnd() == "---" || lines[it].trimEnd() == "..." }?.plus(1) ?: 0
+            } else 0
     }
 }
 

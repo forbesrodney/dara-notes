@@ -153,6 +153,15 @@ class SpellingTest {
         assertEquals("<!-- cspell:ignore wrogn -->\r\n# T\r\n", SpellComments.ignoreInNote("# T\r\n", "wrogn"))
     }
 
+    @Test fun disableInNoteTurnsOffTheWholeNote() {
+        val note = "---\ntags: [a]\n---\n# T\nwrogn wrods\n"
+        val off = SpellComments.disableInNote(note)
+        assertEquals("---\ntags: [a]\n---\n<!-- cspell:disable -->\n# T\nwrogn wrods\n", off)
+        assertEquals(emptyList(), flagged(off))
+        assertEquals(off, SpellComments.disableInNote(off))
+        assertEquals("<!-- cspell:disable -->\r\n# T\r\n", SpellComments.disableInNote("# T\r\n"))
+    }
+
     @Test fun addsWordsToJsonWithComments() {
         val settings = """
             {

@@ -92,6 +92,11 @@ note offers corrections; tap one to use it. Its menu (the three dots at its end)
 - *Add to the repository's dictionary*, which adds it to `cspell.json` or, without one, to
   `cSpell.words` in `.vscode/settings.json`. It syncs with the rest of the repository.
 
+For a note with too many words that aren't really words, such as a technical one, tap
+*Disable in current note* in the spelling issues list. It puts `<!-- cspell:disable -->`
+at the top of the note (below any front matter), so VS Code skips the note too. Delete that
+line to check the note again.
+
 ### What's checked
 
 As in cSpell: letter case and accents don't matter, words shorter than four letters aren't
