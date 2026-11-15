@@ -85,6 +85,14 @@ compose.desktop {
                 iconFile.set(project.file("icons/app.icns"))
                 appCategory = "public.app-category.productivity"
                 minimumSystemVersion = "12.0"
+                // Uses only exempt encryption (HTTPS for sync), so App Store Connect doesn't ask
+                // about export compliance on each upload (the iOS Info.plist says the same).
+                infoPlist {
+                    extraKeysRawXml = """
+                        <key>ITSAppUsesNonExemptEncryption</key>
+                        <false/>
+                    """.trimIndent()
+                }
                 if (isAppStoreBuild) {
                     // The Mac App Store / TestFlight build (scripts/macos-appstore.sh):
                     // sandboxed, signed with the Mac App Distribution certificate, with the
