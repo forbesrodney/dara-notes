@@ -92,6 +92,15 @@ xcrun notarytool store-credentials foam-notary --key /path/AuthKey_XXXXXXXXXX.p8
 Without a team ID the package is unsigned, and macOS asks for confirmation the first time it
 opens (right-click, *Open*).
 
+`scripts/macos-appstore.sh` builds the Mac App Store / TestFlight version instead: sandboxed,
+signed with the *Mac App Distribution* certificate, and packaged as a signed `.pkg` in
+`desktopApp/build/appstore/` to upload with Transporter. Its build number is the date and
+time. It needs the *Mac App Distribution* and *Mac Installer Distribution* certificates, and
+two Mac App Store provisioning profiles, for `app.daranotes` and for the bundled Java runtime
+(`com.oracle.java.app.daranotes`), saved as `desktopApp/appstore/embedded.provisionprofile`
+and `runtime.provisionprofile` (not committed). The sandbox keeps the app's data in its
+container (`~/Library/Containers/app.daranotes`), apart from the `.dmg` version's.
+
 Packaging needs a self-contained JDK 21, because the app bundles a Java runtime made from it.
 Homebrew's `openjdk` formulas link to other Homebrew libraries, so an app packaged with it only runs on
 Macs that have them. Install Eclipse Temurin 21, which the build finds by default:
@@ -136,7 +145,8 @@ TEAM_ID = ABCDE12345
 
 *Build iOS release* (`scripts/ios-release.sh`) archives and exports a signed `.ipa` for
 TestFlight and the App Store into `iosApp/build/release/export/` (`scripts/ios-release.sh
-release-testing` for an ad hoc build). Signing is automatic, with the Apple ID in *Xcode >
+release-testing` for an ad hoc build). Its build number is the date and time, so each
+upload to App Store Connect is higher than the last. Signing is automatic, with the Apple ID in *Xcode >
 Settings > Accounts* or an App Store Connect API key (see the script).
 
 How it differs from Android:
@@ -173,6 +183,7 @@ and *Build release AAB* run the matching Gradle tasks.
 | `scripts/check-updates.sh` | Lists newer versions of the pinned JavaScript libraries. Changes nothing. |
 | `scripts/app-icons.py` | Draws the app icons with `scripts/KnotIcon.java`, which holds the knot's design: the desktop icons (`desktopApp/icons/`), the iOS asset catalog, the Android adaptive icon and `art/dara_icon.svg`; also the `.dmg` window background. Rerun it after changing the design (needs a JDK). |
 | `scripts/build-libgit2.sh` | Builds libgit2 for iPhone, the iOS Simulator and the Mac (Gradle runs it when needed). |
+| `scripts/macos-appstore.sh` | Builds the sandboxed macOS app for the Mac App Store and TestFlight, as a signed `.pkg`. |
 | `scripts/macos-release.sh` | Builds the signed macOS `.dmg`, notarizes it and staples the ticket; also zips it, for apps that won't send a `.dmg` (such as Signal). |
 | `scripts/macos-dmg.sh` | Puts the packaged macOS app in a `.dmg` with a link to Applications, the arrow background and the app's disk icon (`desktopApp/packaging/`, `desktopApp/icons/app.icns`), using dmgbuild, which it installs into `desktopApp/build/dmgbuild`. |
 | `scripts/ios-release.sh` | Archives the iOS app and exports a signed `.ipa` (TestFlight/App Store, or ad hoc). |

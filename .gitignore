@@ -18,3 +18,6 @@ iosApp/Configuration/Local.xcconfig
 
 # Built spelling dictionaries (dictionaries/build.py); published to a release, not committed
 dictionaries/out/
+
+# Mac App Store provisioning profiles (personal to the team; see scripts/macos-appstore.sh)
+desktopApp/appstore/*.provisionprofile

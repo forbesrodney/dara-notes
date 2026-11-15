@@ -10,12 +10,14 @@
 		A1000000000000000000B001 /* DaraNotesApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000F001 /* DaraNotesApp.swift */; };
 		A1000000000000000000B002 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000F002 /* Assets.xcassets */; };
 		A1000000000000000000B003 /* web in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000F005 /* web */; };
+		A1000000000000000000B004 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = A1000000000000000000F006 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		A1000000000000000000F001 /* DaraNotesApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DaraNotesApp.swift; sourceTree = "<group>"; };
 		A1000000000000000000F002 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		A1000000000000000000F003 /* Config.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Config.xcconfig; sourceTree = "<group>"; };
+		A1000000000000000000F006 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		A1000000000000000000F005 /* web */ = {isa = PBXFileReference; lastKnownFileType = folder; name = web; path = ../web; sourceTree = "<group>"; };
 		A1000000000000000000F004 /* DaraNotes.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = DaraNotes.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -46,6 +48,7 @@
 			children = (
 				A1000000000000000000F001 /* DaraNotesApp.swift */,
 				A1000000000000000000F002 /* Assets.xcassets */,
+				A1000000000000000000F006 /* PrivacyInfo.xcprivacy */,
 			);
 			path = iosApp;
 			sourceTree = "<group>";
@@ -121,6 +124,7 @@
 			files = (
 				A1000000000000000000B002 /* Assets.xcassets in Resources */,
 				A1000000000000000000B003 /* web in Resources */,
+				A1000000000000000000B004 /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

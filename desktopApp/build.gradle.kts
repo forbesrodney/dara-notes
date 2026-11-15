@@ -42,9 +42,22 @@ tasks.processResources {
     from(rootProject.file("web")) { into("assets") }
 }
 
+/** Whether this is the Mac App Store build (-Pdaranotes.appStore=true; scripts/macos-appstore.sh). */
+val isAppStoreBuild = findProperty("daranotes.appStore")?.toString() == "true"
+
+/** CFBundleVersion for App Store uploads, which must rise each time: -Pdaranotes.buildNumber (MAJOR.MINOR.PATCH). */
+val buildNumber = findProperty("daranotes.buildNumber")?.toString() ?: "1"
+
 compose.desktop {
     application {
         mainClass = "app.daranotes.desktop.MainKt"
+
+        if (isAppStoreBuild) {
+            // A sandboxed app can't load native code it unpacks at run time, so the App Store
+            // build has JNA's library next to the jars (scripts/macos-appstore.sh puts it, and
+            // JavaFX's, there), instead of unpacking it from its jar.
+            jvmArgs("-Djna.boot.library.path=${'$'}APPDIR", "-Djna.nounpack=true", "-Djna.nosys=true")
+        }
 
         // Packaging bundles a Java runtime made from this JDK, so it must be self-contained:
         // Homebrew's openjdk links to Homebrew libraries and would only run on Macs that have
@@ -70,12 +83,32 @@ compose.desktop {
             macOS {
                 bundleID = "app.daranotes"
                 iconFile.set(project.file("icons/app.icns"))
-                // Signed with your Developer ID certificate when local.properties has
-                // apple.teamId (scripts/macos-release.sh then notarizes the .dmg).
-                developerIdName()?.let { name ->
+                appCategory = "public.app-category.productivity"
+                minimumSystemVersion = "12.0"
+                if (isAppStoreBuild) {
+                    // The Mac App Store / TestFlight build (scripts/macos-appstore.sh):
+                    // sandboxed, signed with the Mac App Distribution certificate, with the
+                    // provisioning profiles from desktopApp/appstore/ (not committed).
+                    appStore = true
+                    packageBuildVersion = buildNumber
+                    val team = appleTeamId() ?: error("Set apple.teamId in local.properties for the App Store build.")
                     signing {
                         sign.set(true)
-                        identity.set(name)
+                        identity.set(signingIdentity("3rd Party Mac Developer Application", team)
+                            ?: error("No \"3rd Party Mac Developer Application\" (Mac App Distribution) certificate for team $team in the keychain."))
+                    }
+                    provisioningProfile.set(project.file("appstore/embedded.provisionprofile"))
+                    runtimeProvisioningProfile.set(project.file("appstore/runtime.provisionprofile"))
+                    entitlementsFile.set(teamEntitlements("entitlements.plist", team))
+                    runtimeEntitlementsFile.set(teamEntitlements("runtime-entitlements.plist", team))
+                } else {
+                    // Signed with your Developer ID certificate when local.properties has
+                    // apple.teamId (scripts/macos-release.sh then notarizes the .dmg).
+                    developerIdName()?.let { name ->
+                        signing {
+                            sign.set(true)
+                            identity.set(name)
+                        }
                     }
                 }
             }
@@ -107,6 +140,31 @@ fun packagingJdk(): String? {
         }
         .maxByOrNull { File(it, "release").readText().substringAfter("JAVA_VERSION=\"").substringBefore('"') }
         ?.path
+}
+
+/** The Apple Developer team ID from local.properties (apple.teamId), if set. */
+fun appleTeamId(): String? {
+    val props = Properties()
+    val local = rootProject.file("local.properties")
+    if (local.isFile) local.reader().use { props.load(it) }
+    return props.getProperty("apple.teamId")?.trim()?.ifEmpty { null }
+}
+
+/** The full name of the [kind] certificate for [team] in the keychain, e.g. "3rd Party Mac Developer Application: Jane Doe (ABCDE12345)". */
+fun signingIdentity(kind: String, team: String): String? {
+    val out = runCatching {
+        ProcessBuilder("security", "find-identity", "-v", "-p", "codesigning")
+            .redirectErrorStream(true).start().inputStream.bufferedReader().readText()
+    }.getOrDefault("")
+    return Regex("\"(${Regex.escape(kind)}: .+ \\(${Regex.escape(team)}\\))\"").find(out)?.groupValues?.get(1)
+}
+
+/** desktopApp/appstore/[name] with TEAM_ID replaced by [team], written to the build directory. */
+fun teamEntitlements(name: String, team: String): File {
+    val out = layout.buildDirectory.file("appstore/$name").get().asFile
+    out.parentFile.mkdirs()
+    out.writeText(project.file("appstore/$name").readText().replace("TEAM_ID", team))
+    return out
 }
 
 /**
