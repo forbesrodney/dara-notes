@@ -210,7 +210,7 @@ def strip_accents(w):
         c for c in unicodedata.normalize("NFD", w) if not unicodedata.combining(c)))
 
 
-def main(dic_path, aff_path, out_path):
+def main(dic_path, aff_path, out_path, more_words=()):
     aff = Aff(aff_path)
     words, forbidden = set(), set()
     with open(dic_path, encoding="utf-8", errors="replace") as f:
@@ -234,6 +234,14 @@ def main(dic_path, aff_path, out_path):
     for w in words - forbidden:
         w = normalize(w).lower()
         if WORD.match(w):
+            kept.add(w)
+    # Words from elsewhere (cSpell's list for the language). An elided form (l'homme) whose
+    # word is listed too is left out: the app splits elisions off itself.
+    more = {normalize(w).lower() for w in more_words}
+    more = {w for w in more if WORD.match(w)}
+    for w in more:
+        e = next((e for e in aff.elisions if w.startswith(e) and len(w) > len(e)), None)
+        if e is None or (w[len(e):] not in more and w[len(e):] not in kept):
             kept.add(w)
     accent_free = {strip_accents(w) for w in kept} - kept
     with open(out_path, "w", encoding="utf-8", newline="\n") as out:

@@ -215,8 +215,8 @@ folder), run the script, test, and commit the result.
   work on GitHub. The `:ui:generateHelpPages` Gradle task compiles these files and
   `PRIVACY.md` into `HelpPages.kt`, so each app shows the help for its own version, offline.
   A link to another page opens it in the app's help; a new page needs no other changes.
-- **`dictionaries/`** turns Hunspell dictionaries into the word lists the apps download for
-  spell checking (`python3 dictionaries/build.py`; see its README). The *Spelling
+- **`dictionaries/`** combines Hunspell and cSpell dictionaries into the word lists the
+  apps download for spell checking (`python3 dictionaries/build.py`; see its README). The *Spelling
   dictionaries* workflow (`.github/workflows/dictionaries.yml`, run by hand) builds and
   publishes them to the `dictionaries` release; they're never committed.
 - **`androidApp/`**, **`desktopApp/`** and **`iosApp/`** are thin: each starts the shared UI and

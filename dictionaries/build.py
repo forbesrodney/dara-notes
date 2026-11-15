@@ -5,7 +5,9 @@ Builds the spelling dictionaries Dara Notes downloads, from languages.json.
     python3 dictionaries/build.py [out-dir]       (default: dictionaries/out)
 
 For each language it downloads the pinned Hunspell dictionary (an npm package, through the
-jsDelivr CDN), expands it into a word list with expand.py, and gzips it. The extras (cSpell's
+jsDelivr CDN), expands it into a word list with expand.py, adds the words of cSpell's own
+dictionary for the language (read with cspell_trie.py), so the app accepts the words VS Code
+does, and gzips it. The extras (cSpell's
 software terms and company names) are plain word lists, merged into one. Each dictionary's
 license is written next to it, and manifest.json lists them all with their sizes and SHA-256
 checksums, which the app checks after downloading.
@@ -25,6 +27,7 @@ import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
+import cspell_trie  # noqa: E402
 import expand  # noqa: E402
 
 CDN = "https://cdn.jsdelivr.net/npm/"
@@ -69,15 +72,31 @@ def build_language(lang, out, work):
     for name in ("index.dic", "index.aff", "license"):
         with open(os.path.join(folder, name), "wb") as f:
             f.write(fetch(package, name))
+    # cSpell's own dictionary for the language too, so the same words pass as in VS Code:
+    # its English one is SCOWL's larger list, with words like "decrypt".
+    more, sources, licenses = [], [CDN + package], []
+    cspell = lang.get("cspell")
+    if not cspell:
+        print(f"{code}: warning: no cSpell dictionary, so some words VS Code accepts will be flagged", file=sys.stderr)
+    else:
+        print(f"{code}: {cspell['package']}", file=sys.stderr)
+        trie = fetch(cspell["package"], cspell["file"]).decode("utf-8")
+        more = cspell_trie.plain_words(cspell_trie.read_trie(trie))
+        sources.append(CDN + cspell["package"])
+        licenses.append((cspell["package"], fetch(cspell["package"], cspell["licenseFile"])))
     txt = os.path.join(folder, "words.txt")
-    expand.main(os.path.join(folder, "index.dic"), os.path.join(folder, "index.aff"), txt)
+    expand.main(os.path.join(folder, "index.dic"), os.path.join(folder, "index.aff"), txt, more)
     text = open(txt, encoding="utf-8").read()
     write_gz(os.path.join(out, code + ".txt.gz"), text)
     with open(os.path.join(out, code + ".LICENSE.txt"), "wb") as f:
-        f.write(f"{lang['name']} spelling dictionary for Dara Notes, built from the npm package {package}.\n\n".encode())
+        built_from = " and ".join([package] + [p for p, _ in licenses])
+        f.write(f"{lang['name']} spelling dictionary for Dara Notes, built from the npm packages {built_from}.\n\n".encode())
+        f.write(f"From the npm package {package}:\n\n".encode())
         f.write(open(os.path.join(folder, "license"), "rb").read())
+        for p, text_ in licenses:
+            f.write(f"\n\nFrom the npm package {p}:\n\n".encode() + text_)
     words = text.split("#accent-free\n")[0].count("\n") - text.split("#accent-free\n")[0].count("#")
-    return entry(out, code, lang["name"], lang["license"], words, CDN + package)
+    return entry(out, code, lang["name"], lang["license"], words, " ".join(sources))
 
 
 def build_extras(extras, out):
