@@ -37,8 +37,12 @@ Not all of these will become reality.
  
 ## Needs Testing
 
+- General
+  - [ ] right click doesn't work, still works like mobile app with long press
 - [ ] Windows desktop app (msi)
 - [ ] Linux desktop app (rpm, deb)
+- macOS desktop app
+  - [ ] preview gets weird with the font after a while, requires restarting app
 
 ## Known Issues
 
@@ -49,7 +53,5 @@ Not all of these will become reality.
   - [ ] menu and picker jumps/flickers in desktop app
     - maybe hide until it settles
   - [ ] missing cursor in many popups
-  - [x] right click doesn't work, still works like mobile app with long press
   - [ ] double keychain access prompt with debug build of the desktop app
     - does not seem to affect the release build
-  - [x] preview gets weird with the font after a while, requires restarting app
