@@ -1,4 +1,4 @@
-// The desktop app (macOS now; Windows and Linux use the same code): the shared :ui screens in
+// The desktop app (macOS, Windows and Linux, from the same code): the shared :ui screens in
 // a Compose Desktop window. Git uses JGit, as on Android.
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
 import java.io.File
@@ -66,7 +66,7 @@ compose.desktop {
         packagingJdk()?.let { javaHome = it }
 
         nativeDistributions {
-            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
+            targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb, TargetFormat.Rpm)
             packageName = "Dara Notes"
             packageVersion = "1.0.0"
             description = "Markdown notes synced with Git; works with Foam workspaces"
@@ -125,6 +125,13 @@ compose.desktop {
             }
             linux {
                 iconFile.set(project.file("icons/app.png"))
+                // Package names can't have spaces; installed as /opt/dara-notes, with a menu entry.
+                packageName = "dara-notes"
+                debMaintainer = "Snakepit Software <https://github.com/forbesrodney/dara-notes>"
+                menuGroup = "Office"
+                appCategory = "Office"
+                rpmLicenseType = "MIT"
+                shortcut = true
             }
         }
     }

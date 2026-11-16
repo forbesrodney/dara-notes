@@ -1,6 +1,8 @@
 package app.daranotes.desktop
 
-import com.github.javakeyring.Keyring
+import com.github.javakeyring.internal.KeyringBackend
+import com.github.javakeyring.internal.freedesktop.FreedesktopKeyringBackend
+import com.github.javakeyring.internal.windows.WinCredentialStoreBackend
 import com.sun.jna.Library
 import com.sun.jna.Native
 import com.sun.jna.Pointer
@@ -102,14 +104,22 @@ private object MacKeychain : Secrets {
     }
 }
 
-/** java-keyring: Windows Credential Manager, or the Secret Service on Linux. */
+/**
+ * java-keyring: Windows Credential Manager, or the Secret Service on Linux. Its backends are
+ * made directly: Keyring.create() tries the macOS one first, whose classes the build leaves
+ * out, and fails on the missing class instead of moving on.
+ */
 private object JavaKeyring : Secrets {
+    private fun open(): KeyringBackend =
+        if ("win" in System.getProperty("os.name").lowercase()) WinCredentialStoreBackend()
+        else FreedesktopKeyringBackend()
+
     override fun get(service: String, account: String): String? =
-        Keyring.create().use { k -> runCatching { k.getPassword(service, account) }.getOrNull() }
+        open().use { k -> runCatching { k.getPassword(service, account) }.getOrNull() }
 
     override fun set(service: String, account: String, value: String) =
-        Keyring.create().use { k -> k.setPassword(service, account, value) }
+        open().use { k -> k.setPassword(service, account, value) }
 
     override fun delete(service: String, account: String) =
-        Keyring.create().use { k -> runCatching { k.deletePassword(service, account) }; Unit }
+        open().use { k -> runCatching { k.deletePassword(service, account) }; Unit }
 }

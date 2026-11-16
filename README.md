@@ -1,7 +1,7 @@
 # Dara Notes
 
 An app for Markdown notes kept in a Git repository, for Android, iOS and the desktop (macOS
-for now; the same code runs on Windows and Linux). It works with
+and Linux; the same code runs on Windows). It works with
 [Foam](https://foambubble.github.io/foam/) workspaces: it reads Foam's settings and
 templates and follows its conventions for links, tags and daily notes. Dara Notes is an
 independent project, not made by or affiliated with the Foam developers.
@@ -66,9 +66,18 @@ with the *Run desktop app* configuration, or:
 ```
 
 *Package desktop app* (`./gradlew :desktopApp:packageDistributionForCurrentOS`) builds an installer
-for the computer you run it on: a `.dmg` on macOS, `.msi` on Windows, `.deb` on Linux, in
-`desktopApp/build/compose/binaries/main/`. Each must be built on its own system, because the bundled
-Java runtime and JavaFX are native.
+for the computer you run it on: a `.dmg` on macOS, `.msi` on Windows, `.deb` and `.rpm` on Linux,
+in `desktopApp/build/compose/binaries/main/`. Each must be built on its own system, because the
+bundled Java runtime and JavaFX are native.
+
+On Linux, `./gradlew :desktopApp:packageDeb :desktopApp:packageRpm` builds both packages (`.rpm`
+needs the `rpm` package, for `rpmbuild`). They install the app in `/opt/dara-notes` with an entry
+in the applications menu (Office). Or let GitHub build them: the *Linux packages* workflow
+(`.github/workflows/linux.yml`, run by hand from the Actions tab) builds both for x86-64 and
+ARM64 and attaches them to the run as `linux-x64` and `linux-arm64`. Install with
+`sudo apt install ./dara-notes_*.deb` (Debian, Ubuntu) or `sudo dnf install ./dara-notes-*.rpm`
+(Fedora), which also install what the package needs. The access token is kept in the Secret
+Service (GNOME Keyring or KWallet), which desktop Linux has unlocked when you're logged in.
 
 On macOS, the `.dmg` is signed with your *Developer ID Application* certificate when
 `local.properties` (not committed) has your Apple Developer team ID:
