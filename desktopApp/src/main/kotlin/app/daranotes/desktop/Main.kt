@@ -39,6 +39,11 @@ fun main() {
     System.setProperty("compose.interop.blending", "true")
     // On a Mac, the menu bar goes at the top of the screen, where Help is expected.
     if (isMac) System.setProperty("apple.laf.useScreenMenuBar", "true")
+    // On a Mac, JavaFX's GPU pipeline (ES2) garbles the web views' text after the app has run
+    // a while: letters lose pieces ("Dell" drawn as "Cell") until a restart, as its cached
+    // glyphs go bad. The software pipeline doesn't, and costs little here: a JFXPanel copies
+    // each frame back from the GPU into the Swing window anyway. (-Dprism.order overrides it.)
+    if (isMac && System.getProperty("prism.order") == null) System.setProperty("prism.order", "sw")
     GitSync.clientName = clientName()
     Fx.start()
 
