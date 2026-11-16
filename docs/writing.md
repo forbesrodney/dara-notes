@@ -156,11 +156,11 @@ made elsewhere, such as in VS Code, work too.
 
 ## Renaming and moving notes
 
-Long-press a note in the list, or use the editor's menu. Every link to the note is fixed:
-wikilinks (with aliases, headings and embeds), relative Markdown links and Foam's link
-reference definitions, and the moved note's own relative links. If the new name clashes
-with another note's, links get the folder too, so each still points at the right note.
-Links inside code are left alone.
+Long-press a note in the list (right-click with a mouse), or use the editor's menu. Every link
+to the note is fixed: wikilinks (with aliases, headings and embeds), relative Markdown links
+and Foam's link reference definitions, and the moved note's own relative links. If the new
+name clashes with another note's, links get the folder too, so each still points at the
+right note. Links inside code are left alone.
 
 ## Exporting and sharing
 

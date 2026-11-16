@@ -294,7 +294,7 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                 }
             }
 
-            // One note in either view; long-press opens Rename / Move / Delete.
+            // One note in either view; a long press or right-click opens Rename / Move / Delete.
             val noteItem: @Composable (Note, Dp, String) -> Unit = { note, indent, details ->
                 Box {
                     ListItem(
@@ -308,6 +308,7 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                             )
                         },
                         modifier = Modifier
+                            .onRightClick { menuFor = note }
                             .combinedClickable(
                                 onClick = { vm.openPath(note.path) },
                                 onLongClick = { menuFor = note },
