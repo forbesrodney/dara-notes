@@ -1,21 +1,32 @@
-name: Linux packages
-# Builds the Linux desktop app as .deb (Debian, Ubuntu) and .rpm (Fedora, openSUSE) packages,
-# for x86-64 and ARM64. The packages bundle JavaFX's native code and a Java runtime, so each
-# is built on its own architecture. Run it from the Actions tab; the packages are attached to
-# the run as "linux-x64" and "linux-arm64".
+name: Desktop packages
+# Builds the desktop app's installers for Linux and Windows: .deb (Debian, Ubuntu) and .rpm
+# (Fedora, openSUSE) for x86-64 and ARM64, and .msi for Windows (x86-64, which Windows on ARM
+# runs too). The packages bundle JavaFX's native code and a Java runtime, so each is built on
+# its own system and architecture. Run it from the Actions tab; the packages are attached to
+# the run as "linux-x64", "linux-arm64" and "windows-x64". (The macOS .dmg is built locally,
+# signed and notarized, by scripts/macos-release.sh.)
 on:
   workflow_dispatch:
+defaults:
+  run:
+    # Git Bash on Windows, so the steps are the same everywhere.
+    shell: bash
 jobs:
   package:
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Pinned: ubuntu-latest moves to Ubuntu 26 from 2026-10-19. Bump deliberately.
+          # Pinned runner images (the -latest ones move to new versions). Bump deliberately.
           - runner: ubuntu-24.04
-            arch: x64
+            name: linux-x64
+            tasks: :desktopApp:packageDeb :desktopApp:packageRpm
           - runner: ubuntu-24.04-arm
-            arch: arm64
+            name: linux-arm64
+            tasks: :desktopApp:packageDeb :desktopApp:packageRpm
+          - runner: windows-2025
+            name: windows-x64
+            tasks: :desktopApp:packageMsi
     runs-on: ${{ matrix.runner }}
     steps:
       - uses: actions/checkout@v7
@@ -26,8 +37,10 @@ jobs:
           distribution: temurin
           java-version: 21
           cache: gradle
-      # jpackage uses dpkg-deb (preinstalled) and rpmbuild for the packages.
+      # jpackage uses dpkg-deb (preinstalled) and rpmbuild for the Linux packages. (For the .msi,
+      # the build downloads the WiX toolset itself.)
       - name: Install rpm
+        if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends rpm
       # The Gradle wrapper downloads Gradle (~130 MB, from GitHub release assets) in one try and
       # gives up on a stall. curl retries, resumes partial downloads and drops stalled transfers;
@@ -39,15 +52,19 @@ jobs:
           zip="$RUNNER_TEMP/$(basename "$url")"
           curl -fL --retry 6 --retry-all-errors --retry-delay 10 --connect-timeout 30 \
             --speed-limit 50000 --speed-time 30 -C - -o "$zip" "$url"
-          sed -i.bak "s|^distributionUrl=.*|distributionUrl=file\\://$zip|" "$props" && rm "$props.bak"
+          # A file: URL needs /D:/a/... on Windows.
+          path="$zip"
+          if command -v cygpath >/dev/null; then path="/$(cygpath -m "$zip")"; fi
+          sed -i.bak "s|^distributionUrl=.*|distributionUrl=file\\://$path|" "$props" && rm "$props.bak"
           ./gradlew --version
       - name: Build the packages
         # The bundled Java runtime is made from the Temurin 21 set up above.
-        run: ./gradlew --no-daemon :desktopApp:packageDeb :desktopApp:packageRpm -Pdaranotes.packagingJdk="$JAVA_HOME"
+        run: ./gradlew --no-daemon ${{ matrix.tasks }} -Pdaranotes.packagingJdk="$JAVA_HOME"
       - uses: actions/upload-artifact@v7
         with:
-          name: linux-${{ matrix.arch }}
+          name: ${{ matrix.name }}
           path: |
             desktopApp/build/compose/binaries/main/deb/*.deb
             desktopApp/build/compose/binaries/main/rpm/*.rpm
+            desktopApp/build/compose/binaries/main/msi/*.msi
           if-no-files-found: error
