@@ -163,8 +163,9 @@ TEAM_ID = ABCDE12345
 
 *Build iOS release* (`scripts/ios-release.sh`) archives and exports a signed `.ipa` for
 TestFlight and the App Store into `iosApp/build/release/export/` (`scripts/ios-release.sh
-release-testing` for an ad hoc build). Its build number is the date and time, so each
-upload to App Store Connect is higher than the last. Signing is automatic, with the Apple ID in *Xcode >
+release-testing` for an ad hoc build). Its build number is the date and time
+(year.monthday.hourminute, the same as the Mac App Store build), so each upload to App Store
+Connect is higher than the last. Signing is automatic, with the Apple ID in *Xcode >
 Settings > Accounts* or an App Store Connect API key (see the script).
 
 How it differs from Android:
@@ -206,7 +207,7 @@ and *Build release AAB* run the matching Gradle tasks.
 | `scripts/macos-dmg.sh` | Puts the packaged macOS app in a `.dmg` with a link to Applications, the arrow background and the app's disk icon (`desktopApp/packaging/`, `desktopApp/icons/app.icns`), using dmgbuild, which it installs into `desktopApp/build/dmgbuild`. |
 | `scripts/ios-release.sh` | Archives the iOS app and exports a signed `.ipa` (TestFlight/App Store, or ad hoc). |
 | `scripts/ios-run.sh` | Builds the iOS app and runs it in the iOS Simulator (optionally pass a simulator name or ID). |
-| `scripts/bump-version.sh` | Raises the version of all the apps together: `micro` (1.2.3 to 1.2.4), `minor` (1.3.0), `major` (2.0.0), or an exact version such as `1.4.0`. Also adds 1 to the Android `versionCode` and the iOS build number, which `build` raises alone (for another upload of the same version). `--dry-run` shows the change without writing it. Doesn't commit or tag. |
+| `scripts/bump-version.sh` | Raises the version of all the apps together: `micro` (1.2.3 to 1.2.4), `minor` (1.3.0), `major` (2.0.0), or an exact version such as `1.4.0`. Also adds 1 to the Android `versionCode`, which `build` raises alone (for another upload of the same version); the iOS and Mac App Store build numbers are the date and time, set by their release scripts. `--dry-run` shows the change without writing it. Doesn't commit or tag. |
 | `scripts/changelog.sh` | Regenerates `CHANGELOG.md` with git-cliff (`.cliff.toml`) and lists commits it skipped. |
 
 The JavaScript libraries are committed, so a checkout builds without Node.js or network

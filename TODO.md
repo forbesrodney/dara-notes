@@ -1,15 +1,17 @@
 # TODO
 
-## Future Ideas/Work (v1.1+) - not all will become reality
+## Future Ideas/Work
+
+Not all of these will become reality.
 
 - Linux
-  - [ ] add Linux packages to appropriate package managers for Ubuntu, Debian, Fedora and RedHat
-  - [ ] add Linux packages to Homebrew
+  - [ ] add to appropriate package managers for Ubuntu, Debian, Fedora and RedHat
+  - [ ] add to Linux Homebrew
 - macOS
-  - [ ] add macOS packages to Homebrew
+  - [ ] add to macOS Homebrew
 - Windows
-  - [ ] get Windows build properly signed
-  - [ ] add Windows packages to the Microsoft Store
+  - [ ] properly sign build
+  - [ ] add to Microsoft Store
 - General
   - [ ] ability to encrypt the repo
     - this would break compatibility with Foam
@@ -18,28 +20,17 @@
   - [ ] enhance template support
     - support missing variables - $FOAM_DATE_FORMAT, $FOAM_CURRENT_DIR (not sure why), $FOAM_PREVIOUS_DAILY_NOTE (not sure how)
     - support missing VSCode style variables - ${1:placeholder} tab stops, maybe ${VAR:default} (not sure how)
-
-## Planned Tasks (v1.1) - if checked and still here, it needs testing
-
-- [x] Windows desktop app
-- [x] Linux desktop app
  
-## Planned Tasks (v1.0)
+## Needs Testing
 
-- Nothing
+- [ ] Windows desktop app (msi)
+- [ ] Linux desktop app (rpm, deb)
 
 ## Known Issues
 
-<!-- ### Android App -->
-<!-- ### iOS App -->
-
-### Mac Desktop App
-
-- [ ] menu and picker jumps/flickers in desktop app
-  - maybe hide until it settles
-- [ ] missing cursor when naming note
-- [ ] double keychain access prompt with debug build of the desktop app
-  - does not seem to affect the release build
-
-<!-- ### Linux Desktop App -->
-<!-- ### Window Desktop App -->
+- Mac Desktop App
+  - [ ] menu and picker jumps/flickers in desktop app
+    - maybe hide until it settles
+  - [ ] missing cursor when naming note
+  - [ ] double keychain access prompt with debug build of the desktop app
+    - does not seem to affect the release build

@@ -3,14 +3,15 @@
 #   scripts/bump-version.sh micro     # 1.2.3 -> 1.2.4
 #   scripts/bump-version.sh minor     # 1.2.3 -> 1.3.0
 #   scripts/bump-version.sh major     # 1.2.3 -> 2.0.0
-#   scripts/bump-version.sh build     # same version, next build number (e.g. another TestFlight upload)
+#   scripts/bump-version.sh build     # same version, next Android versionCode (another Play upload)
 #   scripts/bump-version.sh 1.4.0     # a version of your choosing
 # Add --dry-run to see the change without writing it.
 #
 # The version is written to:
 #   androidApp/build.gradle.kts         versionName, and versionCode + 1
 #   desktopApp/build.gradle.kts         packageVersion
-#   iosApp/Configuration/Config.xcconfig  MARKETING_VERSION, and CURRENT_PROJECT_VERSION + 1
+#   iosApp/Configuration/Config.xcconfig  MARKETING_VERSION
+# (The iOS and Mac App Store build numbers are the date and time, set by their release scripts.)
 # Nothing is committed or tagged.
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -40,8 +41,7 @@ android_name=$(read_value "$android" 'versionName\s*=\s*"([^"]+)"')
 android_code=$(read_value "$android" 'versionCode\s*=\s*(\d+)')
 desktop_version=$(read_value "$desktop" 'packageVersion\s*=\s*"([^"]+)"')
 ios_version=$(read_value "$ios" '^\s*MARKETING_VERSION\s*=\s*(\S+)')
-ios_build=$(read_value "$ios" '^\s*CURRENT_PROJECT_VERSION\s*=\s*(\d+)')
-for v in android_name android_code desktop_version ios_version ios_build; do
+for v in android_name android_code desktop_version ios_version; do
     [ -n "${!v}" ] || { echo "Couldn't find the current version ($v)." >&2; exit 1; }
 done
 
@@ -67,15 +67,13 @@ esac
 [ "${next%%.*}" -ge 1 ] || { echo "The major version must be 1 or more (macOS requires it)." >&2; exit 1; }
 
 next_code=$((android_code + 1))
-next_build=$((ios_build + 1))
 echo "Version: $current -> $next"
 echo "Android versionCode: $android_code -> $next_code"
-echo "iOS build number: $ios_build -> $next_build"
 $dry && { echo "(dry run: nothing written)"; exit 0; }
 
 perl -pi -e "s/(versionName\s*=\s*\")[^\"]+/\${1}$next/; s/(versionCode\s*=\s*)\d+/\${1}$next_code/" "$android"
 perl -pi -e "s/(packageVersion\s*=\s*\")[^\"]+/\${1}$next/" "$desktop"
-perl -pi -e "s/^(\s*MARKETING_VERSION\s*=\s*)\S+/\${1}$next/; s/^(\s*CURRENT_PROJECT_VERSION\s*=\s*)\d+/\${1}$next_build/" "$ios"
+perl -pi -e "s/^(\s*MARKETING_VERSION\s*=\s*)\S+/\${1}$next/" "$ios"
 
 git --no-pager diff --stat -- "$android" "$desktop" "$ios" 2>/dev/null || true
 [ "$part" = build ] || echo "When it's committed, tag it with:  git tag v$next"
