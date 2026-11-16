@@ -1,7 +1,7 @@
 # Dara Notes
 
-An app for Markdown notes kept in a Git repository, for Android, iOS and the desktop (macOS
-and Linux; the same code runs on Windows). It works with
+An app for Markdown notes kept in a Git repository, for Android, iOS and the desktop (macOS,
+Windows and Linux). It works with
 [Foam](https://foambubble.github.io/foam/) workspaces: it reads Foam's settings and
 templates and follows its conventions for links, tags and daily notes. Dara Notes is an
 independent project, not made by or affiliated with the Foam developers.
@@ -72,12 +72,21 @@ bundled Java runtime and JavaFX are native.
 
 On Linux, `./gradlew :desktopApp:packageDeb :desktopApp:packageRpm` builds both packages (`.rpm`
 needs the `rpm` package, for `rpmbuild`). They install the app in `/opt/dara-notes` with an entry
-in the applications menu (Office). Or let GitHub build them: the *Linux packages* workflow
-(`.github/workflows/linux.yml`, run by hand from the Actions tab) builds both for x86-64 and
-ARM64 and attaches them to the run as `linux-x64` and `linux-arm64`. Install with
-`sudo apt install ./dara-notes_*.deb` (Debian, Ubuntu) or `sudo dnf install ./dara-notes-*.rpm`
-(Fedora), which also install what the package needs. The access token is kept in the Secret
-Service (GNOME Keyring or KWallet), which desktop Linux has unlocked when you're logged in.
+in the applications menu (Office). Install with `sudo apt install ./dara-notes_*.deb` (Debian,
+Ubuntu) or `sudo dnf install ./dara-notes-*.rpm` (Fedora), which also install what the package
+needs. The access token is kept in the Secret Service (GNOME Keyring or KWallet), which
+desktop Linux has unlocked when you're logged in.
+
+On Windows, `gradlew :desktopApp:packageMsi` builds the `.msi` (it downloads the WiX toolset
+it needs). It installs for the current user only, in `%LOCALAPPDATA%`, so it needs no
+administrator, and adds a Start menu entry and a desktop shortcut. A newer `.msi` replaces the
+installed version. It isn't code signed, so the first time it's opened Windows SmartScreen
+warns "Windows protected your PC": choose *More info*, then *Run anyway*. The x86-64 `.msi`
+also runs on Windows on ARM (emulated). The access token is kept in Windows Credential Manager.
+
+GitHub can build all of these: the *Desktop packages* workflow (`.github/workflows/desktop.yml`,
+run by hand from the Actions tab) builds the Linux packages for x86-64 and ARM64 and the
+Windows `.msi`, and attaches them to the run as `linux-x64`, `linux-arm64` and `windows-x64`.
 
 On macOS, the `.dmg` is signed with your *Developer ID Application* certificate when
 `local.properties` (not committed) has your Apple Developer team ID:

@@ -122,6 +122,15 @@ compose.desktop {
             }
             windows {
                 iconFile.set(project.file("icons/app.ico"))
+                // Identifies the app to Windows Installer across versions, so a newer .msi
+                // replaces the installed one instead of installing beside it. Never change it.
+                upgradeUuid = "6f2b1c9e-4d3a-4e8b-9a71-2c5d8e0f3b64"
+                // Into the user's own folder (%LOCALAPPDATA%), so installing needs no administrator.
+                perUserInstall = true
+                menu = true
+                menuGroup = "Dara Notes"
+                shortcut = true
+                dirChooser = false
             }
             linux {
                 iconFile.set(project.file("icons/app.png"))
