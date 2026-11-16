@@ -208,7 +208,7 @@ and *Build release AAB* run the matching Gradle tasks.
 | `scripts/ios-release.sh` | Archives the iOS app and exports a signed `.ipa` (TestFlight/App Store, or ad hoc). |
 | `scripts/ios-run.sh` | Builds the iOS app and runs it in the iOS Simulator (optionally pass a simulator name or ID). |
 | `scripts/bump-version.sh` | Raises the version of all the apps together: `micro` (1.2.3 to 1.2.4), `minor` (1.3.0), `major` (2.0.0), or an exact version such as `1.4.0`. Also adds 1 to the Android `versionCode`, which `build` raises alone (for another upload of the same version); the iOS and Mac App Store build numbers are the date and time, set by their release scripts. `--dry-run` shows the change without writing it. Doesn't commit or tag. |
-| `scripts/changelog.sh` | Regenerates `CHANGELOG.md` with git-cliff (`.cliff.toml`) and lists commits it skipped. |
+| `scripts/changelog.sh` | Keeps `CHANGELOG.md` with git-cliff (`.cliff.toml`). With no argument, previews the changes since the last version tag. `release` adds the next version's section (worked out from the commit types, or `release v1.2.0`) below the header, keeping the rest of the file; then commit it and tag. `notes` prints a release's section for the GitHub release. `full` rebuilds the whole file, hand-written sections included. |
 
 The JavaScript libraries are committed, so a checkout builds without Node.js or network
 access to the CDN. To upgrade one, change its version in `fetch-vendor.sh` (or in
