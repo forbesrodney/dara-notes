@@ -45,6 +45,10 @@ fun main() {
     // each frame back from the GPU into the Swing window anyway. (-Dprism.order overrides it.)
     if (isMac && System.getProperty("prism.order") == null) System.setProperty("prism.order", "sw")
     GitSync.clientName = clientName()
+    // Start AWT before JavaFX. On a Mac, whichever starts first owns the app's NSApplication;
+    // if JavaFX does, AWT runs embedded: the app menu is empty (no Quit) and the menu bar
+    // lands inside the window instead of at the top of the screen.
+    java.awt.Toolkit.getDefaultToolkit()
     Fx.start()
 
     // The app icon, for the window and (when run from Gradle) the Dock.
