@@ -33,7 +33,7 @@ private const val GRAPH_PAGE = "${WebAssets.ORIGIN}/assets/graph.html"
 /** Creates a JFXPanel showing [page]; [onLoaded] runs on the JavaFX thread once it has loaded. */
 private fun webPanel(page: String, background: Color, onCreated: (WebEngine) -> Unit, onLoaded: (WebEngine) -> Unit): JFXPanel {
     Fx.start()
-    val panel = JFXPanel()
+    val panel = WebPanel()
     Fx.run {
         val view = WebView()
         view.isContextMenuEnabled = false
@@ -47,6 +47,51 @@ private fun webPanel(page: String, background: Color, onCreated: (WebEngine) -> 
         engine.load(page)
     }
     return panel
+}
+
+/**
+ * A web view that steps aside while a menu or dialog is open. Compose draws those on the
+ * window's own canvas, which sits under the web views (they're Swing components on top of
+ * it), so where a menu overlapped the preview or graph, the web view got the pointer: the
+ * menu couldn't be clicked or highlighted. Swing asks each component whether it contains
+ * the pointer; while a menu or dialog is open, this one says no, so the pointer goes to the
+ * canvas and the menu, and a click on the web view outside it closes the menu, as elsewhere.
+ */
+private class WebPanel : JFXPanel() {
+    override fun contains(x: Int, y: Int): Boolean = !ComposeLayers.anyOpen(this) && super.contains(x, y)
+}
+
+/**
+ * Whether Compose has a menu, dialog or tooltip open in a component's window. Reads, by
+ * reflection, the list Compose keeps of them (1.12: ComposeWindowPanel._composeContainer
+ * .mediator.scene.layers). If that changes in a later Compose, this says no, and menus over
+ * the web views go back to not taking clicks.
+ */
+private object ComposeLayers {
+    private var failed = false
+
+    fun anyOpen(component: java.awt.Component): Boolean {
+        if (failed) return false
+        return runCatching {
+            var c: java.awt.Container? = component.parent
+            while (c != null && c.javaClass.simpleName != "ComposeWindowPanel") c = c.parent
+            c ?: return false
+            val container = c.get("_composeContainer") ?: return false
+            val mediator = container.get("mediator") ?: return false
+            val scene = (mediator.get("scene\$delegate") as Lazy<*>).value ?: return false
+            (scene.get("layers") as List<*>).isNotEmpty()
+        }.getOrElse { failed = true; false }
+    }
+
+    private fun Any.get(name: String): Any? {
+        var k: Class<*>? = javaClass
+        while (k != null) {
+            val f = runCatching { k.getDeclaredField(name) }.getOrNull()
+            if (f != null) return f.apply { isAccessible = true }.get(this)
+            k = k.superclass
+        }
+        error("No field $name in $javaClass")
+    }
 }
 
 private fun fxColor(c: Color): javafx.scene.paint.Color {

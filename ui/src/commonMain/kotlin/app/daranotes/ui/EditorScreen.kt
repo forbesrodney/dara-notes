@@ -158,9 +158,7 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     var editingTags by remember { mutableStateOf(false) }
     var knownTags by remember { mutableStateOf(emptyList<String>()) }
     var moving by remember { mutableStateOf(false) }
-    // Links out and in, for the counts beside Connections in the menu: worked out when the
-    // note opens (so they're ready the first time) and again each time the menu opens, from
-    // the text as edited.
+    // Links out and in, for the counts beside Connections in the menu.
     var connectionCounts by remember(path) { mutableStateOf<Pair<Int, Int>?>(null) }
     val notes by vm.notes.collectAsState()
     val sync by vm.syncState.collectAsState()
@@ -200,9 +198,12 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
             if (text != saved) { vm.save(path, text); saved = text }
         }
     }
-    LaunchedEffect(menu, path) {
-        if (isTemplate || (!menu && connectionCounts != null)) return@LaunchedEffect
-        val text = value.text
+    // Worked out when the note opens, after each save and when the notes change (a sync), not
+    // when the menu opens: a count arriving after the menu has appeared can make it wider, and
+    // the menu then moves.
+    LaunchedEffect(path, saved, notes) {
+        if (isTemplate) return@LaunchedEffect
+        val text = saved
         connectionCounts = withContext(ioDispatcher) { runCatching { vm.repo.connectionCounts(path, text) }.getOrNull() }
     }
     // Save anything pending when leaving the note.

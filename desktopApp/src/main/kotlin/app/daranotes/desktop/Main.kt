@@ -32,10 +32,10 @@ import java.awt.event.WindowEvent
 import javax.imageio.ImageIO
 
 fun main() {
-    // The web views are native (Swing/JavaFX) components. Menus and dialogs drawn inside the
-    // window would show over them but lose their clicks to them, so give each its own window.
-    System.setProperty("compose.layers.type", "WINDOW")
-    showLayerWindowsOnOpen()
+    // Menus and dialogs are drawn on the window's own canvas (Compose's default), under the
+    // web views, which step aside while one is open (WebPanel in PlatformViews.jvm.kt). Giving
+    // each a window of its own (compose.layers.type=WINDOW) also works, but Compose moves and
+    // resizes a menu's window as the menu draws, and the menu jumped.
     System.setProperty("compose.interop.blending", "true")
     // On a Mac, the menu bar goes at the top of the screen, where Help is expected.
     if (isMac) System.setProperty("apple.laf.useScreenMenuBar", "true")
