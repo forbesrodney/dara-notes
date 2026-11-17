@@ -14,17 +14,32 @@ android {
     defaultConfig {
         applicationId = "app.daranotes"
         minSdk = 26
-        targetSdk = 35
+        targetSdk = 36
         versionCode = 1
-        versionName = "1.0"
+        versionName = "1.0.0"
+    }
+
+    // The Play upload key, from ~/.gradle/gradle.properties (never committed):
+    //   DARA_KEYSTORE, DARA_KEYSTORE_PASSWORD, DARA_KEY_ALIAS, DARA_KEY_PASSWORD
+    // Without them (CI, other machines), release builds use the debug key, which installs
+    // directly but which Play rejects.
+    val uploadKey = listOf("DARA_KEYSTORE", "DARA_KEYSTORE_PASSWORD", "DARA_KEY_ALIAS", "DARA_KEY_PASSWORD")
+        .map { providers.gradleProperty(it).orNull }
+    signingConfigs {
+        if (uploadKey.all { it != null }) {
+            create("upload") {
+                storeFile = file(uploadKey[0]!!)
+                storePassword = uploadKey[1]
+                keyAlias = uploadKey[2]
+                keyPassword = uploadKey[3]
+            }
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            // Signed with the debug key so the release APK installs directly.
-            // Replace with your own signing config before distributing.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.findByName("upload") ?: signingConfigs.getByName("debug")
         }
     }
     compileOptions {
