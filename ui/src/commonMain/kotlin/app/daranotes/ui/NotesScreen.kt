@@ -25,7 +25,6 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Home
@@ -169,7 +168,7 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                     if (desktop) {
                         Tip(withShortcut("Today's note", "D")) {
                             IconButton(onClick = vm::openDailyNote) {
-                                Icon(Icons.Default.DateRange, contentDescription = "Today's note")
+                                Icon(TodayIcon, contentDescription = "Today's note")
                             }
                         }
                         Tip(withShortcut("New note", "N")) {
@@ -271,7 +270,7 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
             if (desktop) return@Scaffold
             // Two matching buttons: the same height, and as wide as the wider of the two.
             Column(Modifier.width(IntrinsicSize.Max), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                ListActionButton(Icons.Default.DateRange, "Today", vm::openDailyNote)
+                ListActionButton(TodayIcon, "Today", vm::openDailyNote)
                 ListActionButton(Icons.Default.Add, "New note") { showNew = true }
             }
         },
@@ -638,7 +637,16 @@ val TagIcon: ImageVector by lazy {
     )
 }
 
-/** Material "calendar_month" icon, for the Calendar (Today has "date_range"). */
+/** Material "today" icon (a calendar with one day marked), for Today's note. */
+val TodayIcon: ImageVector by lazy {
+    menuIcon(
+        "Today",
+        "M19,3h-1V1h-2v2H8V1H6v2H5C3.89,3 3.01,3.9 3.01,5L3,19c0,1.1 0.89,2 2,2h14c1.1,0 2,-0.9 2,-2V5" +
+            "c0,-1.1 -0.9,-2 -2,-2zM19,19H5V8h14V19zM7,10h5v5H7V10z",
+    )
+}
+
+/** Material "calendar_month" icon, for the Calendar. */
 val CalendarIcon: ImageVector by lazy {
     menuIcon(
         "Calendar",
