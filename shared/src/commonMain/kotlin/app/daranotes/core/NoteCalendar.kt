@@ -51,8 +51,11 @@ object NoteCalendar {
         return (daily.keys + edited.keys).associateWith { day ->
             CalendarDay(
                 daily = daily[day].orEmpty().sortedBy { it.path },
-                // Latest edit first, like the note list.
-                edited = edited[day].orEmpty().sortedByDescending { it.first }.map { it.second },
+                // Latest edit first, like the note list; notes from one commit share a time,
+                // so those go by title, the same on every device.
+                edited = edited[day].orEmpty()
+                    .sortedWith(compareByDescending<Pair<Long, Note>> { it.first }.thenBy { it.second.title.lowercase() })
+                    .map { it.second },
             )
         }
     }

@@ -41,6 +41,14 @@ class NoteCalendarTest {
     }
 
     @Test
+    fun notesFromOneCommitGoByTitle() {
+        val notes = listOf("Scones", "brown bread", "Irish Stew").map { Note("recipes/$it.md", it, modified = nov12) }
+        val times = EditTimes(notes.associate { it.path to nov10 }, emptySet())
+        val day = NoteCalendar.days(notes, times, TimeZone.UTC).getValue(LocalDate(2026, 11, 10))
+        assertEquals(listOf("brown bread", "Irish Stew", "Scones"), day.edited.map { it.title })
+    }
+
+    @Test
     fun monthGridHasWholeWeeks() {
         // November 2026 starts on a Sunday and has 30 days.
         val sundayFirst = NoteCalendar.monthGrid(LocalDate(2026, 11, 1), weekStart = 7)
