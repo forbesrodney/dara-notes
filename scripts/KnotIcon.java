@@ -8,6 +8,7 @@
 //   png <px> full <out.png>           opaque navy square (iOS rounds the corners itself)
 //   svg <out.svg>                     the tile as SVG artwork (1024 x 1024)
 //   android <res dir>                 adaptive icon: foreground, monochrome and background
+//   feature <out.png>                 Google Play feature graphic (1024 x 500): knot, name and tagline
 // Uses only the JDK.
 import java.awt.*;
 import java.awt.geom.*;
@@ -170,6 +171,31 @@ public class KnotIcon {
         ImageIO.write(img, "png", new File(out));
     }
 
+    /** Google Play's feature graphic: 1024 x 500, opaque, the knot beside the name and tagline. */
+    static void feature(String out) throws IOException {
+        samples = 1440;
+        int w = 1024, h = 500;
+        BufferedImage img = new BufferedImage(w, h, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g = smooth(img);
+        g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+        g.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+        g.setColor(NAVY);
+        g.fillRect(0, 0, w, h);
+        // The knot as on a 460 px icon, so the band keeps the icon's proportions.
+        double square = 460;
+        draw(g, 255, h / 2.0, EXTENT * square, square);
+        int x = 480;
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Avenir Next", Font.BOLD, 92));
+        g.drawString("Dara Notes", x, 235);
+        g.setColor(GOLD);
+        g.setFont(new Font("Avenir Next", Font.PLAIN, 36));
+        g.drawString("Markdown notes in your", x, 305);
+        g.drawString("own Git repository", x, 353);
+        g.dispose();
+        ImageIO.write(img, "png", new File(out));
+    }
+
     static String hex(Color c) { return String.format("#%06x", c.getRGB() & 0xffffff); }
 
     /** SVG / Android path data for [shape], flattened to lines. */
@@ -230,6 +256,7 @@ public class KnotIcon {
                 case "png" -> { png(a, i); i += a[i + 2].equals("tile") ? 5 : 4; }
                 case "svg" -> { svg(a[i + 1]); i += 2; }
                 case "android" -> { android(a[i + 1]); i += 2; }
+                case "feature" -> { feature(a[i + 1]); i += 2; }
                 default -> throw new IllegalArgumentException("Unknown job " + a[i]);
             }
         }

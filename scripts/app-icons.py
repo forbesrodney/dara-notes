@@ -6,7 +6,8 @@ It writes:
   desktopApp/src/main/resources/app-icon.png (the window and Dock icon), the iOS icon
   iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png (opaque, as iOS requires;
   iOS rounds the corners itself), the Android adaptive icon (androidApp/src/main/res:
-  mipmap-anydpi-v26/ic_launcher.xml and its layers) and the artwork, art/dara_icon.svg.
+  mipmap-anydpi-v26/ic_launcher.xml and its layers), the artwork, art/dara_icon.svg, and the
+  Google Play listing's icon and feature graphic, art/play/icon-512.png and feature-graphic.png.
 It also draws the window background of the macOS .dmg, an arrow from the app to the
 Applications folder: desktopApp/packaging/dmg-background.tiff (1x and 2x, via tiffutil).
 Needs a JDK (java on the PATH) for KnotIcon.java; otherwise only the Python standard library.
@@ -96,7 +97,7 @@ def main():
     ios = os.path.join(ROOT, "iosApp/iosApp/Assets.xcassets/AppIcon.appiconset")
     os.makedirs(res, exist_ok=True)
     os.makedirs(ios, exist_ok=True)
-    os.makedirs(os.path.join(ROOT, "art"), exist_ok=True)
+    os.makedirs(os.path.join(ROOT, "art/play"), exist_ok=True)
     with tempfile.TemporaryDirectory() as tmp:
         jobs, ico = [], []
         iconset = os.path.join(tmp, "app.iconset")
@@ -113,6 +114,9 @@ def main():
             ["png", "1024", "full", os.path.join(ios, "AppIcon-1024.png")],
             ["svg", os.path.join(ROOT, "art/dara_icon.svg")],
             ["android", os.path.join(ROOT, "androidApp/src/main/res")],
+            # Google Play: opaque, full square (Play rounds the corners itself).
+            ["png", "512", "full", os.path.join(ROOT, "art/play/icon-512.png")],
+            ["feature", os.path.join(ROOT, "art/play/feature-graphic.png")],
         ]
         knot(*jobs)
         # macOS .icns from the .iconset folder.
@@ -132,7 +136,7 @@ def main():
             f.write(header + entries + b"".join(images))
     print("Wrote desktopApp/icons/app.icns, app.ico, app.png, desktopApp/src/main/resources/app-icon.png,")
     print("  iosApp/iosApp/Assets.xcassets/AppIcon.appiconset/AppIcon-1024.png, the Android adaptive icon")
-    print("  and art/dara_icon.svg")
+    print("  art/dara_icon.svg, and art/play/icon-512.png and feature-graphic.png (Google Play)")
     write_dmg_background()
 
 
