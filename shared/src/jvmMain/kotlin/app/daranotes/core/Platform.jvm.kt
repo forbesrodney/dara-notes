@@ -10,6 +10,7 @@ import java.time.chrono.IsoChronology
 import java.time.format.DateTimeFormatterBuilder
 import java.time.format.FormatStyle
 import java.time.format.TextStyle
+import java.time.temporal.WeekFields
 import java.util.Locale
 
 internal actual fun <T> locked(lock: Any, block: () -> T): T = synchronized(lock, block)
@@ -47,6 +48,8 @@ actual object PlatformDates {
 
     actual fun dayName(isoDay: Int, short: Boolean): String =
         DayOfWeek.of(isoDay).getDisplayName(style(short), Locale.getDefault())
+
+    actual fun firstDayOfWeek(): Int = WeekFields.of(Locale.getDefault()).firstDayOfWeek.value
 
     actual fun shortDatePattern(): String = runCatching {
         DateTimeFormatterBuilder.getLocalizedDateTimePattern(

@@ -229,6 +229,11 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                             )
                             HorizontalDivider()
                             DropdownMenuItem(
+                                text = { Text("Calendar") },
+                                leadingIcon = { Icon(CalendarIcon, null) },
+                                onClick = { more = false; vm.navigate(Screen.Calendar) },
+                            )
+                            DropdownMenuItem(
                                 text = { Text("Tags") },
                                 trailingIcon = { MenuCount(overview?.tags) },
                                 leadingIcon = { Icon(TagIcon, null) },
@@ -611,7 +616,6 @@ internal fun menuIcon(name: String, path: String): ImageVector =
         .addPath(pathData = addPathNodes(path), fill = SolidColor(Color.Black))
         .build()
 
-/** Material "label" icon, for Tags (not in material-icons-core). */
 /** Material "file_copy" icon (a page in front of another), for Create note from template. */
 val NoteFromTemplateIcon: ImageVector by lazy {
     menuIcon(
@@ -622,11 +626,22 @@ val NoteFromTemplateIcon: ImageVector by lazy {
     )
 }
 
+/** Material "label" icon, for Tags (not in material-icons-core). */
 val TagIcon: ImageVector by lazy {
     menuIcon(
         "Tag",
         "M17.63,5.84C17.27,5.33 16.67,5 16,5L5,5.01C3.9,5.01 3,5.9 3,7v10c0,1.1 0.9,1.99 2,1.99L16,19" +
             "c0.67,0 1.27,-0.33 1.63,-0.84L22,12l-4.37,-6.16z",
+    )
+}
+
+/** Material "calendar_month" icon, for the Calendar (Today has "date_range"). */
+val CalendarIcon: ImageVector by lazy {
+    menuIcon(
+        "Calendar",
+        "M19,4h-1V2h-2v2H8V2H6v2H5C3.89,4 3.01,4.9 3.01,6L3,20c0,1.1 0.89,2 2,2h14c1.1,0 2,-0.9 2,-2V6" +
+            "C21,4.9 20.1,4 19,4zM19,20H5V10h14V20zM9,14H7v-2h2V14zM13,14h-2v-2h2V14zM17,14h-2v-2h2V14z" +
+            "M9,18H7v-2h2V18zM13,18h-2v-2h2V18zM17,18h-2v-2h2V18z",
     )
 }
 

@@ -54,7 +54,7 @@ class LibGit2EngineTest {
     }
 
     private fun write(dir: Path, name: String, text: String) {
-        fs.createDirectories(dir)
+        fs.createDirectories((dir / name).parent!!)
         fs.write(dir / name) { writeUtf8(text) }
     }
 
@@ -117,5 +117,20 @@ class LibGit2EngineTest {
         write(a, "note.md", "hi\n")
         assertEquals("Committed 1 file(s) locally", LibGit2Engine.sync(a, s).message)
         assertEquals("No changes", LibGit2Engine.sync(a, s).message)
+    }
+
+    @Test fun editTimes() {
+        val s = settings("Local").apply { remoteUrl = "" }
+        LibGit2Engine.cloneFresh(a, s)
+        assertEquals(EditTimes.NONE, LibGit2Engine.editTimes(a))
+        write(a, "one.md", "one\n")
+        write(a, "sub/two.md", "two\n")
+        LibGit2Engine.sync(a, s)
+        write(a, "one.md", "one, edited\n")
+        write(a, "sub/three.md", "three\n")
+        val times = LibGit2Engine.editTimes(a)
+        assertEquals(setOf("one.md", "sub/two.md"), times.committed.keys)
+        assertTrue(times.committed.values.all { kotlin.math.abs(it - Dates.nowMillis()) < 60_000 }, times.toString())
+        assertEquals(setOf("one.md", "sub/three.md"), times.uncommitted)
     }
 }

@@ -6,6 +6,7 @@ import kotlinx.coroutines.IO
 import kotlinx.cinterop.addressOf
 import kotlinx.cinterop.usePinned
 import platform.Foundation.NSData
+import platform.Foundation.NSCalendar
 import platform.Foundation.NSDateFormatter
 import platform.Foundation.NSHTTPURLResponse
 import platform.Foundation.NSMutableURLRequest
@@ -81,6 +82,9 @@ actual object PlatformDates {
         val names = formatter().let { if (short) it.shortWeekdaySymbols else it.weekdaySymbols }
         return names.getOrNull(isoDay % 7) as? String ?: isoDay.toString()
     }
+
+    // Foundation numbers weekdays from Sunday (1) to Saturday (7).
+    actual fun firstDayOfWeek(): Int = NSCalendar.currentCalendar.firstWeekday.toInt().let { if (it == 1) 7 else it - 1 }
 
     actual fun shortDatePattern(): String =
         NSDateFormatter.dateFormatFromTemplate("yMd", 0u, NSLocale.currentLocale) ?: "y-MM-dd"

@@ -7,9 +7,13 @@ import org.eclipse.jgit.api.ResetCommand
 import org.eclipse.jgit.lib.Constants
 import org.eclipse.jgit.lib.PersonIdent
 import org.eclipse.jgit.merge.MergeStrategy
+import org.eclipse.jgit.revwalk.RevWalk
 import org.eclipse.jgit.transport.RefSpec
 import org.eclipse.jgit.transport.RemoteRefUpdate
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider
+import org.eclipse.jgit.treewalk.EmptyTreeIterator
+import org.eclipse.jgit.treewalk.TreeWalk
+import org.eclipse.jgit.treewalk.filter.TreeFilter
 import okio.Path
 import java.io.File
 
@@ -33,6 +37,38 @@ internal object JGitEngine : GitEngine {
     }
 
     override fun sync(dir: Path, s: Settings): SyncResult = doSync(dir.toFile(), s)
+
+    override fun editTimes(dir: Path): EditTimes {
+        val d = dir.toFile()
+        if (!File(d, ".git").exists()) return EditTimes.NONE
+        Git.open(d).use { git ->
+            val repo = git.repository
+            val status = git.status().call()
+            val uncommitted = status.uncommittedChanges + status.untracked
+            val head = repo.resolve(Constants.HEAD) ?: return EditTimes(emptyMap(), uncommitted)
+            val times = HashMap<String, Long>()
+            RevWalk(repo).use { walk ->
+                walk.markStart(walk.parseCommit(head))
+                for (commit in walk) {
+                    // A merge's changes were made, and dated, in the commits it joins.
+                    if (commit.parentCount > 1) continue
+                    val time = commit.authorIdent.`when`.time
+                    TreeWalk(repo).use { tw ->
+                        tw.isRecursive = true
+                        tw.filter = TreeFilter.ANY_DIFF
+                        if (commit.parentCount == 1) tw.addTree(walk.parseCommit(commit.getParent(0)).tree)
+                        else tw.addTree(EmptyTreeIterator())
+                        tw.addTree(commit.tree)
+                        while (tw.next()) {
+                            val path = tw.pathString
+                            if (time > (times[path] ?: 0L)) times[path] = time
+                        }
+                    }
+                }
+            }
+            return EditTimes(times, uncommitted)
+        }
+    }
 
     private fun credentials(s: Settings) =
         if (s.token.isNotBlank()) UsernamePasswordCredentialsProvider(s.username.ifBlank { "git" }, s.token)

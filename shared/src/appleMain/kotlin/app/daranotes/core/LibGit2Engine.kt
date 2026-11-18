@@ -22,11 +22,13 @@ import kotlinx.cinterop.value
 import cnames.structs.git_annotated_commit
 import cnames.structs.git_commit
 import cnames.structs.git_config
+import cnames.structs.git_diff
 import cnames.structs.git_index
 import cnames.structs.git_index_conflict_iterator
 import cnames.structs.git_object
 import cnames.structs.git_reference
 import cnames.structs.git_remote
+import cnames.structs.git_revwalk
 import cnames.structs.git_repository
 import cnames.structs.git_status_list
 import cnames.structs.git_tree
@@ -157,6 +159,89 @@ internal object LibGit2Engine : GitEngine {
                 check(git_remote_create(remote.ptr, repo, "origin", s.remoteUrl.trim()))
                 git_remote_free(remote.value)
             }
+        }
+    }
+
+    override fun editTimes(dir: Path): EditTimes = memScoped {
+        if (!FileSystem.SYSTEM.exists(dir / ".git")) return@memScoped EditTimes.NONE
+        val repoVar = alloc<CPointerVar<git_repository>>()
+        check(git_repository_open(repoVar.ptr, dir.toString()))
+        val repo = repoVar.value!!
+        try {
+            val times = HashMap<String, Long>()
+            if (oidOf(repo, "HEAD") != null) {
+                val walk = alloc<CPointerVar<git_revwalk>>()
+                check(git_revwalk_new(walk.ptr, repo))
+                try {
+                    check(git_revwalk_push_head(walk.value))
+                    val id = alloc<git_oid>()
+                    while (git_revwalk_next(id.ptr, walk.value) == 0) memScoped {
+                        val commit = lookupCommit(repo, id)
+                        try {
+                            val parents = git_commit_parentcount(commit).toInt()
+                            // A merge's changes were made, and dated, in the commits it joins.
+                            if (parents <= 1) {
+                                val time = git_commit_author(commit)!!.pointed.`when`.time * 1000
+                                for (path in changedPaths(repo, commit, parents)) {
+                                    if (time > (times[path] ?: 0L)) times[path] = time
+                                }
+                            }
+                        } finally {
+                            git_commit_free(commit)
+                        }
+                    }
+                } finally {
+                    git_revwalk_free(walk.value)
+                }
+            }
+            EditTimes(times, uncommittedPaths(repo))
+        } finally {
+            git_repository_free(repo)
+        }
+    }
+
+    /** The paths [commit] changed from its parent (or added, with no parent). */
+    private fun MemScope.changedPaths(repo: CPointer<git_repository>, commit: CPointer<git_commit>, parents: Int): List<String> {
+        val tree = alloc<CPointerVar<git_tree>>()
+        val parent = alloc<CPointerVar<git_commit>>()
+        val parentTree = alloc<CPointerVar<git_tree>>()
+        val diff = alloc<CPointerVar<git_diff>>()
+        try {
+            check(git_commit_tree(tree.ptr, commit))
+            if (parents == 1) {
+                check(git_commit_parent(parent.ptr, commit, 0u))
+                check(git_commit_tree(parentTree.ptr, parent.value))
+            }
+            check(git_diff_tree_to_tree(diff.ptr, repo, parentTree.value, tree.value, null))
+            val n = git_diff_num_deltas(diff.value).toInt()
+            return (0 until n).mapNotNull { i ->
+                git_diff_get_delta(diff.value, i.toULong())?.pointed?.new_file?.path?.toKString()
+            }
+        } finally {
+            git_diff_free(diff.value)
+            git_tree_free(parentTree.value)
+            git_commit_free(parent.value)
+            git_tree_free(tree.value)
+        }
+    }
+
+    /** Files that differ from HEAD: staged, edited in the working tree, or new. */
+    private fun MemScope.uncommittedPaths(repo: CPointer<git_repository>): Set<String> {
+        val opts = alloc<git_status_options>()
+        check(git_status_options_init(opts.ptr, GIT_STATUS_OPTIONS_VERSION.toUInt()))
+        opts.show = GIT_STATUS_SHOW_INDEX_AND_WORKDIR
+        opts.flags = (GIT_STATUS_OPT_INCLUDE_UNTRACKED or GIT_STATUS_OPT_RECURSE_UNTRACKED_DIRS).toUInt()
+        val list = alloc<CPointerVar<git_status_list>>()
+        check(git_status_list_new(list.ptr, repo, opts.ptr))
+        try {
+            val n = git_status_list_entrycount(list.value).toInt()
+            return (0 until n).mapNotNullTo(HashSet()) { i ->
+                val entry = git_status_byindex(list.value, i.toULong())?.pointed ?: return@mapNotNullTo null
+                val delta = (entry.index_to_workdir ?: entry.head_to_index)?.pointed ?: return@mapNotNullTo null
+                (delta.new_file.path ?: delta.old_file.path)?.toKString()
+            }
+        } finally {
+            git_status_list_free(list.value)
         }
     }
 
