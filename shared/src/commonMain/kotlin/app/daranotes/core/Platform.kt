@@ -28,6 +28,9 @@ expect object PlatformDates {
     /** [isoDay] is 1 (Monday) to 7 (Sunday). */
     fun dayName(isoDay: Int, short: Boolean): String
 
+    /** The day weeks start on in the device's region, 1 (Monday) to 7 (Sunday, as in the US). */
+    fun firstDayOfWeek(): Int
+
     /** The locale's short date pattern, e.g. "M/d/yy" in the US or "dd.MM.yy" in Germany. */
     fun shortDatePattern(): String
 }

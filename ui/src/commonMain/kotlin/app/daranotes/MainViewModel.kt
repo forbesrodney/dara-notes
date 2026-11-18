@@ -45,6 +45,8 @@ sealed interface Screen {
     data class Connections(val path: String) : Screen
     /** The templates in .foam/templates, to create, open, rename or delete. */
     data object Templates : Screen
+    /** A month calendar of daily notes and the days other notes were last edited. */
+    data object Calendar : Screen
     /** A help page, by name (see Help). */
     data class Help(val page: String = app.daranotes.ui.Help.INDEX) : Screen
 }
@@ -72,6 +74,13 @@ class MainViewModel(val platform: AppPlatform) : ViewModel() {
         notesTreeView.value = tree
         settings.notesView = if (tree) "tree" else "flat"
     }
+
+    /**
+     * Calendar state: the month shown (its 1st) and the day picked, kept while you open a
+     * note and come back. Null until the calendar first opens, on today.
+     */
+    val calendarMonth = mutableStateOf<kotlinx.datetime.LocalDate?>(null)
+    val calendarDay = mutableStateOf<kotlinx.datetime.LocalDate?>(null)
 
     /** Tag Explorer state: open tags (lowercase), the filter text and the scroll position. */
     val tagsExpanded = mutableStateOf(emptySet<String>())

@@ -9,7 +9,7 @@ so you can switch between the app and VS Code freely.
 - [Writing notes](writing.md): the editor, the preview, tags, checklists, daily notes,
   renaming and exporting.
 - [Finding and organizing notes](organizing.md): the note list, the index note, the graph,
-  connections, tags, orphans and placeholders.
+  the calendar, connections, tags, orphans and placeholders.
 - [Templates](templates.md): new-note and daily-note templates, writing templates in the
   app, picking one, and every template variable.
 - [Foam and repository settings](foam-settings.md): the files in your repository that the

@@ -40,7 +40,19 @@ Drag a node (it springs back), pinch to zoom, and tap a node to highlight its ne
 open it, or to create a missing note. Filters show or hide tags and missing notes. The
 layout is kept while the app runs.
 
-## Connections
+## Calendar
+
+The note list's menu > *Calendar* shows a month at a time. A filled dot marks a day with a
+daily note; a ring marks a day when other notes were last edited. Today is outlined. Tap a
+day to list its notes, then tap a note to open it. *Today* jumps back to this month.
+
+- A daily note is placed by its name (`2026-11-17.md`), whatever folder it's in, and only
+  on that date, even if you edited it later.
+- Other notes are placed by the last commit that changed them, so syncing doesn't move them
+  all to the day you cloned or pulled. A note with changes not synced yet is placed by the
+  time its file was saved.
+- A note that was only moved or renamed counts as edited when it moved.
+
 
 A note's menu > *Connections* works like Foam's Connections panel:
 
