@@ -39,16 +39,10 @@ fun main() {
     System.setProperty("compose.interop.blending", "true")
     // On a Mac, the menu bar goes at the top of the screen, where Help is expected.
     if (isMac) System.setProperty("apple.laf.useScreenMenuBar", "true")
-    // On a Mac, Java2D's Metal renderer garbles the web views on a 1x (non-Retina) screen, such
-    // as an external display: JavaFX draws the page correctly, but copying it into the window
-    // clips the letters ("Dell" drawn as "Cell"). Its OpenGL renderer copies it intact. Compose
-    // draws the rest of the window itself, so this only changes how the web views get on
-    // screen. (-Dsun.java2d.metal=true overrides it.)
-    if (isMac && System.getProperty("sun.java2d.metal") == null) System.setProperty("sun.java2d.metal", "false")
-    // On a Mac, JavaFX draws the web views in software rather than on the GPU (ES2). A JFXPanel
-    // copies each frame back into the Swing window anyway, so the GPU gains little. This was
-    // first done for the garbling above, which it didn't fix; that was most likely the window
-    // ending up on an external display. (-Dprism.order overrides it.)
+    // On a Mac, JavaFX's GPU pipeline (ES2) garbles the web views' text after the app has run
+    // a while: letters lose pieces ("Dell" drawn as "Cell") until a restart, as its cached
+    // glyphs go bad. The software pipeline doesn't, and costs little here: a JFXPanel copies
+    // each frame back from the GPU into the Swing window anyway. (-Dprism.order overrides it.)
     if (isMac && System.getProperty("prism.order") == null) System.setProperty("prism.order", "sw")
     GitSync.clientName = clientName()
     // Start AWT before JavaFX. On a Mac, whichever starts first owns the app's NSApplication;

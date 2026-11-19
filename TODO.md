@@ -1,4 +1,3 @@
-<!-- cSpell:ignore markdownlint -->
 # TODO
 
 ## Future Ideas/Work
@@ -17,7 +16,7 @@ Not all of these will become reality.
   - [ ] ability to encrypt the repo (thinking something along the lines of git-remote-gcrypt)
     - this would break compatibility with Foam
   - [ ] ability to sync with multiple repos
-    - Foam is often used for notes within a project repo, it would be nice to have access to these notes too  
+    - Foam is often used for notes within a project repo, it would be nice to have access to these notes to  
       Cloning the whole repo of a software project to get access to notes is out of the question.  
       Technically, it's possible using a sparse checkout.
       ```bash
@@ -35,17 +34,9 @@ Not all of these will become reality.
       - ${1:placeholder} tab stops  
         supporting $1 might be enough, would allow text above and below where it leaves the cursor
       - ${VAR:default} (not sure how)
-  - [ ] handle markdownlint similar to spell checking
-    - disable in note - '<!-- markdownlint-disable-file -->'
-    - disable rule in note - '<!-- markdownlint-disable-file MD013 MD033 -->'
-    - disable rule globally (.markdownlint.json) - '"MD013": false'
-  - [ ] share to Dara: create a new note from text shared by another app
-    - e.g. meeting transcripts (Voice Memos, Google Recorder), web clippings, emails
-    - Android: intent filter for shared text (about a day)
-    - iOS: Share Extension, sharing the repo with the app via an App Group (a few days)
-    - desktop: drag and drop text or `.md` files onto the window, or an Import command
+  - [ ] add disable in note option to markdownlint support
  
-## Needs Further Testing
+## Needs Testing
 
 - [ ] Windows desktop app (msi)
 - [ ] Linux desktop app (rpm, deb)
@@ -53,4 +44,4 @@ Not all of these will become reality.
 
 ## Known Issues
 
-- None
+- Nothing
