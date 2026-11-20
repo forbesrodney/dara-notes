@@ -5,7 +5,7 @@ APP_NAME = Dara Notes
 BUNDLE_ID = app.daranotes
 TEAM_ID =
 MARKETING_VERSION = 1.0.0
-// The build number: scripts/ios-release.sh sets it to the date and time for each upload.
+// The build number: scripts/ios-release.sh sets it for each upload (scripts/build-number.sh).
 CURRENT_PROJECT_VERSION = 1
 
 // The Kotlin framework is built for Apple silicon only (iosSimulatorArm64), not Intel Macs.

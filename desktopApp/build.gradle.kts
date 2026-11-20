@@ -45,7 +45,7 @@ tasks.processResources {
 /** Whether this is the Mac App Store build (-Pdaranotes.appStore=true; scripts/macos-appstore.sh). */
 val isAppStoreBuild = findProperty("daranotes.appStore")?.toString() == "true"
 
-/** CFBundleVersion for App Store uploads, which must rise each time: -Pdaranotes.buildNumber (MAJOR.MINOR.PATCH). */
+/** CFBundleVersion for App Store uploads, which must rise each time: -Pdaranotes.buildNumber (scripts/build-number.sh). */
 val buildNumber = findProperty("daranotes.buildNumber")?.toString() ?: "1"
 
 compose.desktop {

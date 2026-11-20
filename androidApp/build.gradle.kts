@@ -1,3 +1,7 @@
+import java.io.ByteArrayOutputStream
+import javax.inject.Inject
+import org.gradle.process.ExecOperations
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
@@ -15,6 +19,7 @@ android {
         applicationId = "app.daranotes"
         minSdk = 26
         targetSdk = 36
+        // Debug builds only: release builds get the build number (releaseVersionCode below).
         versionCode = 1
         versionName = "1.0.0"
     }
@@ -87,4 +92,39 @@ dependencies {
     debugImplementation("androidx.compose.ui:ui-tooling")
     // Unit tests for the note logic live in :shared.
     testImplementation("junit:junit:4.13.2")
+}
+
+/**
+ * The versionCode of release builds, which must rise with every Play upload: the minutes since
+ * 1970-01-01 UTC at the last commit's committer time, the same number the iOS and Mac App Store
+ * builds of that commit get (scripts/build-number.sh, which says how to read one as a date).
+ * Play allows up to 2100000000, which this reaches in the year 5962. Worked out afresh each
+ * build, even from the configuration cache. BUILD_NUMBER or -Pdaranotes.versionCode=N sets it
+ * instead, for a second upload of the same commit.
+ */
+abstract class CommitTimeVersionCode : ValueSource<Int, ValueSourceParameters.None> {
+    @get:Inject abstract val exec: ExecOperations
+
+    override fun obtain(): Int {
+        val out = ByteArrayOutputStream()
+        val seconds = runCatching {
+            exec.exec {
+                commandLine("git", "log", "-1", "--format=%ct")
+                standardOutput = out
+            }
+            out.toString().trim().toLong()
+        }.getOrElse { System.currentTimeMillis() / 1000 } // not a git checkout: the time now
+        return (seconds / 60).toInt()
+    }
+}
+
+val releaseVersionCode: Provider<Int> = providers.gradleProperty("daranotes.versionCode")
+    .orElse(providers.environmentVariable("BUILD_NUMBER"))
+    .map { it.trim().toInt() }
+    .orElse(providers.of(CommitTimeVersionCode::class.java) {})
+
+androidComponents {
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.outputs.forEach { it.versionCode.set(releaseVersionCode) }
+    }
 }

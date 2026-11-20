@@ -4,8 +4,9 @@
 # (The notarized .dmg for downloads is scripts/macos-release.sh; the two don't mix.)
 # Output: desktopApp/build/appstore/Dara Notes-<version>.pkg
 #
-# The build number is the date and time (year.monthday.hourminute, e.g. 2026.1115.657, or
-# BUILD_NUMBER if set), so each upload is higher than the last.
+# The build number is the minutes since 1970 at the last commit (scripts/build-number.sh, or
+# BUILD_NUMBER if set), the same as the Android and iOS builds of that commit; a second upload
+# of the same commit needs BUILD_NUMBER.
 #
 # Needs, once:
 #   - apple.teamId=<your team ID> in local.properties;
@@ -32,7 +33,7 @@ done
 # it into the app, which App Store Connect refuses (ITMS-91109).
 xattr -c desktopApp/appstore/*.provisionprofile
 
-build="${BUILD_NUMBER:-$(date +%Y.%-m%d.%-H%M)}"
+build=$(scripts/build-number.sh)
 echo "== Building the sandboxed app (build $build)"
 ./gradlew -q :desktopApp:createDistributable -Pdaranotes.appStore=true -Pdaranotes.buildNumber="$build"
 app="desktopApp/build/compose/binaries/main/app/Dara Notes.app"

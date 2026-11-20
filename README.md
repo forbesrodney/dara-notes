@@ -112,8 +112,8 @@ opens (right-click, *Open*).
 
 `scripts/macos-appstore.sh` builds the Mac App Store / TestFlight version instead: sandboxed,
 signed with the *Mac App Distribution* certificate, and packaged as a signed `.pkg` in
-`desktopApp/build/appstore/` to upload with Transporter. Its build number is the date and
-time. It needs the *Mac App Distribution* and *Mac Installer Distribution* certificates, and
+`desktopApp/build/appstore/` to upload with Transporter. Its build number is the one every
+platform shares (see *Build numbers* below). It needs the *Mac App Distribution* and *Mac Installer Distribution* certificates, and
 two Mac App Store provisioning profiles, for `app.daranotes` and for the bundled Java runtime
 (`com.oracle.java.app.daranotes`), saved as `desktopApp/appstore/embedded.provisionprofile`
 and `runtime.provisionprofile` (not committed). The sandbox keeps the app's data in its
@@ -163,9 +163,8 @@ TEAM_ID = ABCDE12345
 
 *Build iOS release* (`scripts/ios-release.sh`) archives and exports a signed `.ipa` for
 TestFlight and the App Store into `iosApp/build/release/export/` (`scripts/ios-release.sh
-release-testing` for an ad hoc build). Its build number is the date and time
-(year.monthday.hourminute, the same as the Mac App Store build), so each upload to App Store
-Connect is higher than the last. Signing is automatic, with the Apple ID in *Xcode >
+release-testing` for an ad hoc build). Its build number is the one every platform shares (see
+*Build numbers* below). Signing is automatic, with the Apple ID in *Xcode >
 Settings > Accounts* or an App Store Connect API key (see the script).
 
 How it differs from Android:
@@ -185,6 +184,23 @@ Git on iOS uses [libgit2](https://libgit2.org), built from source by
 `scripts/build-libgit2.sh` (HTTPS through Apple's Secure Transport; no SSH). Gradle runs the
 script the first time it's needed, which takes about two minutes and needs CMake
 (`brew install cmake`); the libraries land in `shared/build/libgit2`.
+
+### Build numbers
+
+Every app's release build gets the same build number: Android's `versionCode`, and the iOS and
+Mac App Store build. It's the minutes since 1970-01-01 UTC at the last commit (its committer
+time), from `scripts/build-number.sh` (Android's Gradle build works it out the same way), so
+the same commit gives the same number everywhere and each new commit a higher one, as the
+stores require. Play's limit of 2100000000 is reached in the year 5962. To upload the same
+commit again, set a higher `BUILD_NUMBER` (`BUILD_NUMBER=29920300 scripts/ios-release.sh`;
+for Android, `BUILD_NUMBER` or `-Pdaranotes.versionCode`). Debug builds keep `versionCode` 1.
+
+To read a build number (here 29920211) as a date:
+
+| Platform | Command |
+|---|---|
+| macOS | `date -u -r $((29920211 * 60))` |
+| Linux | `date -u -d @$((29920211 * 60))` |
 
 ### Scripts
 
@@ -207,7 +223,8 @@ and *Build release AAB* run the matching Gradle tasks.
 | `scripts/macos-dmg.sh` | Puts the packaged macOS app in a `.dmg` with a link to Applications, the arrow background and the app's disk icon (`desktopApp/packaging/`, `desktopApp/icons/app.icns`), using dmgbuild, which it installs into `desktopApp/build/dmgbuild`. |
 | `scripts/ios-release.sh` | Archives the iOS app and exports a signed `.ipa` (TestFlight/App Store, or ad hoc). |
 | `scripts/ios-run.sh` | Builds the iOS app and runs it in the iOS Simulator (optionally pass a simulator name or ID). |
-| `scripts/bump-version.sh` | Raises the version of all the apps together: `micro` (1.2.3 to 1.2.4), `minor` (1.3.0), `major` (2.0.0), or an exact version such as `1.4.0`. Also adds 1 to the Android `versionCode`, which `build` raises alone (for another upload of the same version); the iOS and Mac App Store build numbers are the date and time, set by their release scripts. `--dry-run` shows the change without writing it. Doesn't commit or tag. |
+| `scripts/build-number.sh` | Prints the build number all the release builds use (see *Build numbers*); `BUILD_NUMBER` overrides it. |
+| `scripts/bump-version.sh` | Raises the version of all the apps together: `micro` (1.2.3 to 1.2.4), `minor` (1.3.0), `major` (2.0.0), or an exact version such as `1.4.0`. The build numbers aren't changed here; see *Build numbers*. `--dry-run` shows the change without writing it. Doesn't commit or tag. |
 | `scripts/changelog.sh` | Keeps `CHANGELOG.md` with git-cliff (`.cliff.toml`). With no argument, previews the changes since the last version tag. `release` adds the next version's section (worked out from the commit types, or `release v1.2.0`) below the header, keeping the rest of the file; then commit it and tag. `notes` prints a release's section for the GitHub release. `full` rebuilds the whole file, hand-written sections included. |
 
 The JavaScript libraries are committed, so a checkout builds without Node.js or network

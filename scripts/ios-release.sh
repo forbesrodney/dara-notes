@@ -6,9 +6,10 @@
 #
 # Needs your Apple Developer team ID as TEAM_ID in iosApp/Configuration/Local.xcconfig
 # (not committed), e.g.  TEAM_ID = ABCDE12345
-# The build number is the date and time (year.monthday.hourminute, e.g. 2026.1116.905, or
-# BUILD_NUMBER if set), so each upload is higher than the last; it matches the Mac App Store
-# build (scripts/macos-appstore.sh). The version shown is MARKETING_VERSION in Config.xcconfig.
+# The build number is the minutes since 1970 at the last commit (scripts/build-number.sh, or
+# BUILD_NUMBER if set), the same as the Android and Mac App Store builds of that commit; a
+# second upload of the same commit needs BUILD_NUMBER. The version shown is MARKETING_VERSION
+# in Config.xcconfig.
 # Signing is automatic. Xcode uses the Apple ID signed in under Xcode > Settings > Accounts,
 # or an App Store Connect API key if these are set:
 #   ASC_KEY_PATH=/path/AuthKey_XXXX.p8  ASC_KEY_ID=XXXX  ASC_ISSUER_ID=xxxxxxxx-...
@@ -28,7 +29,7 @@ fi
 
 # The archive is left unsigned; the export signs it for its method (an App Store profile needs
 # no registered devices, unlike the development profile Xcode would sign an archive with).
-build="${BUILD_NUMBER:-$(date +%Y.%-m%d.%-H%M)}"
+build=$(scripts/build-number.sh)
 echo "== Archiving (Release, team $team, build $build)"
 rm -rf "$out"
 xcodebuild -project iosApp/iosApp.xcodeproj -scheme iosApp -configuration Release \
