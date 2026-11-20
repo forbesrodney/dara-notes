@@ -810,10 +810,14 @@ private fun FormatToolbar(
 
 /**
  * Hardware-keyboard shortcuts, with Ctrl or Cmd: B bold, I italic, Shift+X strike-through,
- * and Enter to check the line's task (as in Notion). Returns the edit for [e], or null if
- * it isn't a shortcut. Option/Alt is left alone: many keyboard layouts type letters with it.
+ * and Enter to check the line's task (as in Notion); and Tab and Shift+Tab, on their own, to
+ * indent and outdent (see [tab]). Returns the edit for [e], or null if it isn't a shortcut.
+ * Option/Alt is left alone: many keyboard layouts type letters with it.
  */
 private fun shortcut(e: KeyEvent, bullet: String, taskStyle: () -> TaskStyle): ((TextFieldValue) -> TextFieldValue)? {
+    if (e.key == Key.Tab && !e.isCtrlPressed && !e.isMetaPressed && !e.isAltPressed) {
+        return if (e.isShiftPressed) { v -> v.outdentLines() } else { v -> v.tab() }
+    }
     if (!(e.isCtrlPressed || e.isMetaPressed) || e.isAltPressed) return null
     return if (e.isShiftPressed) when (e.key) {
         Key.X -> { v -> v.toggleWrap("~~", "strike") }

@@ -46,4 +46,46 @@ class EditingTest {
         check("~~[done]~~", "~~", "[done]")
         check("~[sub]~", "~~", "~~~[sub]~~~")
     }
+
+    private fun indent(before: String, after: String) = assertEquals(after, show(v(before).tab()))
+    private fun outdent(before: String, after: String) = assertEquals(after, show(v(before).outdentLines()))
+
+    @Test fun tabNestsAListItemUnderTheOneAbove() {
+        indent("- a\n- b|", "- a\n  - b|")
+        indent("1. a\n1. b|", "1. a\n   1. b|")
+        indent("- a\n  - b\n  - c|", "- a\n  - b\n    - c|")
+        indent("- [ ] a\n- [ ] b|", "- [ ] a\n  - [ ] b|")
+    }
+
+    @Test fun tabIndentsEverySelectedLine() {
+        indent("- a\n[- b\n- c]\n- d", "- a\n  [- b\n  - c]\n- d")
+        // A selection ending at a line's start leaves that line alone; blank lines stay empty.
+        indent("[- a\n\n- b\n]- c", "  [- a\n\n  - b\n]- c")
+    }
+
+    @Test fun tabTypesATabOutsideListsAndSelections() {
+        indent("some |text", "some \t|text")
+        indent("|", "\t|")
+        indent("- a\n  more |text", "- a\n  more \t|text") // under an item, but not one
+    }
+
+    @Test fun tabIndentsSelectedLinesThatAreNotListItemsByFour() {
+        indent("some [text]", "    some [text]")
+        indent("- a\n  [more text]", "- a\n    [more text]")
+    }
+
+    @Test fun tabNestsTheItemWhereverTheCursorIs() {
+        indent("- a\n- b|c", "- a\n  - b|c")
+        indent("- a\n|- b", "- a\n  |- b")
+    }
+
+    @Test fun shiftTabOutdents() {
+        outdent("- a\n  - b|", "- a\n- b|")
+        outdent("- a\n  [- b\n  - c]", "- a\n[- b\n- c]")
+        outdent("- a\n - b|", "- a\n- b|") // only what's there
+        outdent("\t- b|", "- b|")
+        outdent("- a|", "- a|") // nothing to remove
+        outdent("    so|me", "so|me")
+        outdent("  | - b", "| - b") // cursor inside the indentation goes to the line start
+    }
 }

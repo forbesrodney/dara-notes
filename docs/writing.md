@@ -26,9 +26,14 @@ With a hardware keyboard:
 | Cmd+I or Ctrl+I | Italic |
 | Cmd+Shift+X or Ctrl+Shift+X | Strike-through |
 | Cmd+Enter or Ctrl+Enter | Check or uncheck the task on the current line |
+| Tab | Indent the selected lines, or the list item the cursor is on; elsewhere, type a tab |
+| Shift+Tab | Outdent the selected lines, or the line the cursor is on |
 
 Bold, italic and strike-through toggle, and with nothing selected apply to the word at the
-cursor. On Android, use Ctrl: the system may claim some Cmd shortcuts.
+cursor. Tab nests a list item under the one above it: 2 spaces under a bullet (`- `), 3 under
+a numbered item (`1. `). Other selected lines move 4 spaces. markdownlint flags tab
+characters by default (rule MD010); turn that rule off in `.markdownlint.json` if you use
+them. On Android, use Ctrl: the system may claim some Cmd shortcuts.
 
 ## The preview
 
