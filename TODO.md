@@ -44,6 +44,17 @@ Not all of these will become reality.
     - Android: intent filter for shared text (about a day)
     - iOS: Share Extension, sharing the repo with the app via an App Group (a few days)
     - desktop: drag and drop text or `.md` files onto the window, or an Import command
+  - [ ] Kanban boards, compatible with Obsidian's Kanban plugin
+    - a board is a note with `kanban-plugin` front matter: `##` headings are columns, list items are cards
+      (check real files for the exact format, e.g. the Archive section and settings block)
+    - open such notes as a board instead of the preview, with the raw Markdown still editable
+    - read-only board (about a day), then add/check/move cards (about a week with drag and drop)
+    - stays plain Markdown, so Foam can still read and edit boards
+  - [ ] Dataview queries (a subset)
+    - e.g. `LIST`/`TABLE` of notes by tag or folder, simple `WHERE` and `SORT`, rendered in the preview
+    - needs a query parser and an index of front matter, tags, tasks and inline fields (`key:: value`)
+    - a week or two for a small subset; full compatibility (including DataviewJS) isn't realistic
+    - ask which queries people actually use before starting
 
 ## Needs Further Testing
 
