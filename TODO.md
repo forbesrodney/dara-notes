@@ -14,18 +14,61 @@ Not all of these will become reality.
   - [ ] properly sign build
   - [ ] add to Microsoft Store
 - General
-  - [ ] ability to encrypt the repo (thinking something along the lines of git-remote-gcrypt)
-    - this would break compatibility with Foam
+  - [ ] ability to encrypt the repo with PGP keys, compatible with git-remote-gcrypt (roughly 4-6 weeks)
+    - only the remote is encrypted (packs plus an encrypted manifest); the local repo stays plain,
+      so merging, history and edit dates work as now
+    - Foam still works for anyone who clones with `git clone gcrypt::<url>` (git-remote-gcrypt and GnuPG);
+      the repo is unusable only without the key
+    - per-file encryption (git-crypt) ruled out: leaks file names (note titles) and history,
+      and every concurrent edit becomes a whole-file conflict
+    - hard parts
+      - reimplement gcrypt's protocol for JGit (Android, desktop) and libgit2 (iOS), matching it exactly
+      - OpenPGP: Bouncy Castle on Android and desktop; on iOS GopenPGP, rPGP or ObjectivePGP
+        (check ObjectivePGP's license for commercial use)
+      - keys: import a private key, store it in the Keychain/Keystore/OS keychain, handle passphrases;
+        no hardware keys (YubiKey) at first
+      - every gcrypt push is effectively a force push: two devices syncing at once could lose a push;
+        check the manifest before pushing and retry, and see how gcrypt handles it first
+      - packs pile up and repacking re-uploads everything, noticeable for big repos on phones
+      - setup and recovery: turn it on, clone on a new device, warn that losing the key loses the notes
+    - not covered: notes on the device stay unencrypted (relies on device/disk encryption);
+      the server still sees repo size and push times
+    - order
+      1. read gcrypt's source: pin down the format and how concurrent pushes are handled
+      2. desktop-only proof of concept (Bouncy Castle, JGit), tested both ways against real git-remote-gcrypt
+      3. port to Android (shares the JVM code)
+      4. iOS crypto library last (riskiest choice)
   - [ ] ability to sync with multiple repos
     - Foam is often used for notes within a project repo, it would be nice to have access to these notes too  
       Cloning the whole repo of a software project to get access to notes is out of the question.  
-      Technically, it's possible using a sparse checkout.
+      Command-line git can do it with a partial clone (saves the download) and a sparse checkout (saves disk):
       ```bash
       git clone --no-checkout --depth=1 --filter=tree:0 <repository-url>
       cd <repository-name>
       git sparse-checkout set --cone <path/to/directory>
       git checkout
       ```
+    - Dara's git libraries can't do either (check their trackers first, findings were a few years old)
+      - JGit (5.13.3) fails on files a partial clone left out; no sparse checkout support known
+      - libgit2 (1.9.7) has no partial clone (issue #5564); sparse checkout PR #6394 seemed stalled
+      - both support shallow clones (latest snapshot, no history)
+    - option 1 (recommended, about 3-5 days): a "notes folder" repo setting plus shallow clones
+      - Dara lists, searches, links and creates notes only under the folder (e.g. `docs/notes`)
+      - root config still applies: `.foam/templates`, `.vscode/settings.json`, `cspell.json`, `.markdownlint.json`
+      - optional depth-1 clone skips history, usually the bulk of a project's download;
+        the current snapshot of everything is still downloaded and kept on disk
+      - calendar edit dates come from history: in a shallow clone older notes all look edited on
+        the clone date; show only later edits, or fetch more history in the background
+    - option 2 (several weeks): host APIs (GitHub, GitLab, Gitea) to read and commit one folder;
+      truly partial, but per host, no plain git/SSH, and sync and merging rebuilt around the API
+    - option 3 (months, not realistic): add partial clone support to JGit and libgit2, or fork them
+    - project repo issues, whichever option
+      - Dara's automatic sync commits fill a team repo's history with small commits
+      - protected `main` (pull requests required) rejects pushes; syncing to a `notes` branch
+        avoids that, but someone has to merge it
+      - wikilinks to files outside the folder break or show as missing
+      - large files or Git LFS, and pushing may need write access the user doesn't have
+    - do option 1 first, then see whether truly partial downloads are still needed
   - [ ] enhance template support
     - support missing variables
       - $FOAM_DATE_FORMAT (${FOAM_DATE_FORMAT:YYYY-MM-DD})
