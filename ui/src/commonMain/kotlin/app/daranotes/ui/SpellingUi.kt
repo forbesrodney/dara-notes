@@ -58,18 +58,22 @@ val SpellcheckIcon: ImageVector by lazy {
     )
 }
 
-/** The downloaded languages, under Settings > Spelling, with the button to change them. */
+/**
+ * The downloaded languages, under Settings > Spelling, with the button to change them;
+ * dimmed and unusable unless [enabled] (spelling is switched on).
+ */
 @Composable
-fun SpellingLanguagesRow(vm: MainViewModel, onChoose: () -> Unit) {
+fun SpellingLanguagesRow(vm: MainViewModel, enabled: Boolean = true, onChoose: () -> Unit) {
     val languages by vm.languages.collectAsState()
     LaunchedEffect(Unit) { vm.refreshLanguages() }
     Text(
         if (languages.isEmpty()) "No languages downloaded yet: download one to check spelling."
         else "Languages: " + languages.joinToString { it.name },
         style = MaterialTheme.typography.bodyMedium,
+        color = dimmedUnless(enabled),
         modifier = Modifier.padding(top = 8.dp),
     )
-    OutlinedButton(onClick = onChoose, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
+    OutlinedButton(onClick = onChoose, enabled = enabled, modifier = Modifier.fillMaxWidth().padding(top = 4.dp)) {
         Text(if (languages.isEmpty()) "Download a language…" else "Languages…")
     }
 }

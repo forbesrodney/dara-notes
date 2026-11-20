@@ -1,5 +1,6 @@
 package app.daranotes.ui
 
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.backhandler.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -298,7 +299,7 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState, active: Boole
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    SpellingLanguagesRow(vm) { choosingLanguages = true }
+                    SpellingLanguagesRow(vm, enabled = spellEnabled) { choosingLanguages = true }
 
                     Section("Checklists")
                     Toggle("Strike through checked items", strike) { strike = it }
@@ -307,18 +308,19 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState, active: Boole
                     val (order, sep) = CompletionDate.resolve(dateOrder, dateSep)
                     val today = remember { Dates.today() }
                     val sample = { o: DateOrder, sp: String -> CompletionDate.format(today, o, sp) }
-                    Text("Date format", style = MaterialTheme.typography.bodyLarge)
+                    Text("Date format", style = MaterialTheme.typography.bodyLarge, color = dimmedUnless(addDate))
                     ChipRow(
                         listOf(CompletionDate.LOCALE to "Locale (${sample(localeOrder, sep)})") +
                             DateOrder.entries.map { o -> o.key to o.label(sep) },
                         dateOrder,
+                        enabled = addDate,
                     ) { dateOrder = it }
-                    Text("Date separator", style = MaterialTheme.typography.bodyLarge)
+                    Text("Date separator", style = MaterialTheme.typography.bodyLarge, color = dimmedUnless(addDate))
                     ChipRow(
                         listOf(CompletionDate.LOCALE to "Locale ( $localeSep )") +
                             CompletionDate.separators.map { it to "  $it  " },
                         dateSep,
-                        enabled = order.usesSeparator,
+                        enabled = addDate && order.usesSeparator,
                     ) { dateSep = it }
                     Text(
                         "Checked today: " + (if (strike) "~~Buy milk~~" else "Buy milk") +
@@ -388,6 +390,11 @@ private fun ChipRow(
         }
     }
 }
+
+/** A label's color: as usual if [enabled], otherwise dimmed like the controls it labels. */
+@Composable
+fun dimmedUnless(enabled: Boolean): Color =
+    if (enabled) Color.Unspecified else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
 
 @Composable
 private fun Section(title: String) {
