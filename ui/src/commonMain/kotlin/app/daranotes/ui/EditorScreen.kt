@@ -4,6 +4,9 @@ import app.daranotes.core.CSpellConfig
 import app.daranotes.core.SpellComments
 import app.daranotes.core.SpellIssue
 import app.daranotes.core.ioDispatcher
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.gestures.BringIntoViewSpec
+import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -57,6 +60,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -117,7 +121,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
-@OptIn(ExperimentalMaterial3Api::class, FlowPreview::class)
+@OptIn(ExperimentalMaterial3Api::class, FlowPreview::class, ExperimentalFoundationApi::class)
 @Composable
 fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHostState) {
     val path = screen.path
@@ -528,6 +532,12 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                         val q = query ?: return
                         value = completeWikilink(value, q.first, vm.repo.linkId(note.path))
                     }
+                    // The field's own scrolling to its cursor is turned off; the LaunchedEffect
+                    // above does that. On focus, the field scrolls to the cursor it had before
+                    // (often the top of the note). A click both focuses it and places the
+                    // cursor, so after scrolling down, the first click jumped the note and the
+                    // cursor landed where the pointer then was.
+                    CompositionLocalProvider(LocalBringIntoViewSpec provides NoBringIntoView) {
                     BasicTextField(
                         value = value,
                         onValueChange = { value = continueList(value, it) },
@@ -581,6 +591,7 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                             }
                             .focusRequester(focus),
                     )
+                    }
                     val layout = textLayout
                     if (matches.isNotEmpty() && query != null && layout != null) {
                         val c = layout.getCursorRect(value.selection.start.coerceIn(0, layout.layoutInput.text.length))
@@ -1125,4 +1136,10 @@ fun TextFieldValue.addFootnote(): TextFieldValue {
     var newText = text.substring(0, c) + ref + text.substring(c)
     newText = newText.trimEnd('\n') + "\n\n[^$n]: "
     return TextFieldValue(newText, TextRange(newText.length))
+}
+
+/** For the editor's scroll container: scrolls nowhere when asked to show part of the text. */
+@OptIn(ExperimentalFoundationApi::class)
+private val NoBringIntoView = object : BringIntoViewSpec {
+    override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float) = 0f
 }
