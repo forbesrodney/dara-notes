@@ -87,6 +87,19 @@ Not all of these will become reality.
     - Android: intent filter for shared text (about a day)
     - iOS: Share Extension, sharing the repo with the app via an App Group (a few days)
     - desktop: drag and drop text or `.md` files onto the window, or an Import command
+  - [ ] clear the Compose deprecation warnings (after launch; retest each platform afterwards)
+    - `BackHandler` in `App.kt` and `SettingsScreen.kt`: use `NavigationEventHandler` (navigation-event library);
+      test the Android back gesture and the unsaved-changes prompt in Settings
+    - `LocalClipboardManager` in `EditorScreen.kt`: use `LocalClipboard` (suspend functions); test copy and paste
+    - `SwingPanel(background = ...)` in `PlatformViews.jvm.kt` (desktop): use the overload without `background`,
+      setting the color in the panel's factory; test the preview and graph web views
+  - [ ] guess the Git username from the remote URL (about half a day)
+    - show it as the Username field's hint, and use it when the field is left blank (today blank means `git`)
+    - a username in the URL (`https://user@bitbucket.org/...`, as Bitbucket's clone URLs have) is the login
+    - the repo owner (`github.com/owner/repo`) is only a guess: wrong for organization or team repos
+    - GitHub and Azure DevOps ignore the username with a token, so keep sending `git` there;
+      it matters for Bitbucket and maybe Gitea/Forgejo
+    - a wrong guess needs a clear sync error ("check the username and token")
   - [ ] Kanban boards, compatible with Obsidian's Kanban plugin
     - a board is a note with `kanban-plugin` front matter: `##` headings are columns, list items are cards
       (check real files for the exact format, e.g. the Archive section and settings block)
