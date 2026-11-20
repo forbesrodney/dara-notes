@@ -249,7 +249,8 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
             lint = runCatching { vm.platform.lint(text, config) }.getOrNull()
         }
     }
-    LaunchedEffect(spellOn) { if (spellOn) vm.loadSpeller() }
+    // If the language download when spelling was switched on failed, it's tried again here.
+    LaunchedEffect(spellOn) { if (spellOn) { vm.loadSpeller(); vm.downloadDefaultDictionary() } }
     // Spelling, shortly after typing stops (only while editing, when switched on).
     LaunchedEffect(path, editing, spellOn, speller, spellConfigVersion) {
         val checker = speller

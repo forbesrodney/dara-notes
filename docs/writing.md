@@ -80,8 +80,11 @@ comments, so a word VS Code accepts passes here too.
 
 ### Languages
 
-Spelling needs a dictionary: under *Check spelling*, tap *Download a language...* (later
-*Languages...*) and pick one or more. Each is downloaded once (English is about 0.3 MB; Spanish
+Spelling needs a dictionary. When you turn on *Check spelling* and save, Dara downloads one
+for your device's language (English (US) if it doesn't offer yours); if that fails, say
+offline, it tries again the next time you open a note. To choose others, under *Check
+spelling*, tap *Languages...* (*Download a language...* before you have one) and pick one or
+more. Each is downloaded once (English is about 0.3 MB; Spanish
 and French about 2 MB) and kept in the app, not in your notes, so each device needs its own.
 Software terms and company names, from cSpell, come with the first language, so words such
 as GitHub pass. When a dictionary is updated, *Update* appears beside it.

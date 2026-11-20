@@ -242,4 +242,20 @@ class SpellingTest {
         assertFailsWith<okio.IOException> { bad.install(m.languages.single(), m) }
         assertEquals(emptyList(), bad.installed())
     }
+
+    @Test fun picksTheDevicesLanguageToDownload() {
+        fun lang(code: String) = DictionaryInfo(code, code, "$code.txt.gz", 1, "x", 1, "", "")
+        val m = DictionaryManifest(listOf("en-US", "en-GB", "es", "fr", "de").map(::lang), null)
+        fun pick(language: String, region: String) = Dictionaries.pick(m, language, region)?.code
+        assertEquals("en-US", pick("en", "US"))
+        assertEquals("en-GB", pick("en", "GB"))
+        assertEquals("en-GB", pick("en", "AU"))
+        assertEquals("en-US", pick("en", "CA"))
+        assertEquals("en-US", pick("en", ""))
+        assertEquals("de", pick("de", "AT"))
+        assertEquals("es", pick("es", "MX"))
+        assertEquals("fr", pick("fr", ""))
+        assertEquals("en-US", pick("ja", "JP"))
+        assertEquals(null, Dictionaries.pick(DictionaryManifest(emptyList(), null), "en", "US"))
+    }
 }

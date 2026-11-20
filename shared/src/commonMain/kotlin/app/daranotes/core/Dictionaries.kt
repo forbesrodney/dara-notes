@@ -143,6 +143,25 @@ class Dictionaries(
     }
 
     companion object {
+        /** English-speaking regions that spell the British way (colour, organise). */
+        private val britishSpelling = setOf("GB", "IE", "AU", "NZ", "ZA", "IN", "PK", "SG", "HK", "MT", "NG", "KE")
+
+        /**
+         * The language to download for a device set to [language] (ISO 639, e.g. "en") in
+         * [region] (ISO 3166, e.g. "GB", or blank): the same language and region if offered,
+         * else the same language (English by its region's spelling), else English (US).
+         */
+        fun pick(manifest: DictionaryManifest, language: String, region: String): DictionaryInfo? {
+            val offered = manifest.languages
+            fun find(code: String) = offered.firstOrNull { it.code.equals(code, ignoreCase = true) }
+            val lang = language.lowercase()
+            val reg = region.uppercase()
+            if (reg.isNotEmpty()) find("$lang-$reg")?.let { return it }
+            if (lang == "en") find(if (reg in britishSpelling) "en-GB" else "en-US")?.let { return it }
+            offered.firstOrNull { it.code.lowercase().let { c -> c == lang || c.startsWith("$lang-") } }?.let { return it }
+            return find("en-US") ?: offered.firstOrNull()
+        }
+
         /** The `dictionaries` release, which .github/workflows/dictionaries.yml publishes. */
         const val BASE_URL = "https://github.com/forbesrodney/dara-notes/releases/download/dictionaries/"
         const val MANIFEST = "manifest.json"

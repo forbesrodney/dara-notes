@@ -7,6 +7,7 @@ import app.daranotes.core.SpellChecker
 import app.daranotes.core.Dictionaries
 import app.daranotes.core.CSpellConfig
 import app.daranotes.core.ioDispatcher
+import androidx.compose.ui.text.intl.Locale
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -348,6 +349,46 @@ class MainViewModel(val platform: AppPlatform) : ViewModel() {
                 .onFailure { messages.emit("Couldn't download ${info.name}: ${it.message ?: it::class.simpleName}") }
             afterDictionaryChange()
             onDone()
+        }
+    }
+
+    private var defaultDictionaryTried = false
+    private var defaultDictionaryBusy = false
+
+    /**
+     * With spelling on but no language downloaded, downloads one for the device's language,
+     * with the extras: when Settings is saved ([fromSave]), and otherwise once per run (when a
+     * note opens), so a download that failed offline is tried again without nagging.
+     */
+    fun downloadDefaultDictionary(fromSave: Boolean = false) {
+        if (!settings.spellEnabled || defaultDictionaryBusy || (defaultDictionaryTried && !fromSave)) return
+        defaultDictionaryBusy = true
+        defaultDictionaryTried = true
+        viewModelScope.launch {
+            try {
+                if (withContext(ioDispatcher) { dictionaries.languages() }.isNotEmpty()) return@launch
+                val locale = Locale.current
+                val result = withContext(ioDispatcher) {
+                    runCatching {
+                        val manifest = dictionaries.manifest()
+                        val info = Dictionaries.pick(manifest, locale.language, locale.region)
+                            ?: error("no languages are offered")
+                        val names = listOfNotNull(info.name, manifest.extras?.name).joinToString(" and ")
+                        messages.emit("Downloading $names for spelling\u2026")
+                        dictionaries.install(info, manifest)
+                        names
+                    }
+                }
+                result.onSuccess { messages.emit("Downloaded $it for spelling") }.onFailure {
+                    messages.emit(
+                        "Couldn't download a spelling dictionary (${it.message ?: it::class.simpleName}). " +
+                            "Choose one under Settings > Editing > Languages.",
+                    )
+                }
+                afterDictionaryChange()
+            } finally {
+                defaultDictionaryBusy = false
+            }
         }
     }
 

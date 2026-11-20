@@ -132,6 +132,8 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState, active: Boole
         s.autoSyncMinutes = autoSyncValue
         s.syncAfterEdit = syncAfterEdit
         vm.applySyncSchedule()
+        // Spelling switched on with no language yet: download one, rather than check nothing.
+        if (spellEnabled) vm.downloadDefaultDictionary(fromSave = true)
     }
 
     fun save() {
