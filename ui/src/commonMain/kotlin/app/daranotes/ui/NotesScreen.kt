@@ -485,6 +485,7 @@ private fun NewNoteDialog(
 ) {
     var title by remember { mutableStateOf("") }
     val focus = remember { FocusRequester() }
+    val create = { onCreate(title.trim()) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(heading) },
@@ -495,7 +496,9 @@ private fun NewNoteDialog(
                     onValueChange = { title = it },
                     label = { Text("Title") },
                     singleLine = true,
-                    modifier = Modifier.focusRequester(focus),
+                    keyboardOptions = DoneKeyboard,
+                    keyboardActions = doneAction(title.isNotBlank(), create),
+                    modifier = Modifier.focusRequester(focus).onEnter(title.isNotBlank(), create),
                 )
                 if (linked) {
                     Spacer(Modifier.height(8.dp))
@@ -507,7 +510,7 @@ private fun NewNoteDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onCreate(title.trim()) }, enabled = title.isNotBlank()) { Text("Create") }
+            DefaultActionButton("Create", title.isNotBlank(), create)
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )

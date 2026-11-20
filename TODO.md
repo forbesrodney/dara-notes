@@ -14,6 +14,7 @@ Not all of these will become reality.
   - [ ] properly sign build
   - [ ] add to Microsoft Store
 - General
+  - [ ] tab/shift+tab to indent/un-indent list item lines (current line or highlighted lines)
   - [ ] ability to encrypt the repo (thinking something along the lines of git-remote-gcrypt)
     - this would break compatibility with Foam
   - [ ] ability to sync with multiple repos
@@ -48,7 +49,8 @@ Not all of these will become reality.
 ## Needs Further Testing
 
 - General
-  - [ ] right click doesn't work, still works like mobile app with long press
+  - [ ] right click brings up context menu
+  - [ ] default action on popups (create/move/rename) show as active once field is changed and is activated with Enter
 - [ ] Windows desktop app (msi)
 - [ ] Linux desktop app (rpm, deb)
 - macOS desktop app

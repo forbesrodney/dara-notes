@@ -63,6 +63,8 @@ fun RenameNoteDialog(vm: MainViewModel, path: String, onDismiss: () -> Unit, onC
         else -> vm.repo.relocateError(path, newPath)
     }
     val focus = remember { FocusRequester() }
+    val canRename = error == null && field.text.isNotBlank() && field.text.trim() != name
+    val rename = { onConfirm(newPath) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Rename note") },
@@ -78,15 +80,14 @@ fun RenameNoteDialog(vm: MainViewModel, path: String, onDismiss: () -> Unit, onC
                     supportingText = {
                         Text(error ?: "Links to this note are updated in every note")
                     },
-                    modifier = Modifier.fillMaxWidth().focusRequester(focus),
+                    keyboardOptions = DoneKeyboard,
+                    keyboardActions = doneAction(canRename, rename),
+                    modifier = Modifier.fillMaxWidth().focusRequester(focus).onEnter(canRename, rename),
                 )
             }
         },
         confirmButton = {
-            TextButton(
-                onClick = { onConfirm(newPath) },
-                enabled = error == null && field.text.isNotBlank() && field.text.trim() != name,
-            ) { Text("Rename") }
+            DefaultActionButton("Rename", canRename, rename)
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
@@ -103,6 +104,9 @@ fun MoveNoteDialog(vm: MainViewModel, path: String, onDismiss: () -> Unit, onCon
     val newPath = join(folder, nameOf(path))
     val unchanged = folder.trim().trim('/') == current
     val error = if (unchanged) null else vm.repo.relocateError(path, newPath)
+    val canMove = error == null && !unchanged
+    val move = { onConfirm(newPath) }
+    val focus = remember { FocusRequester() }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -117,7 +121,9 @@ fun MoveNoteDialog(vm: MainViewModel, path: String, onDismiss: () -> Unit, onCon
                     singleLine = true,
                     isError = error != null,
                     supportingText = { Text(error ?: "Type a new folder name to create it") },
-                    modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = DoneKeyboard,
+                    keyboardActions = doneAction(canMove, move),
+                    modifier = Modifier.fillMaxWidth().focusRequester(focus).onEnter(canMove, move),
                 )
                 LazyColumn(Modifier.heightIn(max = 280.dp)) {
                     item {
@@ -130,10 +136,13 @@ fun MoveNoteDialog(vm: MainViewModel, path: String, onDismiss: () -> Unit, onCon
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(newPath) }, enabled = error == null && !unchanged) { Text("Move") }
+            DefaultActionButton("Move", canMove, move)
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
+    // On the desktop, typing goes straight into the field. Not on phones and tablets, where
+    // the on-screen keyboard would cover the folder list; a tap on the field focuses it.
+    if (vm.platform.desktop) LaunchedEffect(Unit) { runCatching { focus.requestFocus() } }
 }
 
 @Composable

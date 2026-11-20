@@ -231,6 +231,7 @@ private fun NameDialog(
 ) {
     var text by remember { mutableStateOf(initial) }
     val focus = remember { FocusRequester() }
+    val submit = { onConfirm(text.trim()) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(heading) },
@@ -241,7 +242,9 @@ private fun NameDialog(
                     onValueChange = { text = it },
                     label = { Text(label) },
                     singleLine = true,
-                    modifier = Modifier.focusRequester(focus),
+                    keyboardOptions = DoneKeyboard,
+                    keyboardActions = doneAction(text.isNotBlank(), submit),
+                    modifier = Modifier.focusRequester(focus).onEnter(text.isNotBlank(), submit),
                 )
                 Text(
                     hint,
@@ -251,7 +254,7 @@ private fun NameDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(text.trim()) }, enabled = text.isNotBlank()) { Text(confirm) }
+            DefaultActionButton(confirm, text.isNotBlank(), submit)
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("Cancel") } },
     )
