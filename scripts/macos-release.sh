@@ -2,7 +2,9 @@
 # Builds the signed macOS .dmg (with scripts/macos-dmg.sh), has Apple notarize it, and staples the ticket, so it opens on
 # any Mac without the "unidentified developer" warning.
 # Output: desktopApp/build/compose/binaries/main/dmg/Dara Notes-<version>.dmg, and the same
-# .dmg in a .zip next to it, for apps that won't send a .dmg.
+# .dmg in a .zip next to it, for apps that won't send a .dmg. The build number is the one every
+# platform shares (scripts/build-number.sh). It ends by printing the version, the build number
+# and the files it made.
 #
 # Needs, once:
 #   - apple.teamId=<your team ID> in local.properties, and your "Developer ID Application"
@@ -22,9 +24,10 @@ if ! xcrun notarytool history --keychain-profile "$profile" >/dev/null 2>&1; the
     exit 1
 fi
 
-echo "== Building the signed app"
+build=$(scripts/build-number.sh)
+echo "== Building the signed app (build $build)"
 rm -rf desktopApp/build/compose/binaries/main/dmg
-./gradlew -q :desktopApp:createDistributable
+./gradlew -q :desktopApp:createDistributable -Pdaranotes.buildNumber="$build"
 app="desktopApp/build/compose/binaries/main/app/Dara Notes.app"
 codesign --verify --deep --strict "$app" || { echo "The app isn't signed: is apple.teamId set in local.properties?" >&2; exit 1; }
 
@@ -72,5 +75,9 @@ spctl --assess --type open --context context:primary-signature --verbose "$dmg"
 zip="${dmg%.dmg}.zip"
 rm -f "$zip"
 ditto -c -k --norsrc --noextattr "$dmg" "$zip"
-echo "Done: $dmg"
-echo "Zip:  $zip"
+plist="$app/Contents/Info.plist"
+echo "== Done"
+echo "Version: $(/usr/libexec/PlistBuddy -c "Print :CFBundleShortVersionString" "$plist")"
+echo "Build:   $(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$plist")"
+echo "Output:  $dmg"
+echo "Output:  $zip"

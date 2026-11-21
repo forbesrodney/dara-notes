@@ -3,6 +3,7 @@
 #   scripts/ios-release.sh                 # .ipa for TestFlight / the App Store
 #   scripts/ios-release.sh release-testing # .ipa for registered devices (ad hoc)
 # Output: iosApp/build/release/DaraNotes.xcarchive and iosApp/build/release/export/*.ipa
+# It ends by printing the version, the build number and the .ipa it made.
 #
 # Needs your Apple Developer team ID as TEAM_ID in iosApp/Configuration/Local.xcconfig
 # (not committed), e.g.  TEAM_ID = ABCDE12345
@@ -52,6 +53,10 @@ EOF
 xcodebuild -exportArchive -archivePath "$out/DaraNotes.xcarchive" -exportPath "$out/export" \
     -exportOptionsPlist "$out/ExportOptions.plist" -allowProvisioningUpdates ${auth[@]+"${auth[@]}"} -quiet
 
-ls "$out"/export/*.ipa
+archive_plist="$out/DaraNotes.xcarchive/Info.plist"
+echo "== Done"
+echo "Version: $(/usr/libexec/PlistBuddy -c "Print :ApplicationProperties:CFBundleShortVersionString" "$archive_plist")"
+echo "Build:   $(/usr/libexec/PlistBuddy -c "Print :ApplicationProperties:CFBundleVersion" "$archive_plist")"
+for ipa in "$out"/export/*.ipa; do echo "Output:  $ipa"; done
 echo "Upload to App Store Connect with Xcode's Organizer (Window > Organizer), Transporter, or:"
 echo "  xcrun altool --upload-app -t ios -f $out/export/*.ipa --apiKey ASC_KEY_ID --apiIssuer ASC_ISSUER_ID"

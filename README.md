@@ -110,7 +110,7 @@ xcrun notarytool store-credentials foam-notary --key /path/AuthKey_XXXXXXXXXX.p8
 Without a team ID the package is unsigned, and macOS asks for confirmation the first time it
 opens (right-click, *Open*).
 
-`scripts/macos-appstore.sh` builds the Mac App Store / TestFlight version instead: sandboxed,
+*Build Mac App Store package* (`scripts/macos-appstore.sh`) builds the Mac App Store / TestFlight version instead: sandboxed,
 signed with the *Mac App Distribution* certificate, and packaged as a signed `.pkg` in
 `desktopApp/build/appstore/` to upload with Transporter. Its build number is the one every
 platform shares (see *Build numbers* below). It needs the *Mac App Distribution* and *Mac Installer Distribution* certificates, and
@@ -187,8 +187,8 @@ script the first time it's needed, which takes about two minutes and needs CMake
 
 ### Build numbers
 
-Every app's release build gets the same build number: Android's `versionCode`, and the iOS and
-Mac App Store build. It's the minutes since 1970-01-01 UTC at the last commit (its committer
+Every app's release build gets the same build number: Android's `versionCode`, and the iOS,
+Mac App Store and notarized `.dmg` build. It's the minutes since 1970-01-01 UTC at the last commit (its committer
 time), from `scripts/build-number.sh` (Android's Gradle build works it out the same way), so
 the same commit gives the same number everywhere and each new commit a higher one, as the
 stores require. Play's limit of 2100000000 is reached in the year 5962. To upload the same
@@ -206,7 +206,9 @@ To read a build number (here 29920211) as a date:
 
 Each script also has a shared Android Studio run configuration (in `.run/`), so it can be
 picked from the run configuration list in the toolbar. *Run unit tests*, *Build release APK*
-and *Build release AAB* run the matching Gradle tasks.
+and *Build release AAB* run the matching Gradle tasks. The release builds (the APK, the AAB,
+and the iOS and macOS scripts) end by printing the version, the build number and the path of
+each file they made.
 
 | Script | What it does |
 | --- | --- |

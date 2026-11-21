@@ -128,3 +128,22 @@ androidComponents {
         variant.outputs.forEach { it.versionCode.set(releaseVersionCode) }
     }
 }
+
+// Release builds end by printing the version, the build number and the files made, as the
+// iOS and macOS release scripts do.
+val releaseVersionName = android.defaultConfig.versionName
+val releaseOutputs = mapOf("assembleRelease" to "outputs/apk/release", "bundleRelease" to "outputs/bundle/release")
+tasks.configureEach {
+    val dir = releaseOutputs[name] ?: return@configureEach
+    val outDir = layout.buildDirectory.dir(dir)
+    val root = rootDir
+    val code = releaseVersionCode
+    val shownVersion = releaseVersionName
+    doLast {
+        println("== Done")
+        println("Version: $shownVersion")
+        println("Build:   ${code.get()}")
+        outDir.get().asFile.listFiles { f -> f.extension == "apk" || f.extension == "aab" }.orEmpty()
+            .sorted().forEach { println("Output:  ${it.relativeTo(root)}") }
+    }
+}

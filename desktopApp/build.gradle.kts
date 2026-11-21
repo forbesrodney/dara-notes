@@ -45,8 +45,11 @@ tasks.processResources {
 /** Whether this is the Mac App Store build (-Pdaranotes.appStore=true; scripts/macos-appstore.sh). */
 val isAppStoreBuild = findProperty("daranotes.appStore")?.toString() == "true"
 
-/** CFBundleVersion for App Store uploads, which must rise each time: -Pdaranotes.buildNumber (scripts/build-number.sh). */
-val buildNumber = findProperty("daranotes.buildNumber")?.toString() ?: "1"
+/**
+ * CFBundleVersion of the release builds (scripts/macos-appstore.sh and macos-release.sh), which
+ * must rise with each App Store upload: -Pdaranotes.buildNumber (scripts/build-number.sh).
+ */
+val buildNumber = findProperty("daranotes.buildNumber")?.toString()
 
 compose.desktop {
     application {
@@ -93,12 +96,13 @@ compose.desktop {
                         <false/>
                     """.trimIndent()
                 }
+                buildNumber?.let { packageBuildVersion = it }
                 if (isAppStoreBuild) {
                     // The Mac App Store / TestFlight build (scripts/macos-appstore.sh):
                     // sandboxed, signed with the Mac App Distribution certificate, with the
                     // provisioning profiles from desktopApp/appstore/ (not committed).
                     appStore = true
-                    packageBuildVersion = buildNumber
+                    packageBuildVersion = buildNumber ?: "1"
                     val team = appleTeamId() ?: error("Set apple.teamId in local.properties for the App Store build.")
                     signing {
                         sign.set(true)

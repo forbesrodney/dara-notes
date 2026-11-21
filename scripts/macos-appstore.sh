@@ -3,6 +3,7 @@
 # Mac App Distribution certificate, and packaged as a signed .pkg to upload with Transporter.
 # (The notarized .dmg for downloads is scripts/macos-release.sh; the two don't mix.)
 # Output: desktopApp/build/appstore/Dara Notes-<version>.pkg
+# It ends by printing the version, the build number and the .pkg it made.
 #
 # The build number is the minutes since 1970 at the last commit (scripts/build-number.sh, or
 # BUILD_NUMBER if set), the same as the Android and iOS builds of that commit; a second upload
@@ -81,4 +82,7 @@ if xattr -r "$work/expanded" 2>/dev/null | grep -q com.apple.quarantine; then
     exit 1
 fi
 
-echo "Done: $pkg (version $version, build $build). Upload it with Transporter."
+echo "== Done (upload the .pkg with Transporter)"
+echo "Version: $version"
+echo "Build:   $(/usr/libexec/PlistBuddy -c "Print :CFBundleVersion" "$contents/Info.plist")"
+echo "Output:  $pkg"
