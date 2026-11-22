@@ -88,4 +88,17 @@ class EditingTest {
         outdent("    so|me", "so|me")
         outdent("  | - b", "| - b") // cursor inside the indentation goes to the line start
     }
+
+    // iOS types Tab's character after the handler indents the line, into the text as it was
+    // before or after the edit; that echo is recognized, and other edits aren't.
+    @Test fun recognizesIosKeyEcho() {
+        val before = v("- |")
+        val after = before.tab()
+        val echo = KeyEcho.of(androidx.compose.ui.input.key.Key.Tab, before, after)!!
+        assertEquals(true, echo.matches(v("- \t|")))
+        assertEquals(true, echo.matches(v("  - \t|")))
+        assertEquals(false, echo.matches(v("  - a|")))
+        assertEquals(false, echo.matches(v("\t  - |")))
+        assertEquals(null, KeyEcho.of(androidx.compose.ui.input.key.Key.B, before, after))
+    }
 }

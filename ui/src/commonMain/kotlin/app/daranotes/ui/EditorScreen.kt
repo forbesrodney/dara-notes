@@ -168,6 +168,9 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     val sync by vm.syncState.collectAsState()
     val focus = remember { FocusRequester() }
     var swallowTyped by remember { mutableStateOf(false) }
+    // On iOS a hardware key press also reaches the system's text input, which types the key's
+    // character after we've handled it (a tab after Tab indents the line): see [KeyEcho].
+    var keyEcho by remember { mutableStateOf<KeyEcho?>(null) }
     // The wikilink suggestions: which one is picked, and an unfinished link whose list was closed.
     var pick by remember { mutableStateOf(0) }
     var closedAt by remember { mutableStateOf(-1) }
@@ -541,7 +544,11 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                     CompositionLocalProvider(LocalBringIntoViewSpec provides NoBringIntoView) {
                     BasicTextField(
                         value = value,
-                        onValueChange = { value = continueList(value, it) },
+                        onValueChange = { new ->
+                            val echo = keyEcho
+                            if (echo != null && new.text != value.text) keyEcho = null
+                            if (echo == null || !echo.matches(new)) value = continueList(value, new)
+                        },
                         textStyle = MaterialTheme.typography.bodyLarge.copy(
                             fontFamily = FontFamily.Monospace,
                             color = MaterialTheme.colorScheme.onSurface,
@@ -567,17 +574,20 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                                 if (e.type != KeyEventType.KeyDown && e.type != KeyEventType.KeyUp) {
                                     return@onPreviewKeyEvent swallowTyped.also { swallowTyped = false }
                                 }
+                                if (e.type == KeyEventType.KeyDown) keyEcho = null
                                 // The wikilink suggestions: arrows pick, Enter or Tab completes, Esc closes.
                                 if (matches.isNotEmpty() && query != null &&
                                     (e.key in setOf(Key.DirectionUp, Key.DirectionDown, Key.Enter, Key.NumPadEnter, Key.Tab, Key.Escape))
                                 ) {
                                     if (e.type == KeyEventType.KeyDown) {
+                                        val before = value
                                         when (e.key) {
                                             Key.DirectionDown -> pick = (pick + 1) % matches.size
                                             Key.DirectionUp -> pick = (pick - 1 + matches.size) % matches.size
                                             Key.Escape -> closedAt = query.first
                                             else -> complete(matches[pick.coerceIn(matches.indices)])
                                         }
+                                        keyEcho = KeyEcho.of(e.key, before, value)
                                         swallowTyped = true
                                     }
                                     return@onPreviewKeyEvent true
@@ -585,7 +595,9 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                                 val action = shortcut(e, vm.settings.bullet) { TaskStyle.from(vm.settings) }
                                     ?: return@onPreviewKeyEvent false
                                 if (e.type == KeyEventType.KeyDown) {
+                                    val before = value
                                     value = action(value)
+                                    keyEcho = KeyEcho.of(e.key, before, value)
                                     swallowTyped = true
                                 } else swallowTyped = false
                                 true
@@ -1080,6 +1092,28 @@ fun TextFieldValue.toggleListPrefix(bullet: String, task: Boolean): TextFieldVal
     val prefix = if (task) "$bullet [ ] " else "$bullet "
     val newText = text.substring(0, lineStart) + prefix + text.substring(lineStart)
     return TextFieldValue(newText, TextRange(selection.start + prefix.length, selection.end + prefix.length))
+}
+
+/**
+ * The character a handled Tab or Enter would type, and the text before and after we handled
+ * it. On iOS, Compose passes a hardware key press both to the key handlers and to the
+ * system's text input, which then types the key's character anyway, into the text as it was
+ * before our edit or after it. A change that's just that character typed at the cursor of
+ * either is this echo, and is dropped. Other platforms never send one; the next real edit
+ * or key press clears it.
+ */
+class KeyEcho(private val typed: Char, private val bases: List<TextFieldValue>) {
+    fun matches(new: TextFieldValue): Boolean = bases.any { b ->
+        new.text == b.text.substring(0, b.selection.min) + typed + b.text.substring(b.selection.max)
+    }
+
+    companion object {
+        fun of(key: Key, before: TextFieldValue, after: TextFieldValue): KeyEcho? = when (key) {
+            Key.Tab -> KeyEcho('\t', listOf(before, after))
+            Key.Enter, Key.NumPadEnter -> KeyEcho('\n', listOf(before, after))
+            else -> null
+        }
+    }
 }
 
 private val listItem = Regex("""^(\s*)([-*+]|\d+[.)])(\s+)(\[[ xX]]\s+)?""")
