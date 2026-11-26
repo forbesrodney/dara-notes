@@ -97,7 +97,7 @@ Not all of these will become reality.
     - show it as the Username field's hint, and use it when the field is left blank (today blank means `git`)
     - a username in the URL (`https://user@bitbucket.org/...`, as Bitbucket's clone URLs have) is the login
     - the repo owner (`github.com/owner/repo`) is only a guess: wrong for organization or team repos
-    - GitHub and Azure DevOps ignore the username with a token, so keep sending `git` there;
+    - GitHub and Azure DevOps ignore the username with a token, so keep sending `git` there (maybe show 'git' and make read-only);
       it matters for Bitbucket and maybe Gitea/Forgejo
     - a wrong guess needs a clear sync error ("check the username and token")
   - [ ] Kanban boards, compatible with Obsidian's Kanban plugin
@@ -111,6 +111,37 @@ Not all of these will become reality.
     - needs a query parser and an index of front matter, tags, tasks and inline fields (`key:: value`)
     - a week or two for a small subset; full compatibility (including DataviewJS) isn't realistic
     - ask which queries people actually use before starting
+    - "#wifi && #hacking WHERE note created Date > 2010" could maybe be working into the search box
+    - carry forward of uncompleted tasks could maybe be added to template front matter
+      - when checked/unchecked, it would need to search back and check/uncheck all old tasks of the same name
+  - [ ] do we want cmd+d and cmd+n to work on mobile devices? I'm currently leaning toward yes.
+  - [ ] Show password/token button at end of token field
+  - [ ] graph view on small phones: a pinch that starts on a node drags the node instead of zooming
+    (each node's touch area is at least 14 points across, so on a crowded graph they cover a lot of the screen)
+    - zoom in and out buttons (+ and -) in the graph's toolbar, beside the fit button (about half a day)
+    - turn off node dragging on touch screens (`enableNodeDrag(false)` when the main pointer is coarse;
+      a one-line change): tap to select, panning and pinching still work anywhere; dragged nodes spring back
+      anyway, so little is lost, but tablets lose dragging too
+    - harder: keep dragging, but cancel the drag and zoom instead when a second finger touches down;
+      means working around force-graph's own touch handling, fiddly on both iOS and Android
+  - [ ] forms: a template that asks for fields instead of just a title (about a week, native)
+    - fields in a `dara_form` block in the template's front matter, beside `foam_template` (Foam ignores it)
+      - types: text, multiline, number, date, choice, checkbox; label, required, default (e.g. `today`)
+      - body uses `${FORM_field}` variables; check what Foam does with unknown variables first
+    - answers saved as the new note's front matter (`form: <template>`, one key per field), also filled into the body
+    - "Edit as form" on notes with `form:` updates only the front matter, never redoes the body
+    - naming: the template's `filepath`, also accepting field variables
+      - no `filepath`: a field marked as the title, else the first required text field
+      - repeated forms: add time variables (`$FOAM_DATE_HOUR$FOAM_DATE_MINUTE`)
+      - name taken: add `-2`, `-3`; clean unsafe characters like `FOAM_TITLE_SAFE`
+    - native Compose form recommended over a JS library in the web view (SurveyJS, JSON Forms,
+      react-jsonschema-form): no bridge, no web view keyboard quirks, matches the app;
+      keep field definitions close to a JSON Schema subset so a library stays possible
+    - Obsidian's Modal Form keeps forms in plugin settings, nothing to be compatible with;
+      front matter values work with Obsidian properties and Dataview
+  - [ ] add a quick description of getting started with GitHub
+        (creating account/repo/token) to help docs (maybe on getting started page),
+        lots of this is above the heads of most people
 
 ## Needs Further Testing
 
