@@ -89,6 +89,12 @@ Not all of these will become reality.
     - `LocalClipboardManager` in `EditorScreen.kt`: use `LocalClipboard` (suspend functions); test copy and paste
     - `SwingPanel(background = ...)` in `PlatformViews.jvm.kt` (desktop): use the overload without `background`,
       setting the color in the panel's factory; test the preview and graph web views
+  - [ ] list the editor's shortcuts (Bold, Italic, Strike-through, check or uncheck task) in the
+    system's shortcut lists; they work, but only New note, Today's note and Back are listed
+    - Android (Meta+/): add an "Editor" group in `MainActivity.onProvideKeyboardShortcuts`;
+      it only lists them, a few lines
+    - iPad (hold Cmd): a `UIKeyCommand` would run the shortcut itself instead of the editor,
+      so it needs a way to list them without taking the keys, or to pass them on to the editor
   - [ ] guess the Git username from the remote URL (about half a day)
     - show it as the Username field's hint, and use it when the field is left blank (today blank means `git`)
     - a username in the URL (`https://user@bitbucket.org/...`, as Bitbucket's clone URLs have) is the login
@@ -134,17 +140,14 @@ Not all of these will become reality.
     - Obsidian's Modal Form keeps forms in plugin settings, nothing to be compatible with;
       front matter values work with Obsidian properties and Dataview
 
-## Needs Further Testing
-
-- General
-  - [ ] right click brings up context menu
-  - [ ] default action on popups (create/move/rename) show as active once field is changed and is activated with Enter
-  - [ ] tab/shift+tab to indent/un-indent selected group of lines or list items
-- [ ] Windows desktop app (msi)
-- [ ] Linux desktop app (rpm, deb)
-- macOS desktop app
-  - [ ] preview gets weird with the font after a while, requires restarting app
-
 ## Known Issues
 
-- None
+- iOS: with a hardware keyboard, a dialog with a text field (New note, Rename, Move, template
+  names, Add a tag) takes two Esc presses to close; the first only drops the field's focus
+  - the first Esc never reaches the app's code (no key event, no Back event); the second
+    becomes Back, which closes the dialog
+  - Compose shows dialogs in their own view controller (`ComposeLayersViewController`), and
+    something in UIKit or Compose's iOS text input takes that first Esc there; in the editor,
+    Esc goes Back on the first press
+  - closing the dialog when its field loses focus would work, but would also close it at the
+    wrong times (switching apps); check again after Compose updates
