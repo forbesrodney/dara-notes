@@ -45,7 +45,9 @@ unsaved changes in Settings, the app asks first, as it does when you go back.
 
 Back is Cmd+[ on a Mac or iPad and Alt+Left on Windows and Linux, as in web browsers. Esc
 does the same everywhere, and so does a mouse's back button on the desktop. With a menu or
-dialog open, Back closes it first.
+dialog open, Back closes it first. Editing a note and reading its preview are the same
+screen, so Back from either goes where the back arrow does: the screen before the note,
+usually the note list.
 
 On an iPad, hold Cmd to see the shortcuts listed; on Android, Meta+/.
 
