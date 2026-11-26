@@ -108,6 +108,7 @@ import app.daranotes.core.FoamConfig
 import app.daranotes.core.FoamVariables
 import app.daranotes.core.FrontMatterTags
 import app.daranotes.core.NoteParser
+import app.daranotes.core.LintComments
 import app.daranotes.core.LintResult
 import app.daranotes.core.TaskStyle
 import app.daranotes.core.Tasks
@@ -156,6 +157,8 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
     var spelling by remember(path) { mutableStateOf<List<SpellIssue>>(emptyList()) }
     var spellConfig by remember { mutableStateOf(CSpellConfig()) }
     var spellConfigVersion by remember { mutableStateOf(0) }
+    // Bumped when a rule is turned off in the markdownlint config, to check the note again.
+    var lintConfigVersion by remember { mutableStateOf(0) }
     var showSpelling by remember { mutableStateOf(false) }
     var suggestions by remember { mutableStateOf<List<String>?>(null) }
     var pickingVariable by remember { mutableStateOf(false) }
@@ -245,7 +248,7 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
         }
     }
     // markdownlint, shortly after typing stops (only while editing, when switched on).
-    LaunchedEffect(path, editing, lintOn) {
+    LaunchedEffect(path, editing, lintOn, lintConfigVersion) {
         if (!lintOn || !editing) { lint = null; return@LaunchedEffect }
         snapshotFlow { value.text }.debounce(600).collectLatest { text ->
             val config = withContext(ioDispatcher) { vm.repo.lintConfig() }
@@ -671,6 +674,19 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                         value = TextFieldValue(fixed, TextRange(value.selection.start.coerceAtMost(fixed.length)))
                     }
                 }
+            },
+            onIgnore = { issue ->
+                showIssues = false
+                replaceText(LintComments.ignoreInNote(value.text, issue.rule.substringBefore('/')))
+            },
+            onTurnOff = { issue ->
+                showIssues = false
+                vm.turnOffLintRule(issue.rule) { lintConfigVersion++ }
+            },
+            onDisable = {
+                showIssues = false
+                lint = null
+                replaceText(LintComments.disableInNote(value.text))
             },
         )
     }

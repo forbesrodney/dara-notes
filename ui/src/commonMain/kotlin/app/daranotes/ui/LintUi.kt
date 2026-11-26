@@ -1,6 +1,16 @@
 package app.daranotes.ui
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.IconButton
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -115,8 +125,13 @@ fun LintIssuesDialog(
     onDismiss: () -> Unit,
     onJump: (LintIssue) -> Unit,
     onFixAll: () -> Unit,
+    onIgnore: (LintIssue) -> Unit,
+    onTurnOff: (LintIssue) -> Unit,
+    onDisable: () -> Unit,
 ) {
     val fixable = result.issues.count { it.fixable }
+    // Where Turn off writes: the config the app reads, or a new .markdownlint.json.
+    val configName = result.configFile ?: ".markdownlint.json"
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("markdownlint") },
@@ -136,8 +151,9 @@ fun LintIssuesDialog(
                 }
                 LazyColumn(Modifier.heightIn(max = 420.dp).padding(top = 8.dp)) {
                     items(result.issues) { issue ->
+                        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
                         Column(
-                            Modifier.fillMaxWidth().clickable { onJump(issue) }.padding(vertical = 8.dp),
+                            Modifier.weight(1f).clickable { onJump(issue) }.padding(vertical = 8.dp),
                         ) {
                             Text(
                                 "Line ${issue.line} · ${issue.rule}" + if (issue.fixable) " · fixable" else "",
@@ -157,14 +173,41 @@ fun LintIssuesDialog(
                                 )
                             }
                         }
+                        IssueMenu(issue.rule.substringBefore('/'), configName, { onIgnore(issue) }, { onTurnOff(issue) })
+                        }
                         HorizontalDivider()
                     }
                 }
             }
         },
+        // As in the spelling list: Disable at the left, apart from Close. Fix all goes on a line
+        // of its own above Close: all three don't fit across a phone.
         confirmButton = {
-            if (fixable > 0) TextButton(onClick = onFixAll) { Text("Fix all ($fixable)") }
+            Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.End) {
+                if (fixable > 0) TextButton(onClick = onFixAll) { Text("Fix all ($fixable)") }
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    TextButton(onClick = onDisable) { Text("Disable in current note") }
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = onDismiss) { Text("Close") }
+                }
+            }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("Close") } },
     )
+}
+
+/** An issue's menu: turn its rule off in this note, or for the whole repository. */
+@Composable
+private fun IssueMenu(rule: String, configName: String, onIgnore: () -> Unit, onTurnOff: () -> Unit) {
+    var open by remember { mutableStateOf(false) }
+    Box {
+        Tip("Ignore or turn off $rule") {
+            IconButton(onClick = { open = true }) {
+                Icon(Icons.Default.MoreVert, contentDescription = "More options for $rule")
+            }
+        }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            DropdownMenuItem(text = { Text("Ignore $rule in this note") }, onClick = { open = false; onIgnore() })
+            DropdownMenuItem(text = { Text("Turn off $rule in $configName") }, onClick = { open = false; onTurnOff() })
+        }
+    }
 }

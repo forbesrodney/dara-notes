@@ -199,3 +199,19 @@ as you edit, using your repository's markdownlint configuration, like the VS Cod
 extension. Problems are highlighted; the *issues* chip lists them (tap one to jump to it)
 and offers *Fix all* for the rules markdownlint can fix. See
 [Foam and repository settings](foam-settings.md) for where the configuration comes from.
+
+As with spelling, you can turn a rule off rather than fix it. Each issue's menu (the three
+dots at its end) offers:
+
+- *Ignore MD013 in this note* (with the issue's rule), which adds the rule to a comment at
+  the top of the note, below any front matter: `<!-- markdownlint-disable-file MD013 -->`.
+  Ignoring another rule adds it to the same comment.
+- *Turn off MD013 in .markdownlint.json* (or whichever config file the repository has),
+  which adds `"MD013": false` there, or changes the rule's entry if it has one. Without a
+  config file, the app creates `.markdownlint.json`. It syncs with the rest of the
+  repository. In a YAML config, a rule with settings of its own is left for you to edit.
+
+*Disable in current note*, in the issues list, puts `<!-- markdownlint-disable-file -->` at
+the top instead, so markdownlint skips the note. Delete that line to check the note again.
+These are markdownlint's own comments, so VS Code follows them too, and any you type
+yourself work the same way.

@@ -109,6 +109,83 @@ object Jsonc {
         return if (crlf) out.replace("\n", "\r\n") else out
     }
 
+    /**
+     * [text] with a key set to `false` in the object found by following [objectPath] (keys
+     * each holding an object, made if missing) from the top-level object. The first of
+     * [names] already there, in any letter case, has its value replaced; otherwise the first
+     * name is added as the object's last entry. Null if the file isn't shaped that way.
+     */
+    fun setFalse(text: String, objectPath: List<String>, names: List<String>): String? {
+        if (text.isBlank()) return null
+        val crlf = "\r\n" in text
+        var src = text.replace("\r\n", "\n")
+        var open = nextCode(src, 0)?.takeIf { src[it] == '{' } ?: return null
+        for ((i, segment) in objectPath.withIndex()) {
+            val close = matching(src, open) ?: return null
+            val key = findKeyIn(src, open, close, listOf(segment), ignoreCase = false)
+            if (key == null) {
+                // Missing: the rest of the path, as one line, holding the setting.
+                var entry = "${Json.quote(names.first())}: false"
+                for (s in objectPath.drop(i).reversed()) entry = "${Json.quote(s)}: { $entry }"
+                src = insertItem(src, open, close, entry)
+                return if (crlf) src.replace("\n", "\r\n") else src
+            }
+            open = valueStart(src, key)?.takeIf { src[it] == '{' } ?: return null
+        }
+        val close = matching(src, open) ?: return null
+        val key = findKeyIn(src, open, close, names, ignoreCase = true)
+        src = if (key != null) {
+            val start = valueStart(src, key) ?: return null
+            val end = valueEnd(src, start)
+            if (src.substring(start, end) == "false") return text
+            src.substring(0, start) + "false" + src.substring(end)
+        } else {
+            insertItem(src, open, close, "${Json.quote(names.first())}: false")
+        }
+        return if (crlf) src.replace("\n", "\r\n") else src
+    }
+
+    /** The first key directly inside the object or array from [open] to [close] named one of [names]. */
+    private fun findKeyIn(src: String, open: Int, close: Int, names: List<String>, ignoreCase: Boolean): Int? {
+        var depth = 0
+        var i = open + 1
+        while (i < close) {
+            when {
+                src.startsWith("//", i) -> i = src.indexOf('\n', i).let { if (it < 0) close else it }
+                src.startsWith("/*", i) -> i = src.indexOf("*/", i + 2).let { if (it < 0) close else it + 2 }
+                src[i] == '"' -> {
+                    val end = stringEnd(src, i)
+                    val name = src.substring(i + 1, end)
+                    if (depth == 0 && names.any { it.equals(name, ignoreCase) }) {
+                        val colon = nextCode(src, end + 1)
+                        if (colon != null && src[colon] == ':') return end + 1
+                    }
+                    i = end + 1
+                }
+                src[i] == '{' || src[i] == '[' -> { depth++; i++ }
+                src[i] == '}' || src[i] == ']' -> { depth--; i++ }
+                else -> i++
+            }
+        }
+        return null
+    }
+
+    /** Where the value starts, for a key ending just before [afterKey]. */
+    private fun valueStart(src: String, afterKey: Int): Int? =
+        nextCode(src, afterKey)?.takeIf { src[it] == ':' }?.let { nextCode(src, it + 1) }
+
+    /** Just after the value starting at [start]. */
+    private fun valueEnd(src: String, start: Int): Int = when (src[start]) {
+        '{', '[' -> (matching(src, start) ?: (src.length - 1)) + 1
+        '"' -> stringEnd(src, start) + 1
+        else -> {
+            var i = start
+            while (i < src.length && src[i] !in ",}]\n" && !src.startsWith("//", i) && !src.startsWith("/*", i)) i++
+            while (i > start && src[i - 1].isWhitespace()) i--
+            i
+        }
+    }
+
     /** Adds an item before the array's closing bracket at [close], in the array's style. */
     private fun insertItem(src: String, open: Int, close: Int, quoted: String): String {
         val last = lastCode(src, open + 1, close)

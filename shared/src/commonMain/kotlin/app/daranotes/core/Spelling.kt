@@ -95,7 +95,7 @@ class SpellComments(
         }
 
         /** The first line after any front matter. */
-        private fun topLine(lines: List<String>): Int =
+        internal fun topLine(lines: List<String>): Int =
             if (lines.firstOrNull()?.trimEnd() == "---") {
                 (1 until lines.size).firstOrNull { lines[it].trimEnd() == "---" || lines[it].trimEnd() == "..." }?.plus(1) ?: 0
             } else 0

@@ -16,6 +16,7 @@ import androidx.lifecycle.viewModelScope
 import app.daranotes.core.Dates
 import app.daranotes.core.GitErrors
 import app.daranotes.core.GitSync
+import app.daranotes.core.LintRuleOff
 import app.daranotes.core.Graph
 import app.daranotes.core.Note
 import app.daranotes.core.NoteRepository
@@ -445,6 +446,24 @@ class MainViewModel(val platform: AppPlatform) : ViewModel() {
                 afterEdit()
                 messages.emit("Added \u201c$word\u201d to $file")
             }.onFailure { messages.emit("Couldn't add \u201c$word\u201d: ${it.message ?: it::class.simpleName}") }
+            onDone()
+        }
+    }
+
+    /**
+     * Turns the markdownlint [rule] (`MD013/line-length`) off for the whole repository, in its
+     * markdownlint config, so VS Code follows it too; [onDone] runs once it's written.
+     */
+    fun turnOffLintRule(rule: String, onDone: () -> Unit = {}) {
+        val name = rule.substringBefore('/')
+        viewModelScope.launch {
+            val result = withContext(ioDispatcher) {
+                runCatching { GitSync.exclusive { LintRuleOff.apply(platform.fs, repo.root, rule) } }
+            }
+            result.onSuccess { file ->
+                afterEdit()
+                messages.emit("Turned off $name in $file")
+            }.onFailure { messages.emit(it.message ?: "Couldn't turn off $name") }
             onDone()
         }
     }
