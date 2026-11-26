@@ -53,7 +53,6 @@ day to list its notes, then tap a note to open it. *Today* jumps back to this mo
   time its file was saved.
 - A note that was only moved or renamed counts as edited when it moved.
 
-
 A note's menu > *Connections* works like Foam's Connections panel:
 
 - **Links out:** every link in the note (wikilinks, embeds, Markdown links and images, web

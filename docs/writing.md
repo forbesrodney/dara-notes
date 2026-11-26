@@ -31,8 +31,8 @@ With a hardware keyboard:
 | Shift+Tab | Outdent the selected lines, or the line the cursor is on |
 
 Bold, italic and strike-through toggle, and with nothing selected apply to the word at the
-cursor. Tab nests a list item under the one above it: 2 spaces under a bullet (`- `), 3 under
-a numbered item (`1. `). Other selected lines move 4 spaces. markdownlint flags tab
+cursor. Tab nests a list item under the one above it: 2 spaces under a bullet (`-` and a
+space), 3 under a numbered item (`1.` and a space). Other selected lines move 4 spaces. markdownlint flags tab
 characters by default (rule MD010); turn that rule off in `.markdownlint.json` if you use
 them. On Android, use Ctrl: the system may claim some Cmd shortcuts.
 
