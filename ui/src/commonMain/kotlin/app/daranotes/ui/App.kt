@@ -57,6 +57,18 @@ fun App(vm: MainViewModel) {
                 is Screen.Editor -> key(screen.path) { EditorScreen(vm, screen, snackbar) }
             }
         }
+        // New note, from the note list or Cmd+N anywhere: over the current screen, which is
+        // left only once the note is created.
+        if (vm.newNoteRequested.value) {
+            NewNoteDialog(
+                linked = vm.settings.linkFromIndex,
+                onDismiss = { vm.newNoteRequested.value = false },
+                onCreate = { title ->
+                    vm.newNoteRequested.value = false
+                    vm.createNoteFromDialog(title)
+                },
+            )
+        }
     }
 }
 

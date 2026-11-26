@@ -99,9 +99,9 @@ background if edits are waiting to be pushed (iOS allows about 30 seconds for th
 when its window comes to the front, and before it quits if edits are waiting to be pushed:
 the window closes first, and the app gives up after 20 seconds.
 
-In the desktop app, Cmd+N (Ctrl+N on Windows and Linux) starts a new note and Cmd+D
-(Ctrl+D) opens today's note, from anywhere. The *Today* and *New note* buttons are in the
-toolbar.
+In the desktop app, the *Today* and *New note* buttons are in the toolbar. Cmd+N and Cmd+D
+start a new note and open today's note from any screen; see
+[Keyboard shortcuts](writing.md#keyboard-shortcuts).
 
 ## Where things are kept
 

@@ -40,6 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -143,6 +144,22 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState, active: Boole
 
     fun leave() { if (dirty && s.isConfigured) confirmDiscard = true else vm.back() }
     BackHandler(enabled = active && dirty && s.isConfigured) { confirmDiscard = true }
+
+    // Cmd+N or Cmd+D with unsaved changes: ask first, as Back does, then do it once Settings
+    // is saved or discarded. (Not after Save & re-clone: the re-clone is the thing to watch.)
+    var afterLeave by remember { mutableStateOf<(() -> Unit)?>(null) }
+    val guarded = dirty && s.isConfigured
+    DisposableEffect(guarded) {
+        vm.leaveGuard = if (guarded) { action -> afterLeave = action; confirmDiscard = true } else null
+        onDispose { vm.leaveGuard = null }
+    }
+    fun leaveThen(saving: Boolean) {
+        confirmDiscard = false
+        val action = afterLeave
+        afterLeave = null
+        if (saving) save() else vm.back()
+        if (action != null && !(saving && repoChanged)) action()
+    }
 
     val tabs = listOf("Repo", "Notes", "Editing", "Sync")
 
@@ -344,14 +361,14 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState, active: Boole
 
     if (confirmDiscard) {
         AlertDialog(
-            onDismissRequest = { confirmDiscard = false },
+            onDismissRequest = { confirmDiscard = false; afterLeave = null },
             title = { Text("Discard changes?") },
             text = { Text("Your changes to the settings haven't been saved.") },
             confirmButton = {
-                TextButton(onClick = { confirmDiscard = false; vm.back() }) { Text("Discard") }
+                TextButton(onClick = { leaveThen(saving = false) }) { Text("Discard") }
             },
             dismissButton = {
-                TextButton(onClick = { confirmDiscard = false; save() }) { Text(if (repoChanged) "Save & re-clone" else "Save") }
+                TextButton(onClick = { leaveThen(saving = true) }) { Text(if (repoChanged) "Save & re-clone" else "Save") }
             },
         )
     }

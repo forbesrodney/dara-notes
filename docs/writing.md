@@ -23,6 +23,8 @@ With a hardware keyboard:
 
 | Shortcut | Does |
 | --- | --- |
+| Cmd+N or Ctrl+N | New note, from any screen |
+| Cmd+D or Ctrl+D | Today's note, from any screen |
 | Cmd+B or Ctrl+B | Bold |
 | Cmd+I or Ctrl+I | Italic |
 | Cmd+Shift+X or Ctrl+Shift+X | Strike-through |
@@ -35,6 +37,10 @@ cursor. Tab nests a list item under the one above it: 2 spaces under a bullet (`
 space), 3 under a numbered item (`1.` and a space). Other selected lines move 4 spaces. markdownlint flags tab
 characters by default (rule MD010); turn that rule off in `.markdownlint.json` if you use
 them. On Android, use Ctrl: the system may claim some Cmd shortcuts.
+
+Cmd+N and Cmd+D leave the note you're in (it's already saved). Cancel the New note dialog
+and you stay where you were. With unsaved changes in Settings, the app asks first, as it
+does when you go back. On an iPad, hold Cmd to see them listed; on Android, Meta+/.
 
 ## The preview
 

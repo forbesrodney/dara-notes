@@ -22,6 +22,17 @@ private val vm: MainViewModel by lazy { MainViewModel(platform) }
 @Suppress("FunctionName", "unused")
 fun MainViewController(): UIViewController = ComposeUIViewController { App(vm) }
 
+/**
+ * Cmd+N with a hardware keyboard (a UIKeyCommand in iosApp/): the New note dialog. Named
+ * shortcut... everywhere, not new...: Objective-C reserves that prefix (Kotlin exports doNew...).
+ */
+@Suppress("unused")
+fun shortcutNewNote() = vm.shortcutNewNote()
+
+/** Cmd+D with a hardware keyboard (a UIKeyCommand in iosApp/): today's daily note. */
+@Suppress("unused")
+fun shortcutToday() = vm.shortcutToday()
+
 /** Call at launch (before it finishes): registers background sync and schedules the first. */
 @Suppress("unused")
 fun startBackgroundSync() {

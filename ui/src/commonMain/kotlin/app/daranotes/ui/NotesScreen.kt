@@ -90,7 +90,6 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     val notes by vm.notes.collectAsState()
     val sync by vm.syncState.collectAsState()
     var query by rememberSaveable { mutableStateOf("") }
-    var showNew by remember { mutableStateOf(false) }
     // Create note from template: the templates to pick from, then the one picked, which asks
     // for a title in a dialog of its own. That opens a moment after the list closes: opened at
     // once, the click that picked the template dismissed it on the desktop, and in the list's
@@ -130,13 +129,6 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
     val index = notes.firstOrNull { it.path.equals(indexPath, ignoreCase = true) }
 
     val desktop = vm.platform.desktop
-    // Cmd+N in the desktop app.
-    LaunchedEffect(vm.newNoteRequested.value) {
-        if (vm.newNoteRequested.value) {
-            vm.newNoteRequested.value = false
-            showNew = true
-        }
-    }
 
     Scaffold(
         topBar = {
@@ -172,7 +164,7 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                             }
                         }
                         Tip(withShortcut("New note", "N")) {
-                            IconButton(onClick = { showNew = true }) {
+                            IconButton(onClick = vm::requestNewNote) {
                                 Icon(Icons.Default.Add, contentDescription = "New note")
                             }
                         }
@@ -271,7 +263,7 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
             // Two matching buttons: the same height, and as wide as the wider of the two.
             Column(Modifier.width(IntrinsicSize.Max), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 ListActionButton(TodayIcon, "Today", vm::openDailyNote)
-                ListActionButton(Icons.Default.Add, "New note") { showNew = true }
+                ListActionButton(Icons.Default.Add, "New note", vm::requestNewNote)
             }
         },
         snackbarHost = { SnackbarHost(snackbar) },
@@ -390,12 +382,6 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
         }
     }
 
-    if (showNew) {
-        NewNoteDialog(linked = vm.settings.linkFromIndex, onDismiss = { showNew = false }, onCreate = { title ->
-            showNew = false
-            vm.createNote(title)
-        })
-    }
     templates?.let { list ->
         TemplatePickerDialog(
             list,
@@ -481,7 +467,7 @@ fun SyncStatusLine(sync: SyncState) {
 }
 
 @Composable
-private fun NewNoteDialog(
+internal fun NewNoteDialog(
     linked: Boolean,
     onDismiss: () -> Unit,
     heading: String = "New note",

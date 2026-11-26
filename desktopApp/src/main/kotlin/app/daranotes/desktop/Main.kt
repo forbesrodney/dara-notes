@@ -132,8 +132,8 @@ private fun appShortcut(e: KeyEvent, vm: MainViewModel): Boolean {
     val command = if (isMac) e.isMetaPressed && !e.isCtrlPressed else e.isCtrlPressed && !e.isMetaPressed
     if (!command || e.isShiftPressed || e.isAltPressed) return false
     val action: () -> Unit = when (e.key) {
-        Key.N -> vm::requestNewNote
-        Key.D -> vm::openDailyNote
+        Key.N -> vm::shortcutNewNote
+        Key.D -> vm::shortcutToday
         else -> return false
     }
     if (e.type == KeyEventType.KeyDown) action()

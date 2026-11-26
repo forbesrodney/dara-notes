@@ -191,15 +191,43 @@ class MainViewModel(val platform: AppPlatform) : ViewModel() {
         }
     }
 
-    /** Set to ask the note list to show its New note dialog; it clears this when it does. */
+    /**
+     * Whether the New note dialog is showing. App shows it over whatever screen is current,
+     * so cancelling it leaves you where you were.
+     */
     val newNoteRequested = mutableStateOf(false)
 
-    /** The New note dialog, from anywhere (the desktop app's Cmd+N): back to the note list first. */
+    /** Shows the New note dialog, from any screen once the app is set up. */
     fun requestNewNote() {
-        val list = backStack.indexOf(Screen.Notes)
-        if (list < 0) return // not set up yet
-        while (backStack.lastIndex > list) backStack.removeAt(backStack.lastIndex)
+        if (Screen.Notes !in backStack) return // not set up yet
         newNoteRequested.value = true
+    }
+
+    /** Creates a note from the New note dialog: back to the note list, then opens the note. */
+    fun createNoteFromDialog(title: String) {
+        val list = backStack.indexOf(Screen.Notes)
+        if (list >= 0) while (backStack.lastIndex > list) backStack.removeAt(backStack.lastIndex)
+        createNote(title)
+    }
+
+    /**
+     * Set by a screen with unsaved changes (Settings) while it has them. An app-wide shortcut
+     * hands its action to this instead of running it, so the screen can ask first, then leave
+     * and run the action, or stay.
+     */
+    var leaveGuard: ((action: () -> Unit) -> Unit)? = null
+
+    /** Cmd+N (Ctrl+N): the New note dialog, from any screen. */
+    fun shortcutNewNote() = guarded(::requestNewNote)
+
+    /** Cmd+D (Ctrl+D): today's daily note, from any screen. */
+    fun shortcutToday() = guarded(::openDailyNote)
+
+    private fun guarded(action: () -> Unit) {
+        val guard = leaveGuard ?: return action()
+        // Settings with help open over it: back to Settings, so its question can show.
+        while (current is Screen.Help && Screen.Settings in backStack) back()
+        guard(action)
     }
 
     fun openDailyNote() {
