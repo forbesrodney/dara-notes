@@ -46,8 +46,14 @@ class MainActivity : ComponentActivity() {
      */
     override fun dispatchKeyEvent(event: KeyEvent): Boolean {
         val command = event.isCtrlPressed != event.isMetaPressed && !event.isShiftPressed && !event.isAltPressed
+        // Back, as on the desktop: Esc (which a text field would otherwise keep) and Ctrl+[.
+        // Not Alt+Left, which Android's text fields use for the start of the line. Sent as the
+        // system's Back, so Settings still asks about unsaved changes.
+        val back = { onBackPressedDispatcher.onBackPressed() }
         val action: (() -> Unit)? = when {
+            event.keyCode == KeyEvent.KEYCODE_ESCAPE && event.hasNoModifiers() -> back
             !command -> null
+            event.keyCode == KeyEvent.KEYCODE_LEFT_BRACKET -> back
             event.keyCode == KeyEvent.KEYCODE_N -> vm::shortcutNewNote
             event.keyCode == KeyEvent.KEYCODE_D -> vm::shortcutToday
             else -> null
@@ -66,6 +72,7 @@ class MainActivity : ComponentActivity() {
                 listOf(
                     KeyboardShortcutInfo("New note", KeyEvent.KEYCODE_N, KeyEvent.META_CTRL_ON),
                     KeyboardShortcutInfo("Today's note", KeyEvent.KEYCODE_D, KeyEvent.META_CTRL_ON),
+                    KeyboardShortcutInfo("Back", KeyEvent.KEYCODE_LEFT_BRACKET, KeyEvent.META_CTRL_ON),
                 ),
             ),
         )

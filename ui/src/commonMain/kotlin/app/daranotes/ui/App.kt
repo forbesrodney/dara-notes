@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
@@ -18,6 +19,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
+import androidx.navigationevent.DirectNavigationEventInput
+import androidx.navigationevent.compose.LocalNavigationEventDispatcherOwner
 import app.daranotes.MainViewModel
 import app.daranotes.Screen
 
@@ -28,6 +31,21 @@ fun App(vm: MainViewModel) {
         val snackbar = remember { SnackbarHostState() }
         LaunchedEffect(Unit) { vm.messages.collect { snackbar.showSnackbar(it) } }
         BackHandler(enabled = vm.backStack.size > 1) { vm.back() }
+        // Back from a shortcut or mouse button (vm.shortcutBack) goes through the same
+        // dispatcher as the system's Back, so whatever is on top handles it: an open menu or
+        // dialog closes, Settings asks about unsaved changes, and otherwise the screen goes.
+        // (Android has no dispatcher here; MainActivity sends its own Back.)
+        val dispatcher = LocalNavigationEventDispatcherOwner.current?.navigationEventDispatcher
+        DisposableEffect(dispatcher) {
+            if (dispatcher == null) return@DisposableEffect onDispose {}
+            val input = DirectNavigationEventInput()
+            dispatcher.addInput(input)
+            vm.sendBack = input::backCompleted
+            onDispose {
+                vm.sendBack = null
+                dispatcher.removeInput(input)
+            }
+        }
         // During some rotations (e.g. to upside down) the window can be tiny for a frame.
         // Material list rows throw if laid out narrower than their padding, so never lay the
         // app out below a usable size; the excess is just clipped.

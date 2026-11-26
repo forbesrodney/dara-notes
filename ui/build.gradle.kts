@@ -102,6 +102,8 @@ kotlin {
             api("org.jetbrains.compose.foundation:foundation:1.12.2")
             api("org.jetbrains.compose.ui:ui:1.12.2")
             implementation("org.jetbrains.compose.ui:ui-backhandler:1.12.2")
+            // Sending Back from a keyboard shortcut or mouse button, as the Esc key does.
+            implementation("org.jetbrains.androidx.navigationevent:navigationevent-compose:1.1.0")
             api("org.jetbrains.compose.material3:material3:1.9.0")
             implementation("org.jetbrains.compose.material:material-icons-core:1.7.3")
             api("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.11.0")
@@ -110,6 +112,8 @@ kotlin {
         }
         jvmTest.dependencies {
             implementation(kotlin("test"))
+            implementation("org.jetbrains.compose.ui:ui-test:1.12.2")
+            implementation(compose.desktop.currentOs)
         }
         androidMain.dependencies {
             implementation("androidx.webkit:webkit:1.12.1")

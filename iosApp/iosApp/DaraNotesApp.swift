@@ -65,9 +65,14 @@ final class ShortcutsController: UIViewController {
         [
             UIKeyCommand(title: "New Note", action: #selector(shortcutNewNote), input: "n", modifierFlags: .command),
             UIKeyCommand(title: "Today's Note", action: #selector(shortcutToday), input: "d", modifierFlags: .command),
+            UIKeyCommand(title: "Back", action: #selector(shortcutBack), input: "[", modifierFlags: .command),
+            // Esc goes Back too, as on the desktop and Android. Untitled, so the Cmd list
+            // shows Back once.
+            UIKeyCommand(input: UIKeyCommand.inputEscape, modifierFlags: [], action: #selector(shortcutBack)),
         ]
     }
 
     @objc private func shortcutNewNote() { MainViewControllerKt.shortcutNewNote() }
     @objc private func shortcutToday() { MainViewControllerKt.shortcutToday() }
+    @objc private func shortcutBack() { MainViewControllerKt.shortcutBack() }
 }

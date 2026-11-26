@@ -33,6 +33,10 @@ fun shortcutNewNote() = vm.shortcutNewNote()
 @Suppress("unused")
 fun shortcutToday() = vm.shortcutToday()
 
+/** Cmd+[ with a hardware keyboard (a UIKeyCommand in iosApp/): Back, as the back arrow. */
+@Suppress("unused")
+fun shortcutBack() = vm.shortcutBack()
+
 /** Call at launch (before it finishes): registers background sync and schedules the first. */
 @Suppress("unused")
 fun startBackgroundSync() {

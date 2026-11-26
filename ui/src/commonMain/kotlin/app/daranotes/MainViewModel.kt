@@ -237,6 +237,16 @@ class MainViewModel(val platform: AppPlatform) : ViewModel() {
         }
     }
 
+    /** Set by App: sends Back the way the system's Back (or Esc on the desktop) does. */
+    var sendBack: (() -> Unit)? = null
+
+    /**
+     * Cmd+[ (Alt+Left on Windows and Linux), or a mouse's back button on the desktop: Back,
+     * exactly as the system's Back. So an open menu or dialog closes first, and Settings with
+     * unsaved changes asks before leaving.
+     */
+    fun shortcutBack() { sendBack?.invoke() }
+
     private fun guarded(action: () -> Unit) {
         val guard = leaveGuard ?: return action()
         // Settings with help open over it: back to Settings, so its question can show.

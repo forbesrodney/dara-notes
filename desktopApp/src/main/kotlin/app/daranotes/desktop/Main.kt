@@ -25,7 +25,11 @@ import app.daranotes.Screen
 import app.daranotes.core.GitSync
 import app.daranotes.ui.App
 import app.daranotes.ui.Fx
+import java.awt.AWTEvent
 import java.awt.Desktop
+import java.awt.event.AWTEventListener
+import java.awt.event.MouseEvent
+import javax.swing.SwingUtilities
 import java.awt.event.WindowAdapter
 import java.awt.Taskbar
 import java.awt.event.WindowEvent
@@ -104,6 +108,20 @@ fun main() {
                 window.addWindowFocusListener(listener)
                 onDispose { window.removeWindowFocusListener(listener) }
             }
+            // A mouse's back button goes Back. Watched for the whole window at the AWT level,
+            // so it works over the preview and graph (Swing panels Compose doesn't see).
+            DisposableEffect(Unit) {
+                val toolkit = java.awt.Toolkit.getDefaultToolkit()
+                val listener = AWTEventListener { e ->
+                    if (e is MouseEvent && e.id == MouseEvent.MOUSE_PRESSED && e.button == backButton &&
+                        SwingUtilities.getWindowAncestor(e.component).let { it == window || e.component == window }
+                    ) {
+                        vm.shortcutBack()
+                    }
+                }
+                toolkit.addAWTEventListener(listener, AWTEvent.MOUSE_EVENT_MASK)
+                onDispose { toolkit.removeAWTEventListener(listener) }
+            }
             // Only on a Mac: elsewhere a menu bar would sit inside the window, holding just
             // Help, which the note list's menu already has.
             if (isMac) {
@@ -125,10 +143,27 @@ fun main() {
 private val isMac = "mac" in System.getProperty("os.name").lowercase()
 
 /**
+ * A mouse's back button, as Java numbers it: 4 on Macs and Windows; 6 on Linux, where X11's
+ * buttons 4 and 5 are the scroll wheel and Java numbers the ones after them two lower, so
+ * X11's back button (8) is 6.
+ */
+private val backButton = if ("linux" in System.getProperty("os.name").lowercase()) 6 else 4
+
+/**
  * App-wide shortcuts, wherever the focus is: Cmd+N (Ctrl+N on Windows and Linux) for a new
- * note and Cmd+D (Ctrl+D) for today's daily note. True if [e] was one.
+ * note, Cmd+D (Ctrl+D) for today's daily note, and Back: Cmd+[ on a Mac, Alt+Left elsewhere,
+ * as in browsers and file managers. True if [e] was one.
  */
 private fun appShortcut(e: KeyEvent, vm: MainViewModel): Boolean {
+    val back = if (isMac) {
+        e.key == Key.LeftBracket && e.isMetaPressed && !e.isCtrlPressed && !e.isAltPressed && !e.isShiftPressed
+    } else {
+        e.key == Key.DirectionLeft && e.isAltPressed && !e.isCtrlPressed && !e.isMetaPressed && !e.isShiftPressed
+    }
+    if (back) {
+        if (e.type == KeyEventType.KeyDown) vm.shortcutBack()
+        return true
+    }
     val command = if (isMac) e.isMetaPressed && !e.isCtrlPressed else e.isCtrlPressed && !e.isMetaPressed
     if (!command || e.isShiftPressed || e.isAltPressed) return false
     val action: () -> Unit = when (e.key) {
