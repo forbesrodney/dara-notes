@@ -2,7 +2,8 @@
 
 ## The editor
 
-Notes are plain Markdown, saved automatically as you type. Above the keyboard:
+Notes are plain Markdown, saved automatically as you type. New to Markdown? See
+[Markdown basics](markdown.md). Above the keyboard:
 
 - *All*, *Cut*, *Copy* and *Paste*. With nothing selected, *Cut* and *Copy* take the
   current line.
