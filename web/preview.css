@@ -10,7 +10,9 @@
 }
 html, body { background: var(--bg); color: var(--fg); margin: 0; }
 body {
-  font: 16px/1.6 -apple-system, "Roboto", "Segoe UI", sans-serif;
+  /* No "Roboto": Android's sans-serif is already its system font, and on a Mac with Roboto
+     installed, the desktop preview garbled its italics on a 1x display. */
+  font: 16px/1.6 -apple-system, "Segoe UI", sans-serif;
   padding: 12px 16px 64px; overflow-wrap: break-word;
 }
 #content { max-width: 760px; margin: 0 auto; }
