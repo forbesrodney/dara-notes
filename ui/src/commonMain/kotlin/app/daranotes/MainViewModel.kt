@@ -206,9 +206,17 @@ class MainViewModel(val platform: AppPlatform) : ViewModel() {
 
     /** Creates a note from the New note dialog: back to the note list, then opens the note. */
     fun createNoteFromDialog(title: String) {
+        backToList()
+        createNote(title)
+    }
+
+    /**
+     * Closes everything above the note list. The New note dialog and Cmd+D jump to their note
+     * from wherever you are, rather than piling up, so Back from it always goes to the list.
+     */
+    private fun backToList() {
         val list = backStack.indexOf(Screen.Notes)
         if (list >= 0) while (backStack.lastIndex > list) backStack.removeAt(backStack.lastIndex)
-        createNote(title)
     }
 
     /**
@@ -221,8 +229,13 @@ class MainViewModel(val platform: AppPlatform) : ViewModel() {
     /** Cmd+N (Ctrl+N): the New note dialog, from any screen. */
     fun shortcutNewNote() = guarded(::requestNewNote)
 
-    /** Cmd+D (Ctrl+D): today's daily note, from any screen. */
-    fun shortcutToday() = guarded(::openDailyNote)
+    /** Cmd+D (Ctrl+D): today's daily note, from any screen, just above the note list. */
+    fun shortcutToday() = guarded {
+        if (settings.isConfigured) {
+            backToList()
+            openDailyNote()
+        }
+    }
 
     private fun guarded(action: () -> Unit) {
         val guard = leaveGuard ?: return action()

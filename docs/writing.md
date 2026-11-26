@@ -38,8 +38,8 @@ space), 3 under a numbered item (`1.` and a space). Other selected lines move 4 
 characters by default (rule MD010); turn that rule off in `.markdownlint.json` if you use
 them. On Android, use Ctrl: the system may claim some Cmd shortcuts.
 
-Cmd+N and Cmd+D leave the note you're in (it's already saved). Cancel the New note dialog
-and you stay where you were. With unsaved changes in Settings, the app asks first, as it
+Cmd+N and Cmd+D leave the note you're in (it's already saved), and Back from the note they
+open goes to the note list. Cancel the New note dialog and you stay where you were. With unsaved changes in Settings, the app asks first, as it
 does when you go back. On an iPad, hold Cmd to see them listed; on Android, Meta+/.
 
 ## The preview
