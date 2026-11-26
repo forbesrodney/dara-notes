@@ -78,10 +78,6 @@ Not all of these will become reality.
       - ${1:placeholder} tab stops  
         supporting $1 might be enough, would allow text above and below where it leaves the cursor
       - ${VAR:default} (not sure how)
-  - [ ] handle markdownlint similar to spell checking
-    - disable in note - '<!-- markdownlint-disable-file -->'
-    - disable rule in note - '<!-- markdownlint-disable-file MD013 MD033 -->'
-    - disable rule globally (.markdownlint.json) - '"MD013": false'
   - [ ] share to Dara: create a new note from text shared by another app
     - e.g. meeting transcripts (Voice Memos, Google Recorder), web clippings, emails
     - Android: intent filter for shared text (about a day)
@@ -114,8 +110,6 @@ Not all of these will become reality.
     - "#wifi && #hacking WHERE note created Date > 2010" could maybe be working into the search box
     - carry forward of uncompleted tasks could maybe be added to template front matter
       - when checked/unchecked, it would need to search back and check/uncheck all old tasks of the same name
-  - [ ] do we want cmd+d and cmd+n to work on mobile devices? I'm currently leaning toward yes.
-  - [ ] Show password/token button at end of token field
   - [ ] graph view on small phones: a pinch that starts on a node drags the node instead of zooming
     (each node's touch area is at least 14 points across, so on a crowded graph they cover a lot of the screen)
     - zoom in and out buttons (+ and -) in the graph's toolbar, beside the fit button (about half a day)
@@ -139,9 +133,6 @@ Not all of these will become reality.
       keep field definitions close to a JSON Schema subset so a library stays possible
     - Obsidian's Modal Form keeps forms in plugin settings, nothing to be compatible with;
       front matter values work with Obsidian properties and Dataview
-  - [ ] add a quick description of getting started with GitHub
-        (creating account/repo/token) to help docs (maybe on getting started page),
-        lots of this is above the heads of most people
 
 ## Needs Further Testing
 
