@@ -62,7 +62,8 @@ be limited to the one repository, so it can't touch anything else in your accoun
    repository.
 6. Under *Permissions*, give *Contents* *Read and write* access.
 7. Click *Generate token*, and copy the token. GitHub shows it only once.
-8. Paste it into the app's *Access token* field, along with your GitHub username.
+8. Paste it into the app's *Access token* field, along with your GitHub username. If you
+   type it instead, tap the eye at the end of the field to check it.
 
 Use the same token on each of your devices, or make one per device so you can revoke one
 without affecting the others. When a token expires, syncing fails until you make a new one
