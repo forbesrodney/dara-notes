@@ -244,7 +244,7 @@ private fun NameDialog(
                     singleLine = true,
                     keyboardOptions = DoneKeyboard,
                     keyboardActions = doneAction(text.isNotBlank(), submit),
-                    modifier = Modifier.focusRequester(focus).onEnter(text.isNotBlank(), submit),
+                    modifier = Modifier.focusRequester(focus).onEnter(text.isNotBlank(), submit).arrowsMoveCursor(),
                 )
                 Text(
                     hint,

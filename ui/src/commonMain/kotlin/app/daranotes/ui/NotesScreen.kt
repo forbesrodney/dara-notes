@@ -280,7 +280,7 @@ fun NotesScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                     leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
                     placeholder = { Text("Search notes") },
                     singleLine = true,
-                    modifier = Modifier.weight(1f),
+                    modifier = Modifier.weight(1f).arrowsMoveCursor(),
                 )
                 Tip(if (treeView) "Show as list" else "Show by folder") {
                     IconButton(onClick = { vm.setNotesTreeView(!treeView) }) {
@@ -488,7 +488,7 @@ internal fun NewNoteDialog(
                     singleLine = true,
                     keyboardOptions = DoneKeyboard,
                     keyboardActions = doneAction(title.isNotBlank(), create),
-                    modifier = Modifier.focusRequester(focus).onEnter(title.isNotBlank(), create),
+                    modifier = Modifier.focusRequester(focus).onEnter(title.isNotBlank(), create).arrowsMoveCursor(),
                 )
                 if (linked) {
                     Spacer(Modifier.height(8.dp))

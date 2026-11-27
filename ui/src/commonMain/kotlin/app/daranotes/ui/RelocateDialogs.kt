@@ -82,7 +82,7 @@ fun RenameNoteDialog(vm: MainViewModel, path: String, onDismiss: () -> Unit, onC
                     },
                     keyboardOptions = DoneKeyboard,
                     keyboardActions = doneAction(canRename, rename),
-                    modifier = Modifier.fillMaxWidth().focusRequester(focus).onEnter(canRename, rename),
+                    modifier = Modifier.fillMaxWidth().focusRequester(focus).onEnter(canRename, rename).arrowsMoveCursor(),
                 )
             }
         },
@@ -123,7 +123,7 @@ fun MoveNoteDialog(vm: MainViewModel, path: String, onDismiss: () -> Unit, onCon
                     supportingText = { Text(error ?: "Type a new folder name to create it") },
                     keyboardOptions = DoneKeyboard,
                     keyboardActions = doneAction(canMove, move),
-                    modifier = Modifier.fillMaxWidth().focusRequester(focus).onEnter(canMove, move),
+                    modifier = Modifier.fillMaxWidth().focusRequester(focus).onEnter(canMove, move).arrowsMoveCursor(),
                 )
                 LazyColumn(Modifier.heightIn(max = 280.dp)) {
                     item {

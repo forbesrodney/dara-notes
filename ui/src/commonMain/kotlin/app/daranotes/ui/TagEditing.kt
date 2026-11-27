@@ -110,7 +110,7 @@ fun TagsDialog(
                         },
                         keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
                         keyboardActions = KeyboardActions(onDone = { if (tag != null && !already) add(tag) }),
-                        modifier = Modifier.weight(1f).focusRequester(focus),
+                        modifier = Modifier.weight(1f).focusRequester(focus).arrowsMoveCursor(),
                     )
                     TextButton(onClick = { tag?.let(::add) }, enabled = tag != null && !already) { Text("Add") }
                 }

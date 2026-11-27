@@ -120,7 +120,7 @@ fun TagsScreen(vm: MainViewModel, snackbar: SnackbarHostState) {
                 },
                 placeholder = { Text("Filter tags") },
                 singleLine = true,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp).arrowsMoveCursor(),
             )
             when {
                 shown == null -> Box(Modifier.fillMaxSize()) {

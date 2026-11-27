@@ -250,7 +250,7 @@ fun SettingsScreen(vm: MainViewModel, snackbar: SnackbarHostState, active: Boole
                         visualTransformation = if (showToken) VisualTransformation.None else PasswordVisualTransformation(),
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier.fillMaxWidth().arrowsMoveCursor(),
                     )
                     Field("Commit author name", authorName, { authorName = it })
                     Field("Commit author email", authorEmail, { authorEmail = it }, keyboard = KeyboardType.Email)
@@ -449,7 +449,7 @@ private fun Field(
         supportingText = hint?.let { { Text(it) } },
         keyboardOptions = KeyboardOptions(keyboardType = keyboard),
         singleLine = true,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth().arrowsMoveCursor(),
     )
 }
 

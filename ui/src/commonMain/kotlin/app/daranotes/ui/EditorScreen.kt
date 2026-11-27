@@ -578,6 +578,7 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                             .heightIn(min = viewport)
                             .padding(12.dp)
                             .onFocusChanged { editorFocused = it.isFocused }
+                            .arrowsMoveCursor(multiLine = true)
                             .onPreviewKeyEvent { e ->
                                 // The character a shortcut's key types arrives as a separate event
                                 // (a Mac sends Cmd+Enter's newline separately); swallow it, or the text field
