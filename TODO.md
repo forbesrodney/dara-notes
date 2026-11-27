@@ -95,6 +95,13 @@ Not all of these will become reality.
       it only lists them, a few lines
     - iPad (hold Cmd): a `UIKeyCommand` would run the shortcut itself instead of the editor,
       so it needs a way to list them without taking the keys, or to pass them on to the editor
+  - [ ] editor: never insert a hard tab (markdownlint's MD010 flags them, and tools disagree on
+    their width); Tab should always type spaces
+    - today Tab outside a list or selection types a tab character (`TextFieldValue.tab()` in
+      `Indenting.kt`); indenting lines and list items already uses spaces
+    - decide the rules later: how many spaces (the note's indent unit, 2 or 4, or to the next
+      tab stop), and what Tab does mid-line
+    - maybe also turn tabs into spaces in pasted text, and offer a fix for existing tabs
   - [ ] guess the Git username from the remote URL (about half a day)
     - show it as the Username field's hint, and use it when the field is left blank (today blank means `git`)
     - a username in the URL (`https://user@bitbucket.org/...`, as Bitbucket's clone URLs have) is the login
@@ -151,3 +158,9 @@ Not all of these will become reality.
     Esc goes Back on the first press
   - closing the dialog when its field loses focus would work, but would also close it at the
     wrong times (switching apps); check again after Compose updates
+
+## Not Planned
+
+- Vim key bindings: they'd only make sense with a hardware keyboard, mostly on the desktop,
+  and the app aims to work the same on every platform; the notes are plain Markdown in a Git
+  repository, so Vim itself can edit them alongside the app
