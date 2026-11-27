@@ -188,7 +188,8 @@ private fun megabytes(bytes: Long): String {
     return if (tenths < 1) "under 0.1 MB" else "${tenths / 10}.${tenths % 10} MB"
 }
 
-private fun grouped(n: Int): String = n.toString().reversed().chunked(3).joinToString(",").reversed()
+/** [n] with commas between thousands: 12,345. */
+internal fun grouped(n: Int): String = n.toString().reversed().chunked(3).joinToString(",").reversed()
 
 /** The chip under the toolbar with the note's spelling issues; tap for the list. */
 @Composable

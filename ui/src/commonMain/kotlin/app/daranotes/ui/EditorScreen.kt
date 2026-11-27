@@ -23,6 +23,7 @@ import androidx.compose.ui.window.PopupPositionProvider
 import androidx.compose.ui.window.PopupProperties
 import app.daranotes.core.Note
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -487,41 +488,48 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                     onInsertVariable = if (isTemplate) ({ pickingVariable = true }) else null,
                 )
                 HorizontalDivider()
+                // One row of its own, always there while editing, so the text never jumps when
+                // issues come and go: the spelling bar for the word at the cursor, else the
+                // markdownlint and spelling chips, else the note's word and line counts.
                 val lintShown = lint?.takeIf { it.issues.isNotEmpty() || it.configError != null }
-                if (lintShown != null || spelling.isNotEmpty()) {
-                    Row(
-                        Modifier.fillMaxWidth().padding(horizontal = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    ) {
-                        if (lintShown != null) LintChip(lintShown) { showIssues = true }
-                        if (spelling.isNotEmpty()) SpellingChip(spelling.size) { showSpelling = true }
+                Box(Modifier.fillMaxWidth().height(48.dp), contentAlignment = Alignment.CenterStart) {
+                    val issue = spellAtCursor
+                    when {
+                        issue != null ->
+                            SpellingBar(
+                                word = issue.word,
+                                suggestions = suggestions,
+                                onReplace = { fix ->
+                                    val t = value.text
+                                    if (issue.end <= t.length && t.regionMatches(issue.start, issue.word, 0, issue.word.length)) {
+                                        value = TextFieldValue(
+                                            t.substring(0, issue.start) + fix + t.substring(issue.end),
+                                            TextRange(issue.start + fix.length),
+                                        )
+                                        spelling = spelling - issue
+                                    }
+                                },
+                                onIgnore = {
+                                    spelling = spelling.filterNot { it.word.equals(issue.word, ignoreCase = true) }
+                                    replaceText(SpellComments.ignoreInNote(value.text, issue.word))
+                                },
+                                onAdd = {
+                                    spelling = spelling.filterNot { it.word.equals(issue.word, ignoreCase = true) }
+                                    vm.addToDictionary(issue.word) { spellConfigVersion++ }
+                                },
+                            )
+                        lintShown != null || spelling.isNotEmpty() -> Row(
+                            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            if (lintShown != null) LintChip(lintShown) { showIssues = true }
+                            if (spelling.isNotEmpty()) SpellingChip(spelling.size) { showSpelling = true }
+                        }
+                        else -> NoteCounts(value.text)
                     }
                 }
-                spellAtCursor?.let { issue ->
-                    SpellingBar(
-                        word = issue.word,
-                        suggestions = suggestions,
-                        onReplace = { fix ->
-                            val t = value.text
-                            if (issue.end <= t.length && t.regionMatches(issue.start, issue.word, 0, issue.word.length)) {
-                                value = TextFieldValue(
-                                    t.substring(0, issue.start) + fix + t.substring(issue.end),
-                                    TextRange(issue.start + fix.length),
-                                )
-                                spelling = spelling - issue
-                            }
-                        },
-                        onIgnore = {
-                            spelling = spelling.filterNot { it.word.equals(issue.word, ignoreCase = true) }
-                            replaceText(SpellComments.ignoreInNote(value.text, issue.word))
-                        },
-                        onAdd = {
-                            spelling = spelling.filterNot { it.word.equals(issue.word, ignoreCase = true) }
-                            vm.addToDictionary(issue.word) { spellConfigVersion++ }
-                        },
-                    )
-                }
+                HorizontalDivider()
                 // The editor scrolls in its own container rather than inside the text field: the
                 // field's built-in scrolling resets to the top when the keyboard shrinks it,
                 // while a scroll container keeps the cursor in view.
@@ -1194,3 +1202,34 @@ fun TextFieldValue.addFootnote(): TextFieldValue {
 private val NoBringIntoView = object : BringIntoViewSpec {
     override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float) = 0f
 }
+
+/** The note's word and line counts, in the editor's row under the toolbar when it has no issues. */
+@Composable
+private fun NoteCounts(text: String) {
+    val words = remember(text) { wordCount(text) }
+    val lines = remember(text) { if (text.isEmpty()) 0 else text.count { it == '\n' } + if (text.endsWith('\n')) 0 else 1 }
+    Text(
+        "${grouped(words)} ${if (words == 1) "word" else "words"} \u00b7 ${grouped(lines)} ${if (lines == 1) "line" else "lines"}",
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 16.dp),
+    )
+}
+
+/**
+ * The words in a note, leaving out its front matter and HTML comments (such as
+ * `<!-- cspell:ignore ... -->`), which aren't part of what you wrote.
+ */
+internal fun wordCount(text: String): Int {
+    val body = text.replaceFirst(FRONT_MATTER, "").replace(HTML_COMMENT, " ")
+    return WORD.findAll(body).count()
+}
+
+/** A word for the count: letters or digits, with apostrophes inside (don't, it's). */
+private val WORD = Regex("""[\p{L}\p{N}]+(?:['\u2019][\p{L}\p{N}]+)*""")
+
+/** YAML front matter at the very start: from a `---` line to the next `---` or `...` line. */
+private val FRONT_MATTER = Regex("""\A---[ \t]*\r?\n(?:[\s\S]*?\r?\n)?(?:---|\.\.\.)[ \t]*(?:\r?\n|\z)""")
+
+/** An HTML comment, or one still being typed (no `-->` yet) to the end of the note. */
+private val HTML_COMMENT = Regex("""<!--[\s\S]*?(?:-->|\z)""")
