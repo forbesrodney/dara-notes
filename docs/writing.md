@@ -47,7 +47,8 @@ Back is Cmd+[ on a Mac or iPad and Alt+Left on Windows and Linux, as in web brow
 does the same everywhere, and so does a mouse's back button on the desktop. With a menu or
 dialog open, Back closes it first. Editing a note and reading its preview are the same
 screen, so Back from either goes where the back arrow does: the screen before the note,
-usually the note list.
+usually the note list. On the note list, with nothing open, these shortcuts do nothing:
+they never close the app.
 
 On an iPad, hold Cmd to see the shortcuts listed; on Android, Meta+/.
 

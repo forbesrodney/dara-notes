@@ -48,8 +48,13 @@ class MainActivity : ComponentActivity() {
         val command = event.isCtrlPressed != event.isMetaPressed && !event.isShiftPressed && !event.isAltPressed
         // Back, as on the desktop: Esc (which a text field would otherwise keep) and Ctrl+[.
         // Not Alt+Left, which Android's text fields use for the start of the line. Sent as the
-        // system's Back, so Settings still asks about unsaved changes.
-        val back = { onBackPressedDispatcher.onBackPressed() }
+        // system's Back, so Settings still asks about unsaved changes. Only when something in
+        // the app takes Back (a screen to go back to, an open dialog or menu): on the note
+        // list it would close the app, which the shortcuts don't do on the other platforms.
+        // The back gesture and button still leave as usual.
+        val back = {
+            if (onBackPressedDispatcher.hasEnabledCallbacks()) onBackPressedDispatcher.onBackPressed()
+        }
         val action: (() -> Unit)? = when {
             event.keyCode == KeyEvent.KEYCODE_ESCAPE && event.hasNoModifiers() -> back
             !command -> null
