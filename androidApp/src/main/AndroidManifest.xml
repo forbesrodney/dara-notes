@@ -11,8 +11,12 @@
     android:label="@string/app_name"
     android:supportsRtl="true"
     android:theme="@style/Theme.DaraNotes">
+    <!-- A hardware keyboard connecting or disconnecting (a Bluetooth one waking from sleep, say)
+         is handled by Compose rather than by restarting the activity, which closed open
+         dialogs and took the focus out of the editor. -->
     <activity
       android:name=".MainActivity"
+      android:configChanges="keyboard|keyboardHidden|navigation"
       android:exported="true"
       android:windowSoftInputMode="adjustResize">
       <intent-filter>
