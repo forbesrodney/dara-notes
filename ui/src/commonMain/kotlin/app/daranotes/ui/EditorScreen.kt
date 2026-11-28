@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
@@ -28,6 +29,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -518,15 +520,10 @@ fun EditorScreen(vm: MainViewModel, screen: Screen.Editor, snackbar: SnackbarHos
                                     vm.addToDictionary(issue.word) { spellConfigVersion++ }
                                 },
                             )
-                        lintShown != null || spelling.isNotEmpty() -> Row(
-                            Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
+                        else -> ChipsAndCounts(value.text) {
                             if (lintShown != null) LintChip(lintShown) { showIssues = true }
                             if (spelling.isNotEmpty()) SpellingChip(spelling.size) { showSpelling = true }
                         }
-                        else -> NoteCounts(value.text)
                     }
                 }
                 HorizontalDivider()
@@ -1204,7 +1201,39 @@ private val NoBringIntoView = object : BringIntoViewSpec {
     override fun calculateScrollDistance(offset: Float, size: Float, containerSize: Float) = 0f
 }
 
-/** The note's word and line counts, in the editor's row under the toolbar when it has no issues. */
+/**
+ * The editor's row under the toolbar: the markdownlint and spelling chips on the left, and the
+ * note's word and line counts on the right while there's room for both. When the chips need
+ * the room (a narrow phone), the counts step aside and the chips scroll.
+ */
+@Composable
+private fun ChipsAndCounts(text: String, chips: @Composable RowScope.() -> Unit) {
+    Layout(
+        content = {
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                content = chips,
+            )
+            NoteCounts(text)
+        },
+        modifier = Modifier.fillMaxWidth(),
+    ) { (chipsRow, counts), constraints ->
+        val width = constraints.maxWidth
+        val loose = constraints.copy(minWidth = 0, minHeight = 0)
+        val countsPlaced = counts.measure(loose)
+        val fits = chipsRow.maxIntrinsicWidth(constraints.maxHeight) + countsPlaced.width <= width
+        val chipsPlaced = chipsRow.measure(loose.copy(maxWidth = if (fits) width - countsPlaced.width else width))
+        val height = maxOf(chipsPlaced.height, if (fits) countsPlaced.height else 0)
+        layout(width, height) {
+            chipsPlaced.placeRelative(0, (height - chipsPlaced.height) / 2)
+            if (fits) countsPlaced.placeRelative(width - countsPlaced.width, (height - countsPlaced.height) / 2)
+        }
+    }
+}
+
+/** The note's word and line counts, at the right end of the editor's row under the toolbar. */
 @Composable
 private fun NoteCounts(text: String) {
     val words = remember(text) { wordCount(text) }

@@ -9,9 +9,10 @@ Notes are plain Markdown, saved automatically as you type. New to Markdown? See
   current line.
 - A formatting toolbar: heading, bold, italic, checkbox, list, wikilink, superscript,
   subscript, math, footnote, Mermaid diagram, code and link.
-- Under the toolbar, a row with the note's word and line counts (the word count leaves out
-  front matter and HTML comments). The markdownlint and spelling chips take their place
-  when there are issues, and the spelling bar when the cursor is in a misspelled word. The
+- Under the toolbar, a row with the note's word and line counts at its right end (the word
+  count leaves out front matter and HTML comments). The markdownlint and spelling chips
+  appear at its left when there are issues; on a narrow screen, the counts make way for
+  them. The spelling bar takes the whole row when the cursor is in a misspelled word. The
   row is always there while you edit, so the note doesn't move as issues come and go.
 
 Typing `[[` suggests notes to link to. Pressing Enter in a list starts the next item of
