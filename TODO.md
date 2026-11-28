@@ -109,6 +109,15 @@ Not all of these will become reality.
     - GitHub and Azure DevOps ignore the username with a token, so keep sending `git` there (maybe show 'git' and make read-only);
       it matters for Bitbucket and maybe Gitea/Forgejo
     - a wrong guess needs a clear sync error ("check the username and token")
+  - [ ] settings: pick a folder (Folder for new notes, Daily notes folder) with a folder picker
+    instead of typing its path
+    - the folders are inside the repository, so the picker must stay in the repository and
+      save the path relative to it
+    - desktop: the system's folder dialog (Finder on a Mac) opened at the repository, with a
+      chosen folder outside it rejected
+    - Android and iOS: the repository is in the app's private storage, where the system
+      pickers can't reach, so an in-app list of the repository's folders (maybe with
+      *New folder*)
   - [ ] Kanban boards, compatible with Obsidian's Kanban plugin
     - a board is a note with `kanban-plugin` front matter: `##` headings are columns, list items are cards
       (check real files for the exact format, e.g. the Archive section and settings block)
@@ -158,6 +167,13 @@ Not all of these will become reality.
     Esc goes Back on the first press
   - closing the dialog when its field loses focus would work, but would also close it at the
     wrong times (switching apps); check again after Compose updates
+- editor: Down arrow skips an empty line when the cursor isn't at the start of its line; it
+  should land on the empty line, as Down from the line's first column does (fix after the
+  current build clears Apple's review)
+  - first seen on the iPhone, with two empty lines at the end of the note: Down skipped the first and landed
+    on the last one, so it isn't just hunting for a line long enough for the column
+  - check which platforms do it, whether it happens mid-note too, and whether Up skips an
+    empty line the same way
 
 ## Not Planned
 
