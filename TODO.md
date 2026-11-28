@@ -89,6 +89,17 @@ Not all of these will become reality.
     - `LocalClipboardManager` in `EditorScreen.kt`: use `LocalClipboard` (suspend functions); test copy and paste
     - `SwingPanel(background = ...)` in `PlatformViews.jvm.kt` (desktop): use the overload without `background`,
       setting the color in the panel's factory; test the preview and graph web views
+  - [ ] Android: turn on R8 for release builds (Play Console warns that DEX optimization is
+    below its threshold, obfuscation 0%; fix by Feb 2027, or it may limit visibility and
+    publishing on Google Play)
+    - `isMinifyEnabled = false` in `androidApp/build.gradle.kts`; turn it on and add keep rules
+    - code reached by name at run time breaks without keep rules: JGit (reflection, Java
+      classes Android lacks), the WebViews' `@JavascriptInterface` methods (preview, graph,
+      export), and JSON parsing (settings, cSpell, markdownlint)
+    - failures show only at run time, so retest everything on a release build (sync, preview,
+      graph, export, spelling, markdownlint)
+    - do it with clearing the build warnings (above), so one retest covers both
+    - the app bundle carries R8's mapping file, so Play can still decode crash reports
   - [ ] list the editor's shortcuts (Bold, Italic, Strike-through, check or uncheck task) in the
     system's shortcut lists; they work, but only New note, Today's note and Back are listed
     - Android (Meta+/): add an "Editor" group in `MainActivity.onProvideKeyboardShortcuts`;
