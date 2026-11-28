@@ -8,9 +8,11 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.gestures.BringIntoViewSpec
 import androidx.compose.foundation.gestures.LocalBringIntoViewSpec
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -42,6 +44,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
@@ -824,31 +828,64 @@ private fun FormatToolbar(
         ToolAction("<>", "Inline code") { v: TextFieldValue -> v.wrap("`", "`", "code") },
         ToolAction("🔗", "Link") { v: TextFieldValue -> v.wrap("[", "](url)", "text") },
     )
-    Row(
-        Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 4.dp),
-    ) {
-        editActions.forEach { (label, tip, transform) ->
-            Tip(tip) {
-                TextButton(onClick = { onAction(transform) }, Modifier.keepEditorFocus(), contentPadding = PaddingValues(horizontal = 8.dp)) {
-                    Text(label)
-                }
+    // An arrow at an end with more buttons past it: it shows there's more, and scrolls there
+    // for a mouse, whose wheel doesn't scroll sideways. Neither shows when everything fits.
+    val scroll = rememberScrollState()
+    val scope = rememberCoroutineScope()
+    Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+        if (scroll.canScrollBackward) {
+            ToolbarArrow(Icons.AutoMirrored.Filled.KeyboardArrowLeft, "Scroll the toolbar back") {
+                scope.launch { scroll.animateScrollBy(-scroll.viewportSize * 0.8f) }
+            }
+        }
+        Row(Modifier.weight(1f).horizontalScroll(scroll).padding(horizontal = 4.dp)) {
+            ToolbarButtons(editActions, actions, onAction, onInsertVariable)
+        }
+        if (scroll.canScrollForward) {
+            ToolbarArrow(Icons.AutoMirrored.Filled.KeyboardArrowRight, "Scroll the toolbar for more") {
+                scope.launch { scroll.animateScrollBy(scroll.viewportSize * 0.8f) }
+            }
+        }
+    }
+}
+
+/** An arrow at an end of the formatting toolbar, for scrolling it. */
+@Composable
+private fun ToolbarArrow(icon: ImageVector, description: String, onClick: () -> Unit) {
+    IconButton(onClick = onClick, modifier = Modifier.keepEditorFocus().width(32.dp)) {
+        Icon(icon, contentDescription = description)
+    }
+}
+
+/** The formatting toolbar's buttons, in its scrolling row. */
+@Composable
+private fun RowScope.ToolbarButtons(
+    editActions: List<ToolAction>,
+    actions: List<ToolAction>,
+    onAction: ((TextFieldValue) -> TextFieldValue) -> Unit,
+    onInsertVariable: (() -> Unit)?,
+) {
+    editActions.forEach { (label, tip, transform) ->
+        Tip(tip) {
+            TextButton(onClick = { onAction(transform) }, Modifier.keepEditorFocus(), contentPadding = PaddingValues(horizontal = 8.dp)) {
+                Text(label)
+            }
+        }
+    }
+    VerticalDivider(Modifier.height(24.dp).align(Alignment.CenterVertically).padding(horizontal = 4.dp))
+    if (onInsertVariable != null) {
+        // Templates: their variables, first, since they're what a template is for.
+        Tip("Insert a variable, such as the title or today's date") {
+            TextButton(onClick = onInsertVariable, Modifier.keepEditorFocus(), contentPadding = PaddingValues(horizontal = 10.dp)) {
+                Text("\$ Variable", fontFamily = FontFamily.Monospace)
             }
         }
         VerticalDivider(Modifier.height(24.dp).align(Alignment.CenterVertically).padding(horizontal = 4.dp))
-        if (onInsertVariable != null) {
-            // Templates: their variables, first, since they're what a template is for.
-            Tip("Insert a variable, such as the title or today's date") {
-                TextButton(onClick = onInsertVariable, Modifier.keepEditorFocus(), contentPadding = PaddingValues(horizontal = 10.dp)) {
-                    Text("\$ Variable", fontFamily = FontFamily.Monospace)
-                }
-            }
-            VerticalDivider(Modifier.height(24.dp).align(Alignment.CenterVertically).padding(horizontal = 4.dp))
-        }
-        actions.forEach { (label, tip, transform) ->
-            Tip(tip) {
-                TextButton(onClick = { onAction(transform) }, Modifier.keepEditorFocus(), contentPadding = PaddingValues(horizontal = 10.dp)) {
-                    Text(label, fontFamily = if (label.length <= 2) FontFamily.Serif else FontFamily.Monospace)
-                }
+    }
+    actions.forEach { (label, tip, transform) ->
+        Tip(tip) {
+            TextButton(onClick = { onAction(transform) }, Modifier.keepEditorFocus(), contentPadding = PaddingValues(horizontal = 10.dp)) {
+                Text(label, fontFamily = if (label.length <= 2) FontFamily.Serif else FontFamily.Monospace)
             }
         }
     }

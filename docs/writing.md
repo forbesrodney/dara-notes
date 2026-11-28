@@ -8,7 +8,9 @@ Notes are plain Markdown, saved automatically as you type. New to Markdown? See
 - *All*, *Cut*, *Copy* and *Paste*. With nothing selected, *Cut* and *Copy* take the
   current line.
 - A formatting toolbar: heading, bold, italic, checkbox, list, wikilink, superscript,
-  subscript, math, footnote, Mermaid diagram, code and link.
+  subscript, math, footnote, Mermaid diagram, code and link. When it's wider than the
+  screen, an arrow at either end shows there are more buttons that way; swipe the toolbar,
+  or tap or click the arrow.
 - Under the toolbar, a row with the note's word and line counts at its right end (the word
   count leaves out front matter and HTML comments). The markdownlint and spelling chips
   appear at its left when there are issues; on a narrow screen, the counts make way for
